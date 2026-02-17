@@ -1,0 +1,184 @@
+# 9k risc-v cpu server for milk-v jupiter
+dev +dev
+	root
+	cons
+	arch
+	env
+	pipe
+	proc
+	mnt
+	srv
+	dup
+#	rtc
+	ssl
+	tls
+	cap
+#	pnp		pci
+	kprof
+	segment
+	ether		netif
+	ip		arp chandial ip ipv6 ipaux iproute netlog nullmedium pktmedium
+	uart
+	bridge		log
+	sd
+# needed for usb kbd input via scan codes
+#	kbin
+#	usb
+
+sd +dev
+#	sdmmc		sdpf
+#	sdahci		pci sdscsi
+#	sdnvme		pci sdscsi
+
+uart +dev
+	uarti8250
+
+ip +dev
+	tcp
+	udp
+	ipifc
+	icmp
+	icmp6
+#	ipmux
+
+link +dev
+	etherdwmac4
+	ethermedium
+	loopbackmedium
+	netdevmedium
+#	usbehci		usbehcipc
+
+misc +dev
+	cache
+
+boot cpu
+	tcp
+
+rootdir
+	boot$CONF.out		boot
+	/riscv64/bin/auth/factotum
+	/riscv64/bin/ip/ipconfig
+	/cfg/example/nvram.coll	nvram
+
+conf
+	#include "riscv64.h"
+
+	int cpuserver = 1;
+	/* may have to separate cpuhz from rdtsc freq */
+	uvlong cpuhz = 250*MHZ;		/* rdtsc tick freq */
+	uvlong timebase = 10*MHZ;	/* clint tick freq */
+	Membank membanks[] = {		/* (address, size) pairs */
+		PHYSMEM, BANK0SIZE,
+		PHYSMEM+GB, 7ULL*GB,
+		PHYSMEM+8ULL*GB, 8ULL*GB,	/* in case it's optional */
+		0
+	};
+	char defnvram[] = "/boot/nvram";
+
+	uintptr uartregs[] = { PAUart0 };
+	int nuart = nelem(uartregs);
+	vlong uartfreq = 14000000;
+	int prmsdelay = 80;
+	int dmaincoherent = 1;		/* guess.  hw botch? */
+
+	uchar ether0mac[] = { 0xfe, 0xfe, 0xfe, 0xfe, 0xe1, 0x8d, }; // wrong
+
+	Soc soc = {
+		.clint	 = (char *)PAClint,
+		.ether	 = {(char *)0x38000000,},
+		.l2cache = 0,			/* use Zicbom instead */
+	//	.pci	 = (char *)0xca000000,	/* ecam for cfg space */
+	//	.pcictl  = (char *)0xc0b00000,	/* bridge, ctrl regs */
+		.plic    = (char *)0x09000000,
+	//	.sdmmc   = (char *)0xd4280000,
+		.uart	 = (char *)PAUart0,
+
+		.hobbled = 0,		/* invis mgmt hart (n308) has M+S */
+	//	.xscaleuart = 1,	/* workaround */
+		.idlewakens = 750,	/* ns. to send IPIs to wake wfi cpus */
+	};
+	Ioconf ioconfs[] = {	/* devices whose drivers vmap their regs */
+		{ "ether", PGSZ, &soc.ether[0], Attachenable|84, },
+		0
+	};
+	Ioconf socconf[] = { /* devices without drivers that vmap their regs */
+		{ "clint", 64*KB, &soc.clint, },
+	//	{ "pci",   4*MB, &soc.pci, 56, },	/* pcie ecam cfg */
+	//	{ "pcictl", MB, &soc.pcictl, },	/* pcie br & ctl */
+		{ "plic",  64*MB, &soc.plic, },		/* common */
+		{ "uart",  PGSZ, &soc.uart, 17, },
+	//	{ "sdmmc", PGSZ, &soc.sdmmc, 99, },
+		0
+	};
+
+riscv64
+	start
+	low
+	mtrap
+	strap
+	mch
+	main
+	allocb
+	arch
+	archrv
+	archspacemit
+	color
+	csr
+	dmamalloc
+	fp
+	fpu
+	ioconf
+#	kbd
+	map
+	memory
+	mmu
+	fakepci
+	fakeptenc
+	sane
+	sbi
+	sbicall
+	sbiecall
+	trap
+	fakeucalloc
+port
+	alarm
+	awaitbit
+	byteserial
+	chan
+	ctype
+	dev
+	devtab
+	edf
+	fault
+	image
+#	latin1
+	logpow
+	page
+	parse
+	pgrp
+	portclock
+	prf
+	print
+	proc
+	ps
+	qio
+	qlock
+	qmalloc
+	random
+	rebootcmd
+	segment
+	sysauth
+	syscall
+	syscallfmt
+	sysfile
+	sysproc
+	sysseg
+	systab
+	taslock
+	tod
+	watermarks
+
+# controls which directories to look in for source files; must be relative to ..
+dir
+	ip
+	port

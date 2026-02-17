@@ -1,0 +1,171 @@
+# k10 file server
+dev +dev
+	root
+	cons
+	arch
+	env
+	pipe
+	proc
+	mnt
+	srv
+	dup
+	rtc
+	ssl
+	tls
+	cap
+	pnp		pci
+	kprof
+	segment
+	ether		netif
+	ip		arp chandial ip ipv6 ipaux iproute netlog nullmedium pktmedium
+	fs
+	uart
+	sd
+# needed for usb kbd input via scan codes
+#	kbin
+	usb
+
+sd +dev
+	sdahci		pci sdscsi
+	sdata		pci sdscsi
+	sdnvme		pci sdscsi
+
+uart +dev
+	uarti8250
+
+ip +dev
+	tcp
+	udp
+	ipifc
+	icmp
+	icmp6
+#	ipmux
+
+link +dev
+	etherxgbe	pci
+	etherigbe	pci
+	ethermedium
+	loopbackmedium
+	netdevmedium
+	usbehci		usbehcipc
+	usbohci
+#	usbxhcipc
+
+misc +dev
+	cache
+	mp		apic ioapic pci sipi
+
+boot boot #S/sdn0/
+	tcp
+	local
+
+rootdir
+	boot.fs		boot
+# flag for cpurc* scripts
+	/cfg/example/nvram.zero	_fs
+	/amd64/bin/rc
+	/rc/lib/rcmain
+	/rc/bin/diskparts
+	/rc/bin/search
+	/amd64/bin/ip/ipconfig
+	/amd64/bin/auth/factotum
+	/amd64/bin/venti/venti
+	/amd64/bin/fossil/fossil
+	/amd64/bin/auth/aescbc
+	/amd64/bin/aux/zerotrunc
+	/amd64/bin/bind
+	/amd64/bin/cat
+	/amd64/bin/cp
+	/amd64/bin/disk/fdisk
+	/amd64/bin/disk/prep
+	/amd64/bin/echo
+	/amd64/bin/grep
+	/amd64/bin/ls
+	/amd64/bin/mount
+	/amd64/bin/read
+	/amd64/bin/sed
+	/amd64/bin/sleep
+	/amd64/bin/srv
+	/amd64/bin/test
+	/amd64/bin/usb/usbd
+# expedience while bringing up on new hardware
+	/cfg/example/nvram nvram
+
+conf
+	int cpuserver = 1;
+
+amd64
+	l32p
+	l64v
+	l64idt
+	l64syscall
+	l64fpu
+	main
+	apu
+	arch
+	archk10
+	asm
+	cga
+	bootconf
+	fpu
+	i8080
+	i8254
+	i8259
+# only needed for VMs
+	kbd
+	map
+	mmu
+	multiboot
+	noacpi
+	trap
+	vsvm
+port
+	alarm
+	allocb
+	awaitbit
+	byteserial
+	chan
+	ctype
+	dev
+	devtab
+	edf
+	fault
+	image
+	latin1
+	logpow
+	page
+	parse
+	pgrp
+	portclock
+# prf blows up before anything prints
+	noprf
+	print
+	proc
+	ps
+	qio
+	qlock
+	qmalloc
+	random
+	rebootcmd
+	sane
+	segment
+	sysauth
+	syscall
+	syscallfmt
+	sysfile
+	sysproc
+	sysseg
+	systab
+	taslock
+	tod
+	watermarks
+
+#
+# controls which directories to look in for source files; must be relative to ..
+#
+dir
+	ip
+	port
+	386
+	k10
+#	pc	-.I.

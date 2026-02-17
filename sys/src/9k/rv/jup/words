@@ -1,0 +1,68 @@
+milk-v jupiter, dma incoherent
+
+spacemit k1 rv64gcbv soc with 2 clusters of 4 1.6GHz spacemit x60 cpus,
+	8-stage dual-issue in-order.  cluster 0 has ai shit.
+39-bit virtual addresses
+rva22 compliant.
+each cluster has 2GB on my board, at 0 & 4GB.
+2GB - 4GB is i/o devices.
+clint clock freq 10M or 24M
+l2 cache ctlr
+2 k1x custom gb ether controllers.  2nd doesn't work.
+has usb 2 & 3, hdmi, pcie
+only works with atx power
+can't reset it
+
+memory map
+0		2gb dram, SBI in first 2MB
+0x80000000	i/o
+0x80000000	pcie port a data
+0x90000000	pcie port b data
+0xa0000000	pcie port c data
+0xc088d000	uart1
+0xc0900000	usb crud
+0xc0b00000	pcie port a phy
+0xc0c00000	pcie port b phy
+0xc0d00000	pcie port c phy
+0xca000000	pcie port a config
+0xca400000	pcie port b config
+0xca800000	pcie port c config
+0xcac80000	ether0 (k1x-emac)
+0xcac81000	ether1 (k1x-emac)
+0xd4010000	rtc
+0xd4014000	timer0
+0xd4016000	timer1
+0xd4017000	uart0
+0xd4017100	uart2
+		⋯
+0xd4017800	uart9
+0xd4050000	reset, power ctlr
+0xd4080000	watchdog, power ctlr
+0xd4280000	sdhci0 (of 3)
+0xd4282f90	reboot
+0xe0000000	plic, 64M, 159 devices
+0xe4000000	clint, 64K
+0xffe00000	rom, 1MB (NB!)
+0x100000000	2gb+ dram
+
+intrs/irqs (via plic)
+21		rtc
+22		rtc
+23		timer0 counter
+26		timer1 counter
+35		watchdog
+42		uart0
+43		uart1
+		...
+51		uart9
+99		sdhci0
+107		usb
+125		usb 3
+131		ether0
+132		ether0 rcvd or phy
+133		ether1
+134		ether1 rcvd or phy
+141		pcie port a
+142		pcie port b
+145		pcie port a
+146		pcie port b

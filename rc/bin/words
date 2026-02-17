@@ -1,0 +1,3 @@
+#!/bin/rc
+# words [file...] - emit file contents as one word per line
+cat $* | tr -s '[ \11]' '\12'

@@ -1,0 +1,62 @@
+Starting kernel ...
+
+--
+
+PHYSMEM 0x80200000 sys->pmbase 0x80200000
+cpu0: 1 of 8 private l2 cache ways enabled at entry; setting to 7
+cpu0: 1 of 16 shared l3 cache ways enabled at entry; setting to 15
+plic: turned clock on (eswin feature)
+plic at 0xffff80000c000000: max prio 0x7
+testing plic enables; valid contexts: 0 1 2 3 4 5 6 7
+
+Plan 9 for p550
+
+built Sat Aug 2 03:03:13 PDT 2025
+cpu0: risc-v RV64GCSUZbb sync_is sifive p550 hart 2 plic M context 4 at 1400 MHz
+senvcfg 0x0
+4-level page tables in use
+using 48-bit virtual addresses, can exploit 128T bytes, and idling with WFI, sending IPIs over 0 ns.
+clint direct access: no msip, no mtime, no mtimecmp.
+clint timebase: 1 MHz
+no super trap on unaligned access for 0xffff8000bff02fc9, read 0x55443322
+resetting etherdwmac4, we hope...#l-1: dwmac4: dwmac eswin version 0x1052
+#l-1: dwmac4: mac address 8c1f6413cd51 already set
+
+#l0: dwmac4: 1Gbps regs 0x50400000 irq 61: 8c1f6413cd51
+sbi started hart 0	sbi started hart 1	hart 2 is me, already running
+sbi started hart 3
+4 cpus running, 0 missing
+cpu1: 1 of 8 private l2 cache ways enabled at entry; setting to 7
+cpu2: 1 of 8 private l2 cache ways enabled at entry; setting to 7
+cpu3: 1 of 8 private l2 cache ways enabled at entry; setting to 7
+16G memory: 976K+626M kernel (523M of Page structs), 15G user, 17M unused
+#l0: dwmac4: mac address 8c1f6413cd51 already set
+dhcp...intr: stuck in plicclaim loop, id 61, polling
+garp sent for 8c1f6413cd51 96.78.174.39
+factotum...||tcp...version...time...
+||||||||||||||||||||||||factotum mail & tls keys...||secstore...||||||||||||||p9auth.collyer.net
+|||dns...||||||||||loopbacks...|||listen...|||||||||timesync...|ipv6on: no ip for v6pfx
+|
+|||riscv64 /sys/src/9k/rv/p550cpu --rwxrwxr-x M 9 geoff sys 1109260 Aug 2 03:03 /riscv64/9p550cpu
+boot.env...Sat Aug 2 03:09:50 PDT 2025  p550v6 sla: 0... up 0 days, 00:01:18
+public net: adding v4 default route...collect kmesg...
+
+init: starting /bin/rc
+adding v6 default route...p550# 
+|||||||||||||
+p550# da|te
+Sat Aug  2 03:10:05 PDT 2025
+p550# ||||date;s|leep 2;| date
+Sat Aug  2 03:10:12 PDT 2025
+||Sat Aug  2 03:10:14 PDT 2025
+p550# |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||cd |/usr/|geoff/|bin|/||ri|scv64|
+||||
+|||||||p550# p550# p550# ||||||||||m|ips
+|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||1422
+p550# p550# ||||||||cat |/de|v/sy|s|stat|
+          0       70781       86354        8016       10740           0           0          19          99           7 
+          1       54933       38014        4183        4573           0           0           0          99           0 
+          2       69345       38200        4756        5154           0           0           0          99           0 
+          3       57838       37520       18265        4541           0           0           0          99           0 
+p550# |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||

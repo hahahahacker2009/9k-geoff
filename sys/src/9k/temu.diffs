@@ -1,0 +1,2520 @@
+binary files /n/dump/2025/1015/sys/src/9k/doc/9k-riscv.pdf ./doc/9k-riscv.pdf differ
+
+diff -n /n/dump/2025/1015/sys/src/9k/386/pci.c ./386/pci.c
+/n/dump/2025/1015/sys/src/9k/386/pci.c:65,66 c ./386/pci.c:65,66
+< static int pcimaxbno = 7;
+< static int pcimaxdno;
+---
+> static int pcimaxbno = 15;	/* can be up to 255 */
+> static int pcimaxdno;		/* can be up to 31 */
+/n/dump/2025/1015/sys/src/9k/386/pci.c:1229 c ./386/pci.c:1229
+< 	for (ptr = pcicfgr32(p, ptr); ptr != 0; ptr = pcicfgr8(p, ptr+1)) {
+---
+> 	for (ptr = pcicfgr32(p, ptr); ptr != 0; ptr = pcicfgr8(p, ptr+1))
+/n/dump/2025/1015/sys/src/9k/386/pci.c:1234 c ./386/pci.c:1234
+< 		if(ptr < 0x40 || ptr & ((sizeof(ulong)-1)))
+---
+> 		if(pcicfgptrbad(ptr))
+/n/dump/2025/1015/sys/src/9k/386/pci.c:1238 d ./386/pci.c:1237
+< 	}
+/n/dump/2025/1015/sys/src/9k/386/pci.c:1269 c ./386/pci.c:1268
+< 	for (ptr = pcicfgr32(p, ptr); ptr != 0; ptr = pcicfgr8(p, ptr+1)) {
+---
+> 	for (ptr = pcicfgr32(p, ptr); ptr != 0; ptr = pcicfgr8(p, ptr+1))
+/n/dump/2025/1015/sys/src/9k/386/pci.c:1274 c ./386/pci.c:1273
+< 		if(ptr < 0x40 || ptr & ((sizeof(ulong)-1)))
+---
+> 		if(pcicfgptrbad(ptr))
+/n/dump/2025/1015/sys/src/9k/386/pci.c:1276 c ./386/pci.c:1275
+< 		if(pcicfgr8(p, ptr) == 0x01){
+---
+> 		else if(pcicfgr8(p, ptr) == Pcicappwr){
+/n/dump/2025/1015/sys/src/9k/386/pci.c:1279 d ./386/pci.c:1277
+< 		}
+
+diff -n /n/dump/2025/1015/sys/src/9k/386/sdata.c ./386/sdata.c
+/n/dump/2025/1015/sys/src/9k/386/sdata.c:949 a ./386/sdata.c:950,952
+> 	sdev->unitflg = nil;
+> 
+> 	/* not sure we should free sdev->unit here */
+/n/dump/2025/1015/sys/src/9k/386/sdata.c:952 d ./386/sdata.c:954
+< 	sdev->unitflg = nil;
+/n/dump/2025/1015/sys/src/9k/386/sdata.c:953 a ./386/sdata.c:956
+> 	sdev->nunit = 0;
+/n/dump/2025/1015/sys/src/9k/386/sdata.c:955 d ./386/sdata.c:957
+< 	free(ctlr);
+/n/dump/2025/1015/sys/src/9k/386/sdata.c:956 a ./386/sdata.c:959
+> 	free(ctlr);
+/n/dump/2025/1015/sys/src/9k/386/sdata.c:2162 a ./386/sdata.c:2166,2167
+> 	if (ctlr == nil)
+> 		return 0;
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/apic.c ./k10/apic.c
+/n/dump/2025/1015/sys/src/9k/k10/apic.c:523 c ./k10/apic.c:523,524
+< 	if ((aadd(&traps, 1) > sys->nonline || sys->ticks > 60*HZ) && traps < 12)
+---
+> 	if (1 || (aadd(&traps, 1) > sys->nonline || sys->ticks > 60*HZ) &&
+> 	    traps < 3*sys->nonline)	// TODO
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/apu.c ./k10/apu.c
+/n/dump/2025/1015/sys/src/9k/k10/apu.c:105 a ./k10/apu.c:106
+> 	thisisapu2 = apu;
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/archk10.c ./k10/archk10.c
+/n/dump/2025/1015/sys/src/9k/k10/archk10.c:187 c ./k10/archk10.c:187
+<  *  called at spllo from proc.c, but also in infinite loops elsewhere.
+---
+>  *  called at spllo from proc.c.
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/bootconf.c ./k10/bootconf.c
+/n/dump/2025/1015/sys/src/9k/k10/bootconf.c:104 a ./k10/bootconf.c:105,108
+> 	if (p == nil) {
+> 		iprint("writeconf: nil from getconfenv()\n");
+> 		return;
+> 	}
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/dat.h ./k10/dat.h
+/n/dump/2025/1015/sys/src/9k/k10/dat.h:33 c ./k10/dat.h:33
+< #define SYSCALLTYPE	64	/* nominal syscall trap type (not used) */
+---
+> #define SYSCALLTYPE 64 /* nominal syscall trap type (IdtSYSCALL) */
+/n/dump/2025/1015/sys/src/9k/k10/dat.h:606 a ./k10/dat.h:607,608
+> 
+> int thisisapu2;
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/devarch.c ./k10/devarch.c
+/n/dump/2025/1015/sys/src/9k/k10/devarch.c:458 a ./k10/devarch.c:459
+> /* uniprocessor reset */
+/n/dump/2025/1015/sys/src/9k/k10/devarch.c:463 a ./k10/devarch.c:465,466
+> 	if (m->machno != 0)
+> 		iprint("archreset: called on cpu %d instead of 0\n", m->machno);
+/n/dump/2025/1015/sys/src/9k/k10/devarch.c:483 c ./k10/devarch.c:486
+< 		idlehands();
+---
+> 		halt();
+/n/dump/2025/1015/sys/src/9k/k10/devarch.c:485 a ./k10/devarch.c:489,500
+> /* we've had a nested panic or the like; we must give up and reboot */
+> void
+> emergereset(void)
+> {
+> 	splhi();
+> 	apicresetothers();
+> 	delay(1);			/* let secondary cpus reset */
+> 
+> 	/* we can now use the uniprocessor reset */
+> 	archreset();
+> }
+> 
+/n/dump/2025/1015/sys/src/9k/k10/devarch.c:512 c ./k10/devarch.c:527
+< 		idlehands();
+---
+> 		halt();
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/devether.c ./k10/devether.c
+/n/dump/2025/1015/sys/src/9k/k10/devether.c:507 a ./k10/devether.c:508
+> 		delay(2000);
+/n/dump/2025/1015/sys/src/9k/k10/devether.c:509 c ./k10/devether.c:510
+< 			idlehands();
+---
+> 			halt();
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/io.h ./k10/io.h
+/n/dump/2025/1015/sys/src/9k/k10/io.h:28,29 c ./k10/io.h:28,29
+< 	IdtSYSCALL	= 64,		/* unused on AMD64 */
+< 	IdtIOAPIC	= 65,		/* IOAPIC interrupts */
+---
+> 	IdtSYSCALL	= 64,		/* SYSCALLTYPE */
+> 	IdtIOAPIC	= 65,		/* start IOAPIC interrupts */
+/n/dump/2025/1015/sys/src/9k/k10/io.h:72,76 d ./k10/io.h:71
+< enum {
+< 	MaxEISA		= 16,
+< 	CfgEISA		= 0xC80,
+< };
+< 
+/n/dump/2025/1015/sys/src/9k/k10/io.h:231 a ./k10/io.h:227
+> //	Pcicaphandoff	= 0xa,		/* bios handoff (legacy to os) */
+/n/dump/2025/1015/sys/src/9k/k10/io.h:329 a ./k10/io.h:326,331
+> 
+> /*
+>  * Check for validity.
+>  * Can't be in standard header and must be double-word aligned.
+>  */
+> #define pcicfgptrbad(ptr) ((ptr) < 0x40 || (ptr) & ((sizeof(ulong)-1)))
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/ioapic.c ./k10/ioapic.c
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:9 a ./k10/ioapic.c:10,11
+> // #include "../port/dbgprint.h"
+> 
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:185 c ./k10/ioapic.c:187
+< ioapiconline(void)			/* unused, oddly */
+---
+> ioapiconline(void)
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:370 c ./k10/ioapic.c:372
+< 	if (ptr == -1) {
+---
+> 	if (ptr == -1) {		/* no msi?  find out why. */
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:375 c ./k10/ioapic.c:377
+< 			print("%s: %T: vid %ux did %ux pci-e device NOT "
+---
+> 			print("%s: %T: vid %ux did %ux broken pci-e device NOT "
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:378,379 c ./k10/ioapic.c:380,383
+< 		/* else a pci device, so msi not mandatory */
+< 		return -1;		/* sorry, no msi */
+---
+> 		else
+> 			print("%s: %T: device is pci behind a bridge, so "
+> 				"no msi.  phooey!\n", v->name, pcidev->tbdf);
+> 		return -1;
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:398 c ./k10/ioapic.c:402
+< 	msi.addr = (uvlong)(uintptr)Lapicphys | v->lapic<<12 | Msirhtocpuid;
+---
+> 	msi.addr = (uvlong)Lapicphys | v->lapic<<12 | Msirhtocpuid;
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:513 c ./k10/ioapic.c:517
+< 			DBG("isa: tbdf %#8.8ux busno %d devno %d %#p\n",
+---
+> 			DBG("isa: tbdf %#8.8ux busno %d devno %d rdt %#p\n",
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:533 c ./k10/ioapic.c:537
+< novect(Vctl *v)
+---
+> rdt2vecno(Rdt *rdt)
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:535,536 c ./k10/ioapic.c:539,564
+< 	print("ioapicintrenable: newvecno failed to assign vector for %s %T\n",
+< 		v->name, v->tbdf);
+---
+> 	int vecno;
+> 
+> 	vecno = newvecno(rdt); /* updates rdt->lo with vecno, if rdt->lo is 0 */
+> 	if (vecno < 0 && rdt->lo & 0xff) {
+> 		/*
+> 		 * ugh.  the vector was probably in use, so try
+> 		 * assigning a new one, overriding rdt->lo.
+> 		 */
+> 		rdt->lo &= ~0xff;
+> 		vecno = newvecno(rdt);
+> 	}
+> 	return vecno;
+> }
+> 
+> /* try to configure pcidev for msi without an rdt */
+> static int
+> lastresortmsi(Vctl *v, Pcidev *pcidev)
+> {
+> 	int vecno;
+> 	uint hi, lo;
+> 
+> 	lo = vecno = 256 - 8;		/* pick last vectors */
+> 	ioapicintrdd(&hi, &lo, v);	/* assign a cpu */
+> 	v->vno = vecno;
+> 	v->lapic = hi>>24;
+> 	if (trymsi(v, pcidev) < 0)
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:537 a ./k10/ioapic.c:566,567
+> 	pcinointrs(pcidev);	/* msi on: no legacy pci intrs */
+> 	return vecno;
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:539 a ./k10/ioapic.c:570,594
+> /* configure pcidev for msi if possible, else use redirect table */
+> static int
+> msiorrdt(Vctl *v, Pcidev *pcidev, Rdt *rdt, int vecno)
+> {
+> 	uint hi, lo;
+> 
+> 	/* we trust that vecno & rdt->lo&0xff are a valid vector */
+> 	lo = rdt->lo & ~Im;
+> 	ioapicintrdd(&hi, &lo, v);		/* assign a cpu */
+> 	v->vno = vecno;
+> 	v->lapic = hi>>24;
+> 	if (pcidev && trymsi(v, pcidev) >= 0)
+> 		pcinointrs(pcidev);	/* msi on: no legacy pci interrupts */
+> 	else {
+> 		/* no msi: redirect int to this apic */
+> 		rtblput(rdt->apic, rdt->intin, hi, lo);		/**/
+> 		vecno = lo & 0xff;
+> 		if (pcidev) {
+> 			pcimsioff(v, pcidev);  /* make sure msi is really off */
+> 			pciintrs(pcidev);
+> 		}
+> 	}
+> 	return vecno;
+> }
+> 
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:558 c ./k10/ioapic.c:613
+< 			return v->irq;
+---
+> 			return v->irq;		/* we will share the irq */
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:565,566 c ./k10/ioapic.c:620,626
+< //	if(rdt == nil && BUSTYPE(v->tbdf) != BusPCI)
+< 	if(rdt == nil)
+---
+> //	if(rdt == nil && BUSTYPE(v->tbdf) != BusPCI)	/* old test */
+> 	if(rdt == nil) {
+> 		if (pcidev == nil)
+> 			pcidev = pcibusdev(v, &busno, &devno);
+> 		if (pcidev == nil) {
+> 			print("ioapicintrenable: %s: no pcidev, no msi\n",
+> 				v->name);
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:567 a ./k10/ioapic.c:628,633
+> 		}
+> 		vecno = lastresortmsi(v, pcidev);
+> 		if (vecno < 0)
+> 			return -1;
+> 		goto Finish;
+> 	}
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:571 a ./k10/ioapic.c:638
+> 	 * doctor: don't do that.
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:582,590 c ./k10/ioapic.c:649
+< 	vecno = newvecno(rdt); /* updates rdt->lo with vecno, if rdt->lo is 0 */
+< 	if (vecno < 0)
+< 		if (rdt->lo & 0xff) {
+< 			/*
+< 			 * ugh.  the vector was probably in use, so try
+< 			 * assigning a new one, overriding rdt->lo.
+< 			 */
+< 			rdt->lo &= ~0xff;
+< 			vecno = newvecno(rdt);
+---
+> 	vecno = rdt2vecno(rdt);
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:591 a ./k10/ioapic.c:651,652
+> 		print("ioapicintrenable: newvecno failed to assign vector for "
+> 			"%s %T\n", v->name, v->tbdf);
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:593 c ./k10/ioapic.c:654
+< 				return novect(v);
+---
+> 		return -1;
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:595 c ./k10/ioapic.c:656
+< 		} else {
+---
+> 	vecno = msiorrdt(v, pcidev, rdt, vecno);
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:597,616 d ./k10/ioapic.c:657
+< 			return novect(v);
+< 		}
+< 
+< 	/* we trust that vecno & rdt->lo&0xff are a valid vector */
+< 	lo = rdt->lo & ~Im;
+< 	ioapicintrdd(&hi, &lo, v);		/* assign a cpu */
+< 	v->vno = vecno;
+< 	v->lapic = hi>>24;
+< 	if (pcidev && trymsi(v, pcidev) >= 0)
+< 		pcinointrs(pcidev);	/* msi on: no legacy pci interrupts */
+< 	else {
+< 		/* no msi: redirect int to this apic */
+< 		rtblput(rdt->apic, rdt->intin, hi, lo);		/**/
+< 		vecno = lo & 0xff;
+< 		if (pcidev) {
+< 			pcimsioff(v, pcidev);  /* make sure msi is really off */
+< 			pciintrs(pcidev);
+< 		}
+< 	}
+< 	unlock(rdt->apic);
+/n/dump/2025/1015/sys/src/9k/k10/ioapic.c:619 c ./k10/ioapic.c:660
+< 
+---
+> Finish:
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/k10 ./k10/k10
+/n/dump/2025/1015/sys/src/9k/k10/k10:68,81 d ./k10/k10:67
+< #
+< #boot cpu
+< #	int cpuflag = 1;
+< #boot cpu boot $3
+< #	int cpuflag = 1;
+< #	char* bootdisk = "$3";
+< #boot rootdir $3
+< #	char* rootdir = "$3";
+< #boot (bboot|romboot|dosboot)
+< #	int cpuflag = 1;
+< #	char* bootprog = $2;
+< #boot boot $3
+< #	char* bootdisk = "$3";
+< #
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/k10cpu ./k10/k10cpu
+/n/dump/2025/1015/sys/src/9k/k10/k10cpu:60 a ./k10/k10cpu:61,62
+> 	usbohci
+> #	usbxhcipc
+/n/dump/2025/1015/sys/src/9k/k10/k10cpu:67,80 d ./k10/k10cpu:68
+< #
+< #boot cpu
+< #	int cpuflag = 1;
+< #boot cpu boot $3
+< #	int cpuflag = 1;
+< #	char* bootdisk = "$3";
+< #boot rootdir $3
+< #	char* rootdir = "$3";
+< #boot (bboot|romboot|dosboot)
+< #	int cpuflag = 1;
+< #	char* bootprog = $2;
+< #boot boot $3
+< #	char* bootdisk = "$3";
+< #
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/k10cpuf ./k10/k10cpuf
+/n/dump/2025/1015/sys/src/9k/k10/k10cpuf:69,82 d ./k10/k10cpuf:68
+< #
+< #boot cpu
+< #	int cpuflag = 1;
+< #boot cpu boot $3
+< #	int cpuflag = 1;
+< #	char* bootdisk = "$3";
+< #boot rootdir $3
+< #	char* rootdir = "$3";
+< #boot (bboot|romboot|dosboot)
+< #	int cpuflag = 1;
+< #	char* bootprog = $2;
+< #boot boot $3
+< #	char* bootdisk = "$3";
+< #
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/k10fs ./k10/k10fs
+/n/dump/2025/1015/sys/src/9k/k10/k10fs:26 c ./k10/k10fs:26
+< #	usb
+---
+> 	usb
+/n/dump/2025/1015/sys/src/9k/k10/k10fs:48 a ./k10/k10fs:49,51
+> 	usbehci		usbehcipc
+> 	usbohci
+> 	usbxhcipc
+/n/dump/2025/1015/sys/src/9k/k10/k10fs:54,67 d ./k10/k10fs:56
+< #
+< #boot cpu
+< #	int cpuflag = 1;
+< #boot cpu boot $3
+< #	int cpuflag = 1;
+< #	char* bootdisk = "$3";
+< #boot rootdir $3
+< #	char* rootdir = "$3";
+< #boot (bboot|romboot|dosboot)
+< #	int cpuflag = 1;
+< #	char* bootprog = $2;
+< #boot boot $3
+< #	char* bootdisk = "$3";
+< #
+/n/dump/2025/1015/sys/src/9k/k10/k10fs:75 c ./k10/k10fs:64
+< 	/dev/null	_fs
+---
+> 	/cfg/example/nvram.zero	_fs
+/n/dump/2025/1015/sys/src/9k/k10/k10fs:100 c ./k10/k10fs:89
+< #	/amd64/bin/usb/usbd
+---
+> 	/amd64/bin/usb/usbd
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/l64v.s ./k10/l64v.s
+/n/dump/2025/1015/sys/src/9k/k10/l64v.s:157 c ./k10/l64v.s:157,160
+< /* tsc is reset only by processor reset */
+---
+> /*
+>  * rdtsc result should be consistent across cores, except on very old systems.
+>  * tsc is reset only by processor reset.
+>  */
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/main.c ./k10/main.c
+/n/dump/2025/1015/sys/src/9k/k10/main.c:709 c ./k10/main.c:709
+< 				idlehands();
+---
+> 				halt();
+/n/dump/2025/1015/sys/src/9k/k10/main.c:755,763 d ./k10/main.c:754
+< 	 * the boot processor is cpu0.  execute this process on it
+< 	 * so that the new kernel has the same cpu0.  this only matters
+< 	 * because the hardware has a notion of which processor was the
+< 	 * boot processor and we look at it at start up.
+< 	 */
+< 	if (m->machno != 0 && up)
+< 		runoncpu(0);
+< 
+< 	/*
+/n/dump/2025/1015/sys/src/9k/k10/main.c:809 a ./k10/main.c:801,809
+> 	 * the boot processor is cpu0.  execute this process on it
+> 	 * so that the new kernel has the same cpu0.  this only matters
+> 	 * because the hardware has a notion of which processor was the
+> 	 * boot processor and we look at it at start up.
+> 	 */
+> 	if (m->machno != 0 && up)
+> 		runoncpu(0);
+> 
+> 	/*
+/n/dump/2025/1015/sys/src/9k/k10/main.c:815 a ./k10/main.c:816
+> 
+/n/dump/2025/1015/sys/src/9k/k10/main.c:861 c ./k10/main.c:862
+< 		idlehands();
+---
+> 		halt();
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/mmu.c ./k10/mmu.c
+/n/dump/2025/1015/sys/src/9k/k10/mmu.c:36,39 c ./k10/mmu.c:36,37
+< #define KSEG1PTP(va, l)	(PML4BASE\
+< 			|(KSEG1PML4 << ((Npglvls-1 - (l))*PTSHFT))\
+< 			|(((va) & ~PML4BASE) >> (((l)+1)*PTSHFT)) &\
+< 				~((uintptr)PTSZ-1))
+---
+> #define KSEG1PTP(va, l)	(PML4BASE | (KSEG1PML4 << ((Npglvls-1 - (l))*PTSHFT))\
+> 	| (((va) & ~PML4BASE) >> (((l)+1)*PTSHFT)) & ~((uintptr)PTSZ-1))
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/mp.c ./k10/mp.c
+/n/dump/2025/1015/sys/src/9k/k10/mp.c:10,15 d ./k10/mp.c:9
+< #undef	DBGFLG
+< #define	DBGFLG 0
+< #undef	DBG
+< #define DBG(...) do { if(!DBGFLG) {} else { dbgprint(__VA_ARGS__); \
+< 	delay(1000); } } while (0)
+< 
+/n/dump/2025/1015/sys/src/9k/k10/mp.c:526 a ./k10/mp.c:521,571
+> 
+> #ifdef from9
+> static Mpbus *
+> mpgetbustype(int type, int busno)
+> {
+> 	int i;
+> 	Mpbus *bus;
+> 
+> 	for (i = 0; i < nelem(mpbus); i++) {
+> 		bus = mpbus[i];
+> 		if(bus->busno == busno && bus->type == type)
+> 			return bus;
+> 	}
+> 	return 0;
+> }
+> 
+> static Mpbus*
+> addbus(int type, int bno)
+> {
+> 	Mpbus *bus;
+> 
+> 	if (mpgetbustype(type, bno) != nil)	/* already on mpbus? */
+> 		return nil;
+> 
+> 	// dprint("new bus %d type %d...", bno, type); // TODO
+> 	print("addbus: new bus %d type %d\n", bno, type);
+> 	bus = malloc(sizeof(Mpbus));
+> 	if(mpbus)
+> 		mpbuslast->next = bus;
+> 	else
+> 		mpbus = bus;
+> 	mpbuslast = bus;
+> 
+> 	bus->type = type;
+> 	bus->busno = bno;
+> 	if(bus->type == BusPCI){
+> 		bus->po = PcmpLOW;
+> 		bus->el = PcmpLEVEL;
+> 	} else if(bus->type == BusISA){		/* default PC bus? */
+> 		bus->po = PcmpHIGH;
+> 		bus->el = PcmpEDGE;
+> 		if(mpisabus != -1)
+> 			print("mkbus: more than one ISA bus\n");
+> 		mpisabus = bus->busno;
+> 	} else {
+> 		bus->po = PcmpHIGH;
+> 		bus->el = PcmpEDGE;
+> 	}
+> 	return bus;
+> }
+> #endif
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/sdahci.c ./k10/sdahci.c
+/n/dump/2025/1015/sys/src/9k/k10/sdahci.c:2278 a ./k10/sdahci.c:2279
+> 	st->count++;
+/n/dump/2025/1015/sys/src/9k/k10/sdahci.c:2287 c ./k10/sdahci.c:2288
+< 	else {
+---
+> 	else
+/n/dump/2025/1015/sys/src/9k/k10/sdahci.c:2289,2290 d ./k10/sdahci.c:2289
+< 		st->count++;
+< 	}
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/trap.c ./k10/trap.c
+/n/dump/2025/1015/sys/src/9k/k10/trap.c:380 c ./k10/trap.c:380,385
+< /* ignore a few early traps */
+---
+> /*
+>  * print and ignore a few early traps, disable after that.
+>  * apu2 secondary cores (at least with coreboot 20170228, probably firmware
+>  * 4.0.4) get a vector 39 interrupt (IdtPIC+7) at start when allowing
+>  * interrupts.
+>  */
+/n/dump/2025/1015/sys/src/9k/k10/trap.c:383 a ./k10/trap.c:389
+> 	int disabled;
+/n/dump/2025/1015/sys/src/9k/k10/trap.c:385 a ./k10/trap.c:392
+> 	disabled = 0;
+/n/dump/2025/1015/sys/src/9k/k10/trap.c:388,391 c ./k10/trap.c:395,396
+< 	if ((aadd(&traps, 1) > sys->nonline || sys->ticks > 60*HZ) &&
+< 	    traps < 12 && !active.exiting && !active.rebooting) {
+< 		iprint("cpu%d: intr for unassigned vector %d @ %#p, disabled\n",
+< 			m->machno, vno, ureg->ip);
+---
+> 	if (!active.exiting && !active.rebooting) {
+> 		if (aadd(&traps, 1) > 3*sys->nonline) {
+/n/dump/2025/1015/sys/src/9k/k10/trap.c:392 a ./k10/trap.c:398
+> 			disabled++;
+/n/dump/2025/1015/sys/src/9k/k10/trap.c:393 a ./k10/trap.c:400,404
+> 		if (!thisisapu2 || vno != IdtPIC+7 || traps > sys->nonline)
+> 			iprint("cpu%d: intr for unassigned vector %d (%#x) "
+> 				"@ %#p%s\n", m->machno, vno, vno, ureg->ip,
+> 				disabled? ", disabled": "");
+> 	}
+/n/dump/2025/1015/sys/src/9k/k10/trap.c:477,486 c ./k10/trap.c:488
+< 	if (vno >= IdtIOAPIC && vno <= IdtMAX)
+< 		/*
+< 		 * In the range of vectors that we assign.
+< 		 * We shouldn't get these.  Perhaps they are latched
+< 		 * interrupts from the bootstrap, not cleared by disabling
+< 		 * all PCI interrupts, legacy and MSI?  Maybe need to reset
+< 		 * I/O APICs' redirection tables?
+< 		 */
+< 		trapunassigned(ureg, vno);
+< 	else if(vno == IdtNMI){
+---
+> 	if(vno == IdtNMI){
+/n/dump/2025/1015/sys/src/9k/k10/trap.c:496 c ./k10/trap.c:498
+< 				idlehands();
+---
+> 				halt();
+/n/dump/2025/1015/sys/src/9k/k10/trap.c:498,500 c ./k10/trap.c:500,511
+< 	} else
+< 		trapunassigned(ureg, vno);	/* for apu2, at least */
+< 		// trapunexpected(ureg, vno, user);
+---
+> 	} else	// if (vno >= IdtIOAPIC && vno <= IdtMAX)
+> 		/*
+> 		 * In the range of vectors that we assign.
+> 		 * We shouldn't get these.  Perhaps they are latched
+> 		 * interrupts from the bootstrap, not cleared by disabling
+> 		 * all PCI interrupts, legacy and MSI?  Maybe need to reset
+> 		 * I/O APICs' redirection tables?
+> 		 */
+> 		trapunassigned(ureg, vno);
+> //	else
+> //		trapunassigned(ureg, vno);	/* for apu2, at least */
+> //		// trapunexpected(ureg, vno, user);
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/usbehci.h ./k10/usbehci.h
+/n/dump/2025/1015/sys/src/9k/k10/usbehci.h:83 c ./k10/usbehci.h:83
+< void	ehcilinkage(Hci *hp);
+---
+> void	hcilinkage(Hci *hp);
+
+diff -n /n/dump/2025/1015/sys/src/9k/k10/usbehcipc.c ./k10/usbehcipc.c
+/n/dump/2025/1015/sys/src/9k/k10/usbehcipc.c:21 c ./k10/usbehcipc.c:21,25
+< /* Isn't this cap list search in a helper function? */
+---
+> /*
+>  * bios handoff: take control from the bios's legacy support.
+>  *
+>  * Isn't this cap list search in a helper function?
+>  */
+/n/dump/2025/1015/sys/src/9k/k10/usbehcipc.c:25 c ./k10/usbehcipc.c:29
+< 	int i, ptr, cap, sem;
+---
+> 	int i, ptr, cap, sem, found;
+/n/dump/2025/1015/sys/src/9k/k10/usbehcipc.c:26 a ./k10/usbehcipc.c:31
+> 	found = 0;
+/n/dump/2025/1015/sys/src/9k/k10/usbehcipc.c:29 c ./k10/usbehcipc.c:34,38
+< 		if(ptr < 0x40 || (ptr & ~0xFC))
+---
+> 		/*
+> 		 * Check for validity.
+> 		 * Can't be in standard header and must be double-word aligned.
+> 		 */
+> 		if(pcicfgptrbad(ptr))
+/n/dump/2025/1015/sys/src/9k/k10/usbehcipc.c:33 a ./k10/usbehcipc.c:43,44
+> 
+> 		found++;
+/n/dump/2025/1015/sys/src/9k/k10/usbehcipc.c:35,36 c ./k10/usbehcipc.c:46,51
+< 		if(sem == 0)
+< 			continue;
+---
+> 		if(sem == 0) {
+> 			iprint("ehci: usb legacy support already off\n");
+> 			continue;	/* we already have control */
+> 		}
+> 
+> 		/* bios has control, take it back */
+/n/dump/2025/1015/sys/src/9k/k10/usbehcipc.c:47 a ./k10/usbehcipc.c:63
+> 		iprint("ehci: usb legacy support turned off\n");
+/n/dump/2025/1015/sys/src/9k/k10/usbehcipc.c:49 a ./k10/usbehcipc.c:66,67
+> 	if (!found)
+> 		iprint("ehci: usb legacy support not found\n");
+/n/dump/2025/1015/sys/src/9k/k10/usbehcipc.c:64 c ./k10/usbehcipc.c:82
+< 	 * Turn off legacy mode. Some controllers won't
+---
+> 	 * Turn off legacy mode (bios handoff). Some controllers won't
+/n/dump/2025/1015/sys/src/9k/k10/usbehcipc.c:135 a ./k10/usbehcipc.c:154,155
+> 	assert(ctlr);
+> //	/* don't ilock; we want interrupts to be received */
+/n/dump/2025/1015/sys/src/9k/k10/usbehcipc.c:137 a ./k10/usbehcipc.c:158,160
+> 	assert(opio);
+> //	opio->cmd &= ~Crun;		/* TODO: stop before reset */
+> //	coherence();
+/n/dump/2025/1015/sys/src/9k/k10/usbehcipc.c:140 a ./k10/usbehcipc.c:164
+> 	opio->cmd &= ~(Cpse|Case);
+/n/dump/2025/1015/sys/src/9k/k10/usbehcipc.c:143 c ./k10/usbehcipc.c:167
+< 	for(i = 0; i < 100; i++){
+---
+> 	for(i = 0; i < 200; i++){
+/n/dump/2025/1015/sys/src/9k/k10/usbehcipc.c:148 c ./k10/usbehcipc.c:172
+< 	if(i >= 100) {
+---
+> 	if(i >= 200) {
+/n/dump/2025/1015/sys/src/9k/k10/usbehcipc.c:154 c ./k10/usbehcipc.c:178
+< 	delay(100);
+---
+> 	delay(200);
+/n/dump/2025/1015/sys/src/9k/k10/usbehcipc.c:157 a ./k10/usbehcipc.c:182,185
+> 	opio->cmd = 0;
+> 	coherence();
+> 	if(ctlr->pcidev)
+> 		pciclrbme(ctlr->pcidev);
+/n/dump/2025/1015/sys/src/9k/k10/usbehcipc.c:299 c ./k10/usbehcipc.c:327
+< 	ehcilinkage(hp);
+---
+> 	hcilinkage(hp);
+/n/dump/2025/1015/sys/src/9k/k10/usbehcipc.c:301 a ./k10/usbehcipc.c:330
+> 	hp->type = "ehci";
+
+diff -n /n/dump/2025/1015/sys/src/9k/mk/mkrootall ./mk/mkrootall
+/n/dump/2025/1015/sys/src/9k/mk/mkrootall:27,28 c ./mk/mkrootall:27
+< #	if(~ $"t *executable* && ! ~ $name venti)
+< 	if(~ $"t *executable*)
+---
+> 	if(~ $"t *executable* && ! ~ $"t *'rc executable'*)
+
+diff -n /n/dump/2025/1015/sys/src/9k/mk/parse ./mk/parse
+/n/dump/2025/1015/sys/src/9k/mk/parse:420 c ./mk/parse:420
+< 	s = s "char *kerndatestr = DATESTR;\n";
+---
+> 	s = s "char kerndatestr[] = DATESTR;\n";
+
+diff -n /n/dump/2025/1015/sys/src/9k/port/devcons.c ./port/devcons.c
+/n/dump/2025/1015/sys/src/9k/port/devcons.c:497 a ./port/devcons.c:498,515
+> void
+> chknested(void)
+> {
+> 	if(panicking) {
+> 		if (up && panicking == up->pid) {
+> 			iprint("nested or recursive panic\n");
+> 			delay(10000);
+> 			emergereset();
+> 		}
+> 		for(;;)
+> 			halt();
+> 	}
+> 
+> 	panicking = -1;
+> 	if(up)
+> 		panicking = up->pid;
+> }
+> 
+/n/dump/2025/1015/sys/src/9k/port/devcons.c:508 d ./port/devcons.c:525
+< 
+/n/dump/2025/1015/sys/src/9k/port/devcons.c:510,521 d ./port/devcons.c:526
+< 	if(panicking) {
+< 		if (up && panicking == up->pid) {
+< 			iprint("recursive panic\n");
+< 			delay(60000);
+< 			exit(1);
+< 		}
+< 		for(;;)
+< 			pause();
+< 	}
+< 	panicking = -1;
+< 	if(up)
+< 		panicking = up->pid;
+/n/dump/2025/1015/sys/src/9k/port/devcons.c:528 c ./port/devcons.c:533
+< 	/* fmt might have trailing newline.  it shouldn't. */
+---
+> 	/* fmt might already have trailing newline, but it shouldn't. */
+/n/dump/2025/1015/sys/src/9k/port/devcons.c:532,533 d ./port/devcons.c:536
+< 	prf("%s", buf);			/* utter desperation for rv/low.c */
+< //	prsnolock(buf);			/* desperation: force it out */
+/n/dump/2025/1015/sys/src/9k/port/devcons.c:535 a ./port/devcons.c:539
+> 	chknested();
+/n/dump/2025/1015/sys/src/9k/port/devcons.c:542 c ./port/devcons.c:546
+< 	putstrn(buf, n+1);	/* print panic again; may have scrolled off */
+---
+> 	putstrn(buf, n+1);	/* print msg again; may have scrolled off */
+
+diff -n /n/dump/2025/1015/sys/src/9k/port/devsd.c ./port/devsd.c
+/n/dump/2025/1015/sys/src/9k/port/devsd.c:389 c ./port/devsd.c:389
+< 	snprint(buf, sizeof buf, "%c", sdev->idno);
+---
+> 	snprint(buf, sizeof buf, "%C", sdev->idno);
+/n/dump/2025/1015/sys/src/9k/port/devsd.c:1483 a ./port/devsd.c:1484
+> 	assert(spec);
+/n/dump/2025/1015/sys/src/9k/port/devsd.c:1500 c ./port/devsd.c:1501
+< 	if(sdev->enabled && sdev->ifc->disable)
+---
+> 	if(sdev->ifc && sdev->enabled && sdev->ifc->disable)
+/n/dump/2025/1015/sys/src/9k/port/devsd.c:1502 c ./port/devsd.c:1503
+< 	if(sdev->ifc->clear)
+---
+> 	if(sdev->ifc && sdev->ifc->clear)
+/n/dump/2025/1015/sys/src/9k/port/devsd.c:1504 a ./port/devsd.c:1506
+> 	if (sdev->unit) {
+/n/dump/2025/1015/sys/src/9k/port/devsd.c:1511 a ./port/devsd.c:1514,1517
+> 		free(sdev->unit);
+> 		sdev->unit = nil;
+> 	}
+> 	sdev->nunit = 0;
+
+diff -n /n/dump/2025/1015/sys/src/9k/port/devusb.c ./port/devusb.c
+/n/dump/2025/1015/sys/src/9k/port/devusb.c:702 c ./port/devusb.c:702
+< 	dprint("#u/usb/ep%d.0: %s: port %#lluX irq %d\n",
+---
+> 	print("#u/usb/ep%d.0: %s: port %#lluX irq %d\n",
+
+diff -n /n/dump/2025/1015/sys/src/9k/port/fault.c ./port/fault.c
+/n/dump/2025/1015/sys/src/9k/port/fault.c:82 a ./port/fault.c:83
+> /* called with s->lk held */
+/n/dump/2025/1015/sys/src/9k/port/fault.c:128 a ./port/fault.c:130
+> 		/* fall through */
+/n/dump/2025/1015/sys/src/9k/port/fault.c:212 a ./port/fault.c:215
+> /* called with s->lk held */
+
+diff -n /n/dump/2025/1015/sys/src/9k/port/portfns.h ./port/portfns.h
+/n/dump/2025/1015/sys/src/9k/port/portfns.h:115 a ./port/portfns.h:116
+> void		emergereset(void);
+
+diff -n /n/dump/2025/1015/sys/src/9k/port/portusbehci.h ./port/portusbehci.h
+/n/dump/2025/1015/sys/src/9k/port/portusbehci.h:25 c ./port/portusbehci.h:25
+< 	Ceecpshift	= 8,		/* extended capabilities ptr. */
+---
+> 	Ceecpshift	= 8,		/* extended pci cfg capabilities ptr. */
+/n/dump/2025/1015/sys/src/9k/port/portusbehci.h:28,31 c ./port/portusbehci.h:28,32
+< 	Clegacy		= 1,		/* legacy support cap. id */
+< 	CLbiossem	= 2,		/* legacy cap. bios sem. */
+< 	CLossem		= 3,		/* legacy cap. os sem */
+< 	CLcontrol	= 4,		/* legacy support control & status */
+---
+> 	/* pci cfg space for bios handoff */
+> 	Clegacy		= 1,		/* legacy support (extended?) cap. id */
+> 	CLbiossem	= 2,		/* legacy cap. bios sem. offset */
+> 	CLossem		= 3,		/* legacy cap. os sem offset */
+> 	CLcontrol	= 4,		/* legacy support ctrl & status off. */
+/n/dump/2025/1015/sys/src/9k/port/portusbehci.h:78 c ./port/portusbehci.h:79
+< 	Callmine	= 1,		/* route all ports to us */
+---
+> 	Callmine	= 1, /* route all ports of companion controllers to me */
+
+diff -n /n/dump/2025/1015/sys/src/9k/port/proc.c ./port/proc.c
+/n/dump/2025/1015/sys/src/9k/port/proc.c:1648 a ./port/proc.c:1649,1650
+> #define HZDECAY(avg, new) ((avg) = ((avg)*(HZ-1LL) + (new)) / HZ)
+> 
+/n/dump/2025/1015/sys/src/9k/port/proc.c:1650 c ./port/proc.c:1652
+<  *  time accounting called by clock() splhi'd
+---
+>  *  time accounting called by hzclock() splhi'd
+
+diff -n /n/dump/2025/1015/sys/src/9k/port/sd.h ./port/sd.h
+/n/dump/2025/1015/sys/src/9k/port/sd.h:33 c ./port/sd.h:33
+< 	SDperm;
+---
+> 	SDperm;				/* name and user are malloced */
+
+diff -n /n/dump/2025/1015/sys/src/9k/port/usbehci.c ./port/usbehci.c
+/n/dump/2025/1015/sys/src/9k/port/usbehci.c:385 a ./port/usbehci.c:386
+> 	assert(opio);
+/n/dump/2025/1015/sys/src/9k/port/usbehci.c:398 c ./port/usbehci.c:399
+< 	if(i == 100)
+---
+> 	if(i >= 100)
+/n/dump/2025/1015/sys/src/9k/port/usbehci.c:2289 a ./port/usbehci.c:2291
+> 	Eopio *opio;
+/n/dump/2025/1015/sys/src/9k/port/usbehci.c:2291 a ./port/usbehci.c:2294,2296
+> 	opio = ctlr->opio;
+> 	if (opio && opio->cmd == 0)  /* we're shut down, don't start anything */
+> 		return;
+/n/dump/2025/1015/sys/src/9k/port/usbehci.c:2495 a ./port/usbehci.c:2501
+> 	Ctlr *ctlr;
+/n/dump/2025/1015/sys/src/9k/port/usbehci.c:2499 a ./port/usbehci.c:2506
+> 	Eopio *opio;
+/n/dump/2025/1015/sys/src/9k/port/usbehci.c:2504 a ./port/usbehci.c:2512,2516
+> 	ctlr = ep->hp->aux;
+> 	opio = ctlr->opio;
+> 	if (opio && opio->cmd == 0)  /* we're shut down, don't start anything */
+> 		return -1;
+> 
+/n/dump/2025/1015/sys/src/9k/port/usbehci.c:2655 a ./port/usbehci.c:2668
+> 	Ctlr *ctlr;
+/n/dump/2025/1015/sys/src/9k/port/usbehci.c:2659 a ./port/usbehci.c:2673
+> 	Eopio *opio;
+/n/dump/2025/1015/sys/src/9k/port/usbehci.c:2660 a ./port/usbehci.c:2675,2678
+> 	ctlr = ep->hp->aux;
+> 	opio = ctlr->opio;
+> 	if (opio && opio->cmd == 0)  /* we're shut down, don't start anything */
+> 		return -1;
+/n/dump/2025/1015/sys/src/9k/port/usbehci.c:3266,3267 c ./port/usbehci.c:3284,3285
+< 	 * it's not obvious how multiple ehcis can work, and on some machines,
+< 	 * setting Callmine on all ehcis makes the machine seize up.
+---
+> 	 * on some machines, setting Callmine on all ehcis makes
+> 	 * the machine seize up.
+/n/dump/2025/1015/sys/src/9k/port/usbehci.c:3368 c ./port/usbehci.c:3386
+< ehcilinkage(Hci *hp)
+---
+> hcilinkage(Hci *hp)
+/n/dump/2025/1015/sys/src/9k/port/usbehci.c:3384 d ./port/usbehci.c:3401
+< 	hp->type = "ehci";
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/Announce ./rv/Announce
+/n/dump/2025/1015/sys/src/9k/rv/Announce:10,11 c ./rv/Announce:10,12
+< few respects, and buggy.  You may find debugging code, particularly at
+< start-up, mostly tagged with "c910".
+---
+> few respects, and buggy, plus the Ethernet controller on mine broke.
+> You may find debugging code, particularly at start-up, mostly tagged
+> with "c910".
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/Readme ./rv/Readme
+/n/dump/2025/1015/sys/src/9k/rv/Readme:29,35 d ./rv/Readme:28
+< To build one of the not-yet-ready architectures (ARCH),
+< 
+< 	bind -c . .
+< 	bind -a notyet .
+< 	bind -a notyet/$ARCH .
+< 	mk
+< 
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/addrconf.h ./rv/addrconf.h
+/n/dump/2025/1015/sys/src/9k/rv/addrconf.h:2,6 c ./rv/addrconf.h:2,6
+< #define RVARCH "jup"
+< #define PAUart0 (0xd4017000LL)
+< #define PAClint (0xe4000000LL)
+< #define PHYSMEM (0x200000)
+< #define BANK0SIZE (GB-PHYSMEM)
+---
+> #define RVARCH "te"
+> #define PAUart0 (0x10010000)
+> #define PAClint (0x02000000)
+> #define PHYSMEM (0x80000000u)
+> #define BANK0SIZE (GB)
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/archrv.c ./rv/archrv.c
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:19,22 d ./rv/archrv.c:18
+< /* until soc.clintlongs is set by probing, always use longs for clint */
+< #define Clintlongs (!soc.clintlongsset || soc.clintlongs)
+< 
+< /* so far, only SBI lies, CSR(MHARTID) doesn't */
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:29,37 d ./rv/archrv.c:24
+< 	/*
+< 	 * sending ipis in idlewake() takes more system time (~11-21%) than
+< 	 * not sending, but somewhat less elapsed time (~7-14%).  Increasing
+< 	 * Minns tends to increase system time and decrease elapsed time.
+< 	 * Perhaps this should be cycles instead of ns.  Values tested include
+< 	 * 0, 250, and 2500.
+< 	 */
+< 	Minns = 0,		/* ns from now to avoid sending ipi */
+< 
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:40 d ./rv/archrv.c:26
+< 
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:48 a ./rv/archrv.c:35
+> /* so far, only SBI lies, CSR(MHARTID) doesn't */
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:56 c ./rv/archrv.c:43,44
+<  * usual sifive l2 or l3 cache control.  just set and forget.
+---
+>  * usual sifive l2 or l3 cache control.  just set and forget on working systems.
+>  * flushing is only needed on broken systems with incoherent DMA.
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:70 c ./rv/archrv.c:58
+< 	/* newer l2 controllers have ops in high bits */
+---
+> 	/* private l2 controllers have ops in high bits */
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:107,109 c ./rv/archrv.c:95,96
+< 	{ "spacemit x60", 0x710, 0x8000000058000001ull, },
+< 	{ "spacemit",	0x710,	0, },
+< //	{ "xuantie",	0x401,	0, },
+---
+> 	{ "spacemit x60", Vspacemit,	0x8000000058000001ull, },
+> 	{ "spacemit",	Vspacemit,	0, },
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:110 a ./rv/archrv.c:98
+> 	{ "c-sky (now xuantie)", 0x410,	0, },
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:180,182 c ./rv/archrv.c:168,170
+< 	if (enabways < newways) {
+< 		if (lvl > 2)
+< 			iprint("cpu%d: %d of %d %s cache ways enabled at entry; "
+---
+> 	if (enabways < newways) {		/* cannot reduce enabled ways */
+> 		if (1 || lvl > 2)		// TODO
+> 			print("cpu%d: %d of %d %s cache ways enabled at entry; "
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:215,216 d ./rv/archrv.c:202
+< 	if (soc.havecbom)
+< 		return;
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:429,434 c ./rv/archrv.c:415,416
+< 	up = nil;
+< 	usephysdevaddrs();		/* device vmaps not yet in effect */
+< 	trapsclear();
+< 	trapvecs();
+< 	putstvec(strap);
+< 	putsscratch((uintptr)m);
+---
+> 	trapvecs();			/* set m and stvec */
+> 	trapsclear();			/* turns clock off */
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:449 c ./rv/archrv.c:431
+< 	clockoff();
+---
+> 	csrswap(SCOUNTEREN, ~0ull);
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:453 c ./rv/archrv.c:435
+<  * Clintlongs produces 32-bit little-endian accesses for unmodified tinyemu
+---
+>  * CLINTLONGS() produces 32-bit little-endian accesses for unmodified tinyemu
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:457,466 d ./rv/archrv.c:438
+< uvlong
+< rdcltime(void)
+< {
+< 	/* rdtime() is safe on hardware with sbi and on our tinyemu. */
+< 	if (Clintlongs || !nosbi)
+< 		return rdtime();
+< 	else
+< 		return m->clint->mtime;
+< }
+< 
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:470 c ./rv/archrv.c:442
+< 	if (Clintlongs) {
+---
+> 	if (CLINTLONGS()) {
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:491 c ./rv/archrv.c:463
+< rdcltimecmp(Mach *mp)
+---
+> clrdcltimecmp(Mach *mp)
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:495,498 d ./rv/archrv.c:466
+< 	/* sbi provides no way to read mtimecmp, so see cached value */
+< 	if (!nosbi)
+< 		return mp->timecmp;
+< 
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:501 c ./rv/archrv.c:469
+< 	if (Clintlongs)
+---
+> 	if (CLINTLONGS())
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:506 a ./rv/archrv.c:475,477
+> /* sbi provides no way to read mtimecmp, so read cached value */
+> #define RDCLTIMECMP(mp) (nosbi? clrdcltimecmp(mp): mp->timecmp)
+> 
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:513 c ./rv/archrv.c:484
+< 	m->timecmp = v;		/* remember for rdcltimecmp() under sbi */
+---
+> 	m->timecmp = v;		/* remember for RDCLTIMECMP() under sbi */
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:523 c ./rv/archrv.c:494
+< 	m->timecmp = clticks;	/* remember for rdcltimecmp() under sbi */
+---
+> 	m->timecmp = clticks;	/* remember for RDCLTIMECMP() under sbi */
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:556 c ./rv/archrv.c:527
+< 	sys->nsthresh = (Minns * sys->clintsperµs) / 1000;
+---
+> 	sys->clthresh = (soc.idlewakens * sys->clintsperµs) / 1000;
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:605 c ./rv/archrv.c:576
+< 	curticks = rdcltimecmp(m);
+---
+> 	curticks = RDCLTIMECMP(m);
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:627 c ./rv/archrv.c:598
+< 	setclinttmr(omtime + 20*(timebase/1000000));
+---
+> 	setclinttmr(omtime + 20*timebase/MHZ);
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:642,643 c ./rv/archrv.c:613,614
+< 		if (timebase >= 1000000 && timebase % 1000000 == 0)
+< 			print("clint timebase: %,lld MHz\n", timebase/1000000);
+---
+> 		if (timebase >= MHZ && timebase % MHZ == 0)
+> 			print("clint timebase: %,lld MHz\n", timebase/MHZ);
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:652,673 d ./rv/archrv.c:622
+< void countipi(void);
+< 
+< void
+< clintipitohart(int hart)
+< {
+< 	m->clint->msip[hart] = 1;
+< }
+< 
+< int
+< ipitohart(int hart)
+< {
+< 	uvlong hartbm;
+< 
+< 	if (nosbi || soc.ipiclint) {
+< 		clintipitohart(hart);
+< 		return 0;
+< 	} else {			/* do it the slow and stupid way */
+< 		hartbm = 1ull << hart;
+< 		return sbisendipi(&hartbm) == 0? 0: -1;
+< 	}
+< }
+< 
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:702 a ./rv/archrv.c:652,653
+> static ulong idlecpus;		/* bitmap of waiting cpus */
+> 
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:706 c ./rv/archrv.c:657
+< 	ulong ip;
+---
+> 	ulong ip, cpubit;
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:709,711 c ./rv/archrv.c:660,661
+< 	 * ask for an ipi from another cpu if work becomes possibly
+< 	 * available.  if no other devices or processors interrupt,
+< 	 * the clock will.
+---
+> 	 * ask for an ipi from another cpu if work becomes possibly available.
+> 	 * if no other devices or processors interrupt, the clock will.
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:713 c ./rv/archrv.c:663,665
+< 	amoswapw(&m->ipiwait, 1);		/* avoid coherence call */
+---
+> 	cpubit = 1ull << m->machno;
+> 	amoorw(&idlecpus, cpubit);
+> 	m->ipiwait = 1;
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:717,721 c ./rv/archrv.c:669,673
+< 	 * some interrupt popped us out of wfi at splhi, if we were in
+< 	 * wfi.  if we popped out of wfi due to an ipi, clear it.  as
+< 	 * a side-effect, if we waited in wfi, the ipi won't have been
+< 	 * automatically counted for irqalloc since it wasn't serviced,
+< 	 * but ipiwait will have been zeroed when sending the ipi.
+---
+> 	 * some interrupt popped us out of wfi at splhi, if we were in wfi.  if
+> 	 * we popped out of wfi due to an ipi, clear it.  as a side-effect, if
+> 	 * we waited in wfi, the ipi won't have been automatically counted for
+> 	 * irqalloc since it wasn't serviced, but ipiwait will have been zeroed
+> 	 * when sending the ipi.
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:723 c ./rv/archrv.c:675,676
+< 	if (amoswapw(&m->ipiwait, 0) == 0) {
+---
+> //	if (amoswapw(&m->ipiwait, 0) == 0) {
+> 	if (m->ipiwait == 0) {
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:726 a ./rv/archrv.c:680,681
+> 	m->ipiwait = 0;
+> 	amoandnw(&idlecpus, cpubit);
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:735 c ./rv/archrv.c:690
+<  *  called at spllo from proc.c/runproc, but also in infinite loops elsewhere.
+---
+>  *  called at spllo from proc.c/runproc.
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:745 c ./rv/archrv.c:700
+< 	if (soc.idlewake && sys->nonline > 1)
+---
+> 	if (soc.idlewakens && sys->nonline > 1)
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:752,753 d ./rv/archrv.c:706
+< #define WRAPCPU(cpu, nonline) ((cpu) >= (nonline)? 0: (cpu))
+< 
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:762 c ./rv/archrv.c:715
+<  * try to spread the load around fairly, taking into account that there may
+---
+>  * spread the load around, taking into account that there may
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:774,775 c ./rv/archrv.c:727,728
+< 	uint cpu, startcpu, nonline;
+< 	uvlong hartbm, imminent;
+---
+> 	uint cpu, nonline;
+> 	uvlong hartbm, imminent, idlebits, now;
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:779 c ./rv/archrv.c:732
+< 	static uint currcpu;
+---
+> 	static uvlong lastwakecl;
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:781,783 c ./rv/archrv.c:734,738
+< 	if (0)				/* we don't emulate x86 mwait *.
+< 		++*mwaitwd;		/* need not be atomic increment */
+< 	if (!soc.idlewake || nrdy == 0 || sys->nonline <= 1 ||
+---
+> 	if (FUTURE)		/* we don't currently emulate x86 mwait */
+> 		++*mwaitwd;	/* need not be atomic increment even on x86 */
+> 	nonline = sys->nonline;
+> 	if (soc.idlewakens == 0 || nonline <= 1 || (left = nrdy) == 0 ||
+> 	    lastwakecl > (now = rdcltime()) - sys->clthresh ||
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:785 c ./rv/archrv.c:740
+< 		return;			/* another cpu is waking */
+---
+> 		return;		/* another cpu is waking or was just waking */
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:788,791 c ./rv/archrv.c:743,745
+< 	 * we can run one runnable process on this cpu, so wake up
+< 	 * enough waiting cpus to run the others, if available.
+< 	 * this is somewhat approximate as the other cpus may change
+< 	 * state underfoot.
+---
+> 	 * this cpu can run one runnable process, so wake up enough idling cpus
+> 	 * to run the other ready ones, if available.  this is somewhat
+> 	 * approximate as the other cpus may change state underfoot.
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:793,799 d ./rv/archrv.c:746
+< 	imminent = rdcltime() + sys->nsthresh;
+< 	nonline = sys->nonline;
+< 	startcpu = cpu = WRAPCPU(currcpu, nonline);
+< 
+< 	left = nrdy;
+< 	if (left == 0)
+< 		left = 1;
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:801 a ./rv/archrv.c:749
+> 	imminent = now + sys->clthresh;
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:810,815 c ./rv/archrv.c:758,765
+< 	while (left > 0) {
+< 		mp = machptr[cpu++];
+< 		cpu = WRAPCPU(cpu, nonline);
+< 		if (mp != nil && mp->ipiwait && rdcltimecmp(mp) > imminent &&
+< 		    amoswapw(&mp->ipiwait, 0) != 0) {
+< 			/* next clock intr not soon & no ipi yet sent */
+---
+> 	for (idlebits = idlecpus; idlebits && left > 0;
+> 	    idlebits &= ~(1ull << cpu)) {
+> 		cpu = Clzbits - 1 - clz(idlebits);
+> 		if (cpu >= nelem(sys->machptr))
+> 			break;
+> 		mp = machptr[cpu];
+> 		if (mp == nil || RDCLTIMECMP(mp) <= imminent)
+> 			continue;
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:817 c ./rv/archrv.c:767
+< 				clintipitohart(mp->hartid);
+---
+> 			m->clint->msip[mp->hartid] = 1;
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:819 a ./rv/archrv.c:770
+> 		mp->ipiwait = 0;
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:821 d ./rv/archrv.c:771
+< 			currcpu = cpu;
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:823,825 d ./rv/archrv.c:772
+< 		if (cpu == startcpu)		/* wrapped around? */
+< 			break;
+< 	}
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:827 c ./rv/archrv.c:774,781
+< 		sbisendipi(&hartbm);		/* wake them all at once */
+---
+> 		/*
+> 		 * wake them all at once.  they'll fight among themselves for
+> 		 * runnable procs, consuming system time; that's okay, it
+> 		 * reduces elapsed time by keeping the cpus busy.
+> 		 */
+> 		sbisendipi(&hartbm);
+> 	lastwakecl = now;
+> 	coherence();
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:1123 a ./rv/archrv.c:1078,1081
+> 	if (haveinstr(wrsnto, (uintptr)main)) {
+> 		soc.havewrsnto = 1;
+> 		print("_Zawrs");
+> 	}
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:1128 c ./rv/archrv.c:1086
+< 	if (haveinstr(sync_is, 0))		/* xuantie instr. */
+---
+> 	if (soc.c910 && haveinstr(sync_is, 0))	/* xuantie instr. */
+/n/dump/2025/1015/sys/src/9k/rv/archrv.c:1200 c ./rv/archrv.c:1158
+< 	 * could be (e.g. there's no defined type for a 'register':
+---
+> 	 * could be (e.g., there's no defined type for a 'register':
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/archspacemit.c ./rv/archspacemit.c
+/n/dump/2025/1015/sys/src/9k/rv/archspacemit.c:149 a ./rv/archspacemit.c:150
+> 
+/n/dump/2025/1015/sys/src/9k/rv/archspacemit.c:208,209 c ./rv/archspacemit.c:209,211
+< // MPMU offsets (clock/reset side) used by Linux CCU
+< #define Mpmuposroff	0x0010	// PLL lock status bits
+---
+> 
+> /* MPMU offsets (clock/reset side) used by Linux CCU */
+> #define Mpmuposroff	0x0010	/* PLL lock status bits */
+/n/dump/2025/1015/sys/src/9k/rv/archspacemit.c:218,220 c ./rv/archspacemit.c:220,224
+< // APBC register offsets (subset shown for reference)
+< // These are *per-block* CLK_RST registers. Useful if you
+< // want to pulse-reset specific APB peripherals.
+---
+> /*
+>  * APBC register offsets (subset shown for reference)
+>  * These are *per-block* CLK_RST registers. Useful if you
+>  * want to pulse-reset specific APB peripherals.
+>  */
+/n/dump/2025/1015/sys/src/9k/rv/archspacemit.c:226 c ./rv/archspacemit.c:230
+< // * many more exist in the same sequence per k1-syscon.h
+---
+> /* many more exist in the same sequence per k1-syscon.h */
+/n/dump/2025/1015/sys/src/9k/rv/archspacemit.c:228,234 c ./rv/archspacemit.c:232,240
+< // 1) Force full-chip reset via MPMU WDTPCR
+< // The WDTPCR register is a `pulse control' =E2=80=93 writing the kick pattern
+< // issues a reset via the SoC's watchdog path. The exact key/mask values
+< // are SoC-defined; on K1 this register exists at MPMU_BASE+0x200.
+< // If your platform uses a key, set k1_Wdtkey accordingly.
+< #define Wdtkey 0		// set to required key if any (0 if none)
+< #define Wdtwdtr (1 << 0)	// reset pulse bit (common placement)
+---
+> /*
+>  * 1) Force full-chip reset via MPMU WDTPCR
+>  * The WDTPCR register is a `pulse control' writing the kick pattern issues a
+>  * reset via the SoC's watchdog path.  The exact key/mask values are
+>  * SoC-defined; on K1 this register exists at MPMU_BASE+0x200.  If your platform
+>  * uses a key, set k1_Wdtkey accordingly.
+>  */
+> #define Wdtkey 0		/* set to required key if any (0 if none) */
+> #define Wdtwdtr (1 << 0)	/* reset pulse bit (common placement) */
+/n/dump/2025/1015/sys/src/9k/rv/archspacemit.c:236,239 c ./rv/archspacemit.c:242,247
+< // 2) Reset helpers for RCPU / RCPU2 (block resets)
+< // The reset driver in Linux treats these as CCUs. The exact bitmaps are
+< // defined in reset bindings; here we expose raw helpers so you can OR in
+< // the bit you need (e.g., a fabric or cluster reset) if you've got the id.
+---
+> /*
+>  * 2) Reset helpers for RCPU / RCPU2 (block resets)
+>  * The reset driver in Linux treats these as CCUs.  The exact bitmaps are
+>  * defined in reset bindings; here we expose raw helpers so you can OR in
+>  * the bit you need (e.g., a fabric or cluster reset) if you've got the id.
+>  */
+/n/dump/2025/1015/sys/src/9k/rv/archspacemit.c:243,246 c ./rv/archspacemit.c:251,255
+< 	// RCPU registers are a small window; often `RST_SET'/`RST_CLR words
+< 	// are at low offsets. If you know the specific offset/id: write it here.
+< 	// Example: mmio_set_bits32(k1_sys_rcpu_base + RST_SEToff, reset_mask);
+< 	(void) reset_mask; // placeholder
+---
+> 	/*
+> 	 * RCPU registers are a small window; often `RST_SET'/`RST_CLR words are
+> 	 * at low offsets. If you know the specific offset/id, write it here.
+> 	 * Example: mmio_set_bits32(k1_sys_rcpu_base + RST_SEToff, reset_mask);
+> 	 */
+/n/dump/2025/1015/sys/src/9k/rv/archspacemit.c:253 d ./rv/archspacemit.c:261
+< 	(void) reset_mask; // placeholder for your specific RCPU2 reset bit
+/n/dump/2025/1015/sys/src/9k/rv/archspacemit.c:257,261 c ./rv/archspacemit.c:265,271
+< // 3) APBC / APBC2 peripheral soft resets
+< // Many APB blocks expose a CLK_RST word in APBC/APBC2 windows where
+< // bit0=CLKEN, bit1=RST, bit2=BUSY (pattern similar across Marvell-style CCUs).
+< // If you need to bounce a peripheral, you can do:
+< // write(CLKEN=1,RST=1), small delay, then write(CLKEN=1,RST=0)
+---
+> /*
+>  * 3) APBC / APBC2 peripheral soft resets
+>  * Many APB blocks expose a CLK_RST word in APBC/APBC2 windows where bit0=CLKEN,
+>  * bit1=RST, bit2=BUSY (pattern similar across Marvell-style CCUs).  If you need
+>  * to bounce a peripheral, you can do: write(CLKEN=1,RST=1), small delay, then
+>  * write(CLKEN=1,RST=0).
+>  */
+/n/dump/2025/1015/sys/src/9k/rv/archspacemit.c:279 c ./rv/archspacemit.c:289,291
+< /* this doesn't work and i still don't know why. */
+---
+> /*
+>  * This doesn't work and I still don't know why.
+>  */
+/n/dump/2025/1015/sys/src/9k/rv/archspacemit.c:348 c ./rv/archspacemit.c:360
+< 	// Write `reset pulse' (some SoCs require key|WDTR, others just WDTR).
+---
+> 	/* Write `reset pulse' (some SoCs require key|WDTR, others WDTR). */
+/n/dump/2025/1015/sys/src/9k/rv/archspacemit.c:377 c ./rv/archspacemit.c:389
+< 	iprint("failed utterly\n");
+---
+> 	iprint("failed utterly to reset\n");
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/bvcpu ./rv/bvcpu
+/n/dump/2025/1015/sys/src/9k/rv/bvcpu:147 d ./rv/bvcpu:146
+< 	satp
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/csr.c ./rv/csr.c
+/n/dump/2025/1015/sys/src/9k/rv/csr.c:30 d ./rv/csr.c:29
+< 	Csrfn *fn;
+/n/dump/2025/1015/sys/src/9k/rv/csr.c:37 a ./rv/csr.c:37
+> 
+/n/dump/2025/1015/sys/src/9k/rv/csr.c:42 d ./rv/csr.c:41
+< 	fn = (Csrfn *)insts;
+/n/dump/2025/1015/sys/src/9k/rv/csr.c:44 c ./rv/csr.c:43
+< 	res = (*fn)(new);		/* a fault will set m->probebad */
+---
+> 	res = (*(Csrfn *)insts)(new);	/* a fault will set m->probebad */
+/n/dump/2025/1015/sys/src/9k/rv/csr.c:49 a ./rv/csr.c:49
+> 	putstvec(ostvec);
+/n/dump/2025/1015/sys/src/9k/rv/csr.c:52 d ./rv/csr.c:51
+< 	putstvec(ostvec);
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/dat.h ./rv/dat.h
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:270 c ./rv/dat.h:270
+<  * (e.g. there may be modules located after the kernel BSS end) or ends.
+---
+>  * (e.g., there may be modules located after the kernel BSS end) or ends.
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:283 c ./rv/dat.h:283
+<  * and rebootcode.s  rebooting relies on secstall persisting across reboot.;
+---
+>  * and rebootcode.s  rebooting relies on secstall persisting across reboot;
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:293 c ./rv/dat.h:293,294
+< 	ushort	rebooting;	/* flag: don't use sbi hsm to start cpus */
+---
+> 	/* flag: secondaries running, so don't use sbi hsm to start cpus */
+> 	ushort	rebooting;
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:305 c ./rv/dat.h:306
+<  * in order.  on cpu0, this is zeroed by zerosyssome.  currently 20K.
+---
+>  * in order.  on cpu0, this is zeroed by setstkmach0.  currently 20K.
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:309 c ./rv/dat.h:310
+< 	PTE	pteroot[Ptpgptes];		/* initial page tables */
+---
+> 	Ptepage	pteroot;			/* initial page table */
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:312 c ./rv/dat.h:313
+< 		uchar	machpage[MACHSZ];
+---
+> 		uchar	machpage[MACHSZ];	/* must be multiple of 4K */
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:318 c ./rv/dat.h:319
+<  * (see lowsys computation in low.c).  sizeof(Sys) is 640KB currently.
+---
+>  * (see lowsys computation in low.c).  sizeof(Sys) is 632KB currently.
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:328 a ./rv/dat.h:330
+> 
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:332 a ./rv/dat.h:335
+> 			uchar	startzero;	/* zero from here to stopzero */
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:334 d ./rv/dat.h:336
+< 			/* zero from here to before kmesg */
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:354 c ./rv/dat.h:356,357
+< 			uvlong	nsthresh;  /* ipi: min ns to next clock intr */
+---
+> 			/* idlewake sends ipi: min clints to next clock intr */
+> 			uvlong	clthresh;
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:386 d ./rv/dat.h:388
+< 
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:391 d ./rv/dat.h:392
+< 	/* we stop zeroing here */
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:393,398 c ./rv/dat.h:394,400
+< 	union {
+< 		uchar	sysextend[SYSEXTEND];	/* includes room for growth */
+< 		struct {
+< 			uchar	gap[SYSEXTEND - sizeof(Kmesg)];
+< 			/* must be last so we can avoid zeroing it at start */
+< 			Kmesg	kmsg;		/* do not zero */
+---
+> 	/*
+> 	 * setstkmach0 stops zeroing from after Reboot at stopzero.
+> 	 * includes room for growth.  we try to keep kmsg at a fixed
+> 	 * address so that its contents persist across reboots.
+> 	 */
+> 	uchar	stopzero[SYSEXTEND - sizeof(Kmesg)];
+> 	Kmesg	kmsg;	/* must be after stopzero to avoid zeroing at start */
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:400,401 d ./rv/dat.h:401
+< 	};
+< };
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:403 a ./rv/dat.h:404
+> CTASSERT(sizeof(Syspercpu)+PGSZ == LOW0SYSPAGE, Syspercpu_c_as_offsets_differ);
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:540 a ./rv/dat.h:542
+> //	uchar	plicraces;	/* e.g., titan bug */
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:551 a ./rv/dat.h:554
+> 	uchar	havewrsnto;	/* flag: have wait-for-reservation */
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:557 c ./rv/dat.h:560,569
+< 	uchar	idlewake;	/* flag: wake idling cpus with ipis */
+---
+> 	/*
+> 	 * >0: ns. to clock tick above which to wake idling cpus with ipis.
+> 	 *
+> 	 * Sending ipis in idlewake() takes more system time (as much as
+> 	 * doubling) than not sending, but somewhat less elapsed time (as much
+> 	 * as 50%).  Increasing idlewakens tends to increase system time and
+> 	 * decrease elapsed time.  System time increases wih parallelism
+> 	 * (NPROC).  Values tested include 0, 1, 250, 500, 1000, and 2500.
+> 	 */
+> 	ushort	idlewakens;
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:600 a ./rv/dat.h:613
+> 	uvlong	mtime;
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:601 a ./rv/dat.h:615
+> #ifdef C910
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:603,604 c ./rv/dat.h:617,618
+< 	 * the XuanTie duplicates the above for supervisor mode access when the
+< 	 * Clintee bit is set, which it is initially on the c910.
+---
+> 	 * the XuanTie provides the following for supervisor mode access when
+> 	 * the Clintee bit is set, which it is initially on the c910.
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:607,611 c ./rv/dat.h:621
+< 	uvlong	mtime;
+< 
+< #ifdef C910
+< 	/* S mode clint extension */
+< 	/* aclint sswi */
+---
+> 	/* S mode clint extension, from aclint sswi */
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:699 a ./rv/dat.h:710
+> 	Vandes	= 0x31e,
+/n/dump/2025/1015/sys/src/9k/rv/dat.h:701 a ./rv/dat.h:713
+> 	Vspacemit= 0x710,
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/defs ./rv/defs
+/n/dump/2025/1015/sys/src/9k/rv/defs:2 c ./rv/defs:2
+< ARCH=jup
+---
+> ARCH=vf
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/devarch.c ./rv/devarch.c
+/n/dump/2025/1015/sys/src/9k/rv/devarch.c:177,179 c ./rv/devarch.c:177,179
+< 		"idle %s %ssending IPIs over %lld ns\n",
+< 		cputype, m->cpumhz, (archclz == clzzbb? "clz": ""),
+< 		"wfi", soc.idlewake? "": "not ", sys->nsthresh);
+---
+> 		"idle %s %ssending IPIs over %d ns (%lld clints)\n",
+> 		cputype, m->cpumhz, (archclz == clzzbb? "clz": ""), "wfi",
+> 		soc.idlewakens? "": "not ", soc.idlewakens, sys->clthresh);
+/n/dump/2025/1015/sys/src/9k/rv/devarch.c:247 a ./rv/devarch.c:248
+> 
+/n/dump/2025/1015/sys/src/9k/rv/devarch.c:261 c ./rv/devarch.c:262,263
+< 	iprint("last resort for reset: into wfi.\n");
+---
+> 
+> 	iprint("failed to reset; going into wfi as a last resort.\n");
+/n/dump/2025/1015/sys/src/9k/rv/devarch.c:264 a ./rv/devarch.c:267,279
+> }
+> 
+> /* we've had a nested panic or the like; we must give up and reboot */
+> void
+> emergereset(void)
+> {
+> 	splhi();
+> 	active.exiting = 1;
+> 	coherence();
+> 	delay(1000);	/* hope that active.exiting shuts down other cpus */
+> 
+> 	/* we hope that we can now use the uniprocessor reset */
+> 	archreset();
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/devether.c ./rv/devether.c
+/n/dump/2025/1015/sys/src/9k/rv/devether.c:520 a ./rv/devether.c:521
+> 		delay(1000);
+/n/dump/2025/1015/sys/src/9k/rv/devether.c:522 c ./rv/devether.c:523
+< 			idlehands();
+---
+> 			halt();
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/dmamalloc.c ./rv/dmamalloc.c
+/n/dump/2025/1015/sys/src/9k/rv/dmamalloc.c:45 c ./rv/dmamalloc.c:45
+<  * iff uncached mapping works, flush seems unneeded.  without
+---
+>  * iff uncached mapping works, flush seems unneeded.  lacking
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c ./rv/etherdwmac4.c
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:80 a ./rv/etherdwmac4.c:81
+> 	Rxq0op	= 0xd30/4,	/* Rx queue 0 operation mode */
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:158 a ./rv/etherdwmac4.c:160
+> 	Tsf	= 1<<1,		/* tx store-and-forward whole packets */
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:160 a ./rv/etherdwmac4.c:163,166
+> enum {				/* Rxq0op bits */
+> 	Rsf	= 1<<5,		/* Rx store-and-forward whole packets */
+> };
+> 
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:220 a ./rv/etherdwmac4.c:227,234
+> 	Txjabber= 1<<14,	/* set by hw; read by host */
+> 	Txpktflshed	= 1<<13,	/* set by hw; read by host */
+> 	Txcarrierloss	= 1<<11,	/* set by hw; read by host */
+> 	Txnocarrier	= 1<<10,	/* set by hw; read by host */
+> 	Txlatecollis	= 1<<9,	/* set by hw; read by host */
+> 	Txexcesscollis	= 1<<8,	/* set by hw; read by host */
+> 	Txexcessdefer	= 1<<3,	/* set by hw; read by host */
+> 	Txunderflow	= 1<<2,	/* set by hw; read by host */
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:414 c ./rv/etherdwmac4.c:428,429
+< 		cachedwbinvse(bp->rp, Rbsz);  /* mainly invalidate before dma */
+---
+> 		/* invalidate buffer before dma */
+> 		cachedwbinvse(cachedview(bp->rp), Rbsz);
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:464 c ./rv/etherdwmac4.c:479
+< 		cachedwbinvse(td, sizeof *td);	/* mainly invalidate after dma */
+---
+> 		cachedwbinvse(td, sizeof *td);	/* invalidate td->status */
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:467 c ./rv/etherdwmac4.c:482,487
+< 		bp = uncachedview(ctlr->tb[tdh]);
+---
+> 		if (td->status & Errsum) {
+> 			iprint("%Æ: cleanup: errsum in sts %#lux\n",
+> 				ctlr, td->status);
+> 			((Ether *)ctlr->edev)->oerrs++;
+> 		}
+> 		bp = cachedview(ctlr->tb[tdh]);
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:511 c ./rv/etherdwmac4.c:531
+< 		cachedwbinvse(td, sizeof *td);	/* mainly invalidate after dma */
+---
+> 		cachedwbinvse(td, sizeof *td);	/* invalidate td->status */
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:522 c ./rv/etherdwmac4.c:542
+< 		cachedwbinvse(bp->rp, len);  /* push buffer to ram before dma */
+---
+> 		cachedwbse(bp->rp, len);	/* force packet to ram */
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:529 c ./rv/etherdwmac4.c:549
+< 		cachedwbinvse(td, sizeof *td);	/* push out desc. without Own */
+---
+> 		cachedwbse(td, sizeof *td);	/* push out desc. without Own */
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:532 c ./rv/etherdwmac4.c:552
+< 		cachedwbinvse(td, sizeof *td);	/* push out desc. with Own */
+---
+> 		cachedwbse(td, sizeof *td);	/* push out desc. with Own */
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:634,635 c ./rv/etherdwmac4.c:654,658
+< 	/* configure dma skipping between descs */
+< 	/* buswidth words between desc.s; 0 = contiguous desc.s in list */
+---
+> 	/*
+> 	 * configure dma skipping between descs.
+> 	 * buswidth words between desc.s; 0 = contiguous desc.s in list.
+> 	 * vf2 buswidth 8 dmaskip 2
+> 	 */
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:637 c ./rv/etherdwmac4.c:660,661
+< //	iprint("dwmac: buswidth %d dmaskip %d\n", buswidth, dmaskip);
+---
+> 	if (soc.newmach)
+> 		iprint("%Æ: buswidth %d dmaskip %d\n", ctlr, buswidth, dmaskip);
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:677 c ./rv/etherdwmac4.c:701
+< 	/* on jh7100, could see bits 18-20 of Aonsys+0xc for phy */
+---
+> 	/* on jh7100, could see bits 18-20 of Aonsys+0xc for phy # */
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:705 a ./rv/etherdwmac4.c:730
+> 	regs[Rxq0op] = Rsf;
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:752 c ./rv/etherdwmac4.c:777
+< 		cachedwbinvse(rd, sizeof *rd);	/* mainly invalidate status */
+---
+> 		cachedwbinvse(rd, sizeof *rd);	/* invalidate status */
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:771 c ./rv/etherdwmac4.c:796
+< 		cachedwbinvse(rd, sizeof *rd);	/* push desc. without Own */
+---
+> 		cachedwbse(rd, sizeof *rd);	/* push desc. without Own */
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:774 c ./rv/etherdwmac4.c:799
+< 		cachedwbinvse(rd, sizeof *rd);	/* push desc. with Own */
+---
+> 		cachedwbse(rd, sizeof *rd);	/* push desc. with Own */
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:814 c ./rv/etherdwmac4.c:839
+< 	cachedwbinvse(rd, sizeof *rd);	/* mainly invalidate rd->status */
+---
+> 	cachedwbinvse(rd, sizeof *rd);	/* invalidate rd->status */
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:818 a ./rv/etherdwmac4.c:844
+> 	/* we have an input packet */
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:821 a ./rv/etherdwmac4.c:848,852
+> 	ctlr->rb[rdh] = nil;
+> 	ckcksum(ctlr, rd, bp);
+> 	ctlr->rdh = NEXT(rdh, Nrd);
+> 	--ctlr->rdfree;
+> 
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:840 d ./rv/etherdwmac4.c:870
+< 		ckcksum(ctlr, rd, bp);
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:847 d ./rv/etherdwmac4.c:876
+< 			ainc(&nrbfull);
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:850,851 c ./rv/etherdwmac4.c:879,885
+< 		}
+< 	}
+---
+> 			ainc(&nrbfull);
+> 		} else
+> 			iprint("%Æ: qinpkt: bad crc; sts %#ux\n", ctlr, sts);
+> 	} else if (sts & Errsum)
+> 		iprint("%Æ: qinpkt: errsum in sts %#ux\n", ctlr, sts);
+> 	else
+> 		iprint("%Æ: qinpkt: sts %#ux\n", ctlr, sts);
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:856 c ./rv/etherdwmac4.c:890
+< 	/* note size of queue of Blocks awaiting transmission */
+---
+> 	/* note size of queue of Blocks awaiting input processing */
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:858,862 d ./rv/etherdwmac4.c:891
+< 
+< 	ctlr->rb[rdh] = nil;
+< 	ctlr->rdh = NEXT(rdh, Nrd);
+< 	--ctlr->rdfree;
+< 	coherence();
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:892 d ./rv/etherdwmac4.c:920
+< 			ienable(ctlr, Rie);
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:893 a ./rv/etherdwmac4.c:922
+> 			ienable(ctlr, Rie);
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:1026 c ./rv/etherdwmac4.c:1055,1061
+< /* if remembered mac is set, set hw regs to it */
+---
+> /*
+>  * u-boot or the previous kernel should have left the primary mac address
+>  * in the mac address registers of the primary ethernet controller.
+>  * if we can pick it up from there, we're done.
+>  *
+>  * call while holding ctlr->reglock
+>  */
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:1180 c ./rv/etherdwmac4.c:1215
+< 	regs[Txq0op] = Tqs2k | Txq0en;
+---
+> 	regs[Txq0op] = Tqs2k | Txq0en | Tsf;
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:1209 c ./rv/etherdwmac4.c:1244,1250
+< 	if (ctlr->rdba == nil || ctlr->tdba == nil)
+---
+> 
+> 	if (ctlr->rb == nil)
+> 		ctlr->rb = malloc(Nrd * sizeof(Block *));
+> 	if (ctlr->tb == nil)
+> 		ctlr->tb = malloc(Ntd * sizeof(Block *));
+> 	if (ctlr->rdba == nil || ctlr->tdba == nil ||
+> 	    ctlr->rb == nil || ctlr->tb == nil)
+/n/dump/2025/1015/sys/src/9k/rv/etherdwmac4.c:1221,1228 d ./rv/etherdwmac4.c:1261
+< 
+< 	if (ctlr->rb == nil)
+< 		ctlr->rb = malloc(Nrd * sizeof(Block *));
+< 	if (ctlr->tb == nil)
+< 		ctlr->tb = malloc(Ntd * sizeof(Block *));
+< 	if (ctlr->rb == nil || ctlr->tb == nil)
+< 		error(Enomem);
+< 	cachedwbinvse(ctlr, sizeof ctlr);	/* probably paranoia */
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/ethergem.c ./rv/ethergem.c
+/n/dump/2025/1015/sys/src/9k/rv/ethergem.c:731 c ./rv/ethergem.c:731
+< 		/* note size of queue of Blocks awaiting transmission */
+---
+> 		/* note size of queue of Blocks awaiting input processing */
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/etherk1x.c ./rv/etherk1x.c
+/n/dump/2025/1015/sys/src/9k/rv/etherk1x.c:791 c ./rv/etherk1x.c:791
+< 		rd->buf1 = (uintptr)cachedview((void *)PADDR(bp->rp));
+---
+> 		rd->buf1 = PADDR(bp->rp);
+/n/dump/2025/1015/sys/src/9k/rv/etherk1x.c:867 c ./rv/etherk1x.c:867
+< 	/* note size of queue of Blocks awaiting transmission */
+---
+> 	/* note size of queue of Blocks awaiting input processing */
+/n/dump/2025/1015/sys/src/9k/rv/etherk1x.c:1120 c ./rv/etherk1x.c:1120
+< 	/* don't freemem; we may reattach */
+---
+> 	/* don't freemem; kprocs are using existing rings and we may reattach */
+/n/dump/2025/1015/sys/src/9k/rv/etherk1x.c:1298 a ./rv/etherk1x.c:1299
+> 
+/n/dump/2025/1015/sys/src/9k/rv/etherk1x.c:1302 a ./rv/etherk1x.c:1304
+> 
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/ethertemu.c ./rv/ethertemu.c
+/n/dump/2025/1015/sys/src/9k/rv/ethertemu.c:168 a ./rv/ethertemu.c:169
+> iprint("ethertemu: queued %s block, len %d\n", write? "write": "read", desc->len); // TODO
+/n/dump/2025/1015/sys/src/9k/rv/ethertemu.c:276 a ./rv/ethertemu.c:278
+> iprint("ethertemuproc: deq rcv block, len %lld\n", BLEN(bp));
+/n/dump/2025/1015/sys/src/9k/rv/ethertemu.c:300 a ./rv/ethertemu.c:303
+> iprint("ethertemuproc: deq xmit block, len %lld\n", BLEN(bp));
+/n/dump/2025/1015/sys/src/9k/rv/ethertemu.c:362 a ./rv/ethertemu.c:366
+> 		n = 8;		// TODO
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/fns.h ./rv/fns.h
+/n/dump/2025/1015/sys/src/9k/rv/fns.h:35 a ./rv/fns.h:36,37
+> /* until soc.clintlongs is set by probing, always use longs for clint */
+> #define CLINTLONGS() (!soc.clintlongsset || soc.clintlongs)
+/n/dump/2025/1015/sys/src/9k/rv/fns.h:48 a ./rv/fns.h:51
+> void	countipi(void);
+/n/dump/2025/1015/sys/src/9k/rv/fns.h:130 d ./rv/fns.h:132
+< int	ipitohart(int);
+/n/dump/2025/1015/sys/src/9k/rv/fns.h:240,241 c ./rv/fns.h:242,243
+< uvlong	rdcltimecmp(Mach *mp);
+< uvlong	rdcltime(void);
+---
+> /* rdtime() is safe on hardware with sbi and on our tinyemu. */
+> #define	rdcltime() (CLINTLONGS() || !nosbi? rdtime(): m->clint->mtime)
+/n/dump/2025/1015/sys/src/9k/rv/fns.h:278 a ./rv/fns.h:281
+> void	supsetmtimecmp(void);
+/n/dump/2025/1015/sys/src/9k/rv/fns.h:313 a ./rv/fns.h:317,318
+> void	wrsnto(uintptr);
+> void	wrssto(uintptr);
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/io.h ./rv/io.h
+/n/dump/2025/1015/sys/src/9k/rv/io.h:277 a ./rv/io.h:278,283
+> 
+> /*
+>  * Check for validity.
+>  * Can't be in standard header and must be double-word aligned.
+>  */
+> #define pcicfgptrbad(ptr) ((ptr) < 0x40 || (ptr) & ((sizeof(ulong)-1)))
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/jup/defs ./rv/jup/defs
+/n/dump/2025/1015/sys/src/9k/rv/jup/defs:4 c ./rv/jup/defs:4
+< CONFDEF= '-DBLOCKALIGN=CACHELINESZ'
+---
+> CONFDEF= '-DBLOCKALIGN=CACHELINESZ' # '-DHZ=200'
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/jupcpu ./rv/jupcpu
+/n/dump/2025/1015/sys/src/9k/rv/jupcpu:119 d ./rv/jupcpu:118
+< 		.idlewake= 0, /* flag: send IPIs to wake wfi cpus (faster response) */
+/n/dump/2025/1015/sys/src/9k/rv/jupcpu:120 a ./rv/jupcpu:120
+> 		.idlewakens = 750,	/* ns. to send IPIs to wake wfi cpus */
+/n/dump/2025/1015/sys/src/9k/rv/jupcpu:157 d ./rv/jupcpu:156
+< 	satp
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/low.c ./rv/low.c
+/n/dump/2025/1015/sys/src/9k/rv/low.c:6,7 c ./rv/low.c:6,8
+<  * do not use print nor iprint with '%' in the format here; libc/fmt learns
+<  * function addresses for verbs, which need to be high addresses.
+---
+>  * do not call the real print nor iprint directly with '%' in the format here;
+>  * libc/fmt learns function addresses for verbs, which need to be high
+>  * addresses.  prf is promised to be safe.
+/n/dump/2025/1015/sys/src/9k/rv/low.c:33 c ./rv/low.c:34
+< extern char *kerndatestr;
+---
+> extern char kerndatestr[];
+/n/dump/2025/1015/sys/src/9k/rv/low.c:48,49 d ./rv/low.c:48
+< static void	mkinitpgtbl(Sys *lowsys);
+< 
+/n/dump/2025/1015/sys/src/9k/rv/low.c:278 d ./rv/low.c:276
+< 	USED(nptes);
+/n/dump/2025/1015/sys/src/9k/rv/low.c:296 c ./rv/low.c:294
+< static void
+---
+> void
+/n/dump/2025/1015/sys/src/9k/rv/low.c:324 c ./rv/low.c:322
+< 	usephysdevaddrs();
+---
+> 	usephysdevaddrs();		/* device vmaps not yet in effect */
+/n/dump/2025/1015/sys/src/9k/rv/low.c:395 c ./rv/low.c:393
+< setstkmach0(Sys *lowsys)
+---
+> setstkmach0(void)
+/n/dump/2025/1015/sys/src/9k/rv/low.c:397 a ./rv/low.c:396
+> 	Sys *rlowsys;
+/n/dump/2025/1015/sys/src/9k/rv/low.c:398 a ./rv/low.c:398,404
+> 	/* compute (low)sys once, in case the computation changes */
+> 	lowsys = rlowsys = (Sys *)
+> 		(membanks[0].addr + membanks[0].size - Syssize);
+> 	sys = KADDR((uintptr)rlowsys);
+> 	coherence();
+> 	m = ensurelow(&rlowsys->mach);
+> 
+/n/dump/2025/1015/sys/src/9k/rv/low.c:403 c ./rv/low.c:409
+< 	lowsys->secstall |= RBFLAGSTALL;
+---
+> 	rlowsys->secstall |= RBFLAGSTALL;
+/n/dump/2025/1015/sys/src/9k/rv/low.c:406 c ./rv/low.c:412
+< 	zero(&lowsys->Syspercpu, sizeof(Syspercpu));
+---
+> 	zero(&rlowsys->Syspercpu, sizeof(Syspercpu));
+/n/dump/2025/1015/sys/src/9k/rv/low.c:408,410 c ./rv/low.c:414,416
+< 	/* zero Sys from syspage after Reboot to before kmesg */
+< 	aftreboot = (char *)&lowsys->Reboot + sizeof(Reboot);
+< 	zero(aftreboot, (char *)lowsys->sysextend - aftreboot);
+---
+> 	/* zero Sys from after Reboot to before kmesg */
+> 	aftreboot = (char *)&rlowsys->startzero;
+> 	zero(aftreboot, (char *)rlowsys->stopzero - aftreboot);
+/n/dump/2025/1015/sys/src/9k/rv/low.c:413 c ./rv/low.c:419
+< 	lowsys->machptr[0] = ensurehigh(&sys->mach);
+---
+> 	rlowsys->machptr[0] = ensurehigh(&sys->mach);
+/n/dump/2025/1015/sys/src/9k/rv/low.c:416 c ./rv/low.c:422
+< 	lowsys->clintsperµs = clintsperµs = timebase / MHZ;
+---
+> 	rlowsys->clintsperµs = clintsperµs = timebase / MHZ;
+/n/dump/2025/1015/sys/src/9k/rv/low.c:420 c ./rv/low.c:426
+< 	lowsys->incoher = &incohersw[Uncnone];
+---
+> 	rlowsys->incoher = &incohersw[Uncnone];
+/n/dump/2025/1015/sys/src/9k/rv/low.c:422 c ./rv/low.c:428
+< 	lowsys->satp = 0;		/* don't use previous kernel's map */
+---
+> 	rlowsys->satp = 0;	/* don't use previous kernel's map */
+/n/dump/2025/1015/sys/src/9k/rv/low.c:424 c ./rv/low.c:430
+< 	lowsys->nprivmodes = 2;	/* for plic: Machine & Super can take intrs */
+---
+> 	rlowsys->nprivmodes = 2; /* for plic: Machine & Super can take intrs */
+/n/dump/2025/1015/sys/src/9k/rv/low.c:426 c ./rv/low.c:432
+< 	 * todo: increment lowsys->nprivmodes for each of the hyper and
+---
+> 	 * todo: increment rlowsys->nprivmodes for each of the hyper and
+/n/dump/2025/1015/sys/src/9k/rv/low.c:433 d ./rv/low.c:438
+< 	if (kerndatestr)
+/n/dump/2025/1015/sys/src/9k/rv/low.c:440 c ./rv/low.c:445
+< 	loadsbiids(lowsys);
+---
+> 	loadsbiids(rlowsys);
+/n/dump/2025/1015/sys/src/9k/rv/low.c:442 c ./rv/low.c:447
+< 	return (uintptr)&lowsys->machstk[MACHSTKSZ];
+---
+> 	return (uintptr)&rlowsys->machstk[MACHSTKSZ];
+/n/dump/2025/1015/sys/src/9k/rv/low.c:462 c ./rv/low.c:467
+< 			prf("tlbinvall...");
+---
+> 			prf("tlbinvall 1...");
+/n/dump/2025/1015/sys/src/9k/rv/low.c:466 c ./rv/low.c:471
+< 		 * to really use this, we'd need as asid allocator
+---
+> 		 * to really use this, we'd need an asid allocator
+/n/dump/2025/1015/sys/src/9k/rv/low.c:470 c ./rv/low.c:475
+< 		if (TODO && asids > 1)
+---
+> 		if (FUTURE && asids > 1)
+/n/dump/2025/1015/sys/src/9k/rv/low.c:473 a ./rv/low.c:479,482
+> 	if (soc.c910 && tlbinvall) {
+> 		tlbinvall();		/* superstition */
+> 		prf("tlbinvall 2...");
+> 	}
+/n/dump/2025/1015/sys/src/9k/rv/low.c:489 d ./rv/low.c:497
+< 	USED(cpu);
+/n/dump/2025/1015/sys/src/9k/rv/low.c:502 c ./rv/low.c:510
+< secstall(Sys *lowsys, int cpu)
+---
+> secstall(int cpu)
+/n/dump/2025/1015/sys/src/9k/rv/low.c:505 a ./rv/low.c:514,517
+> 	/* in case we get here before cpu0 sets lowsys and sys */
+> 	while (lowsys == nil || sys == nil)
+> 		coherence();
+> 
+/n/dump/2025/1015/sys/src/9k/rv/low.c:534 d ./rv/low.c:545
+< 	USED(cpu);
+/n/dump/2025/1015/sys/src/9k/rv/low.c:713 d ./rv/low.c:723
+< 	Sys *rlowsys;
+/n/dump/2025/1015/sys/src/9k/rv/low.c:716,729 c ./rv/low.c:726,731
+< 	/* Last step sets bits of Mach and Sys, and works out new stack top. */
+< 	if (cpu == 0) {
+< 		lowsys = rlowsys = (Sys *)
+< 			(membanks[0].addr + membanks[0].size - Syssize);
+< 		sys = KADDR((uintptr)rlowsys);
+< 		m = ensurelow(&rlowsys->mach);
+< 		coherence();
+< 		stktop = setstkmach0(rlowsys);
+< 	} else {
+< 		/* in case we get here before cpu0 */
+< 		while (lowsys == nil || sys == nil)
+< 			coherence();
+< 		stktop = secstall(lowsys, cpu);	/* also sets m */
+< 	}
+---
+> 	up = nil;
+> 	/* Set bits of Mach and Sys, m, and works out new stack top. */
+> 	if (cpu == 0)
+> 		stktop = setstkmach0();		/* also sets sys and lowsys */
+> 	else
+> 		stktop = secstall(cpu);
+/n/dump/2025/1015/sys/src/9k/rv/low.c:744 d ./rv/low.c:745
+< 
+/n/dump/2025/1015/sys/src/9k/rv/low.c:746,748 d ./rv/low.c:746
+< 	probeclint();
+< 	supsetmtimecmp();
+< 	csrswap(SCOUNTEREN, ~0ull);
+/n/dump/2025/1015/sys/src/9k/rv/low.c:751,754 c ./rv/low.c:749,755
+< 	 * switch to new, permanent stack for this cpu at upper addresses.  All
+< 	 * extant automatic variables and saved return addresses are on the old
+< 	 * (current) stack (or in registers), thus unpredictable after the
+< 	 * switch.
+---
+> 	 * switch to new, permanent stack in Syspercpu->machstk for this cpu at
+> 	 * upper addresses.  All extant automatic variables and saved return
+> 	 * addresses are on the old (current) stack (or in registers), thus
+> 	 * unpredictable after the switch.
+> 	 *
+> 	 * jump into high (kernel) addresses, thus vacating the lower range for
+> 	 * user processes.  adjust pointers and registers as needed.
+/n/dump/2025/1015/sys/src/9k/rv/low.c:761,765 d ./rv/low.c:761
+< 	/*
+< 	 * jump into high (kernel) addresses, thus vacating the lower range
+< 	 * for user processes.  adjust pointers and registers as needed.
+< 	 * up is zero here, so needs no change.
+< 	 */
+/n/dump/2025/1015/sys/src/9k/rv/low.c:767 a ./rv/low.c:764
+> 
+/n/dump/2025/1015/sys/src/9k/rv/low.c:775,778 d ./rv/low.c:771
+< 
+< 	putsscratch((uintptr)m);
+< 	putstvec(strap);		/* high virtual */
+< 	sys->machptr[m->machno] = m;
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/main.c ./rv/main.c
+/n/dump/2025/1015/sys/src/9k/rv/main.c:86 c ./rv/main.c:86
+< 	m->cpumhz = cpuhz/1000000;
+---
+> 	m->cpumhz = cpuhz / MHZ;
+/n/dump/2025/1015/sys/src/9k/rv/main.c:98 c ./rv/main.c:98
+< 		m->cpumhz = hz/1000000;
+---
+> 		m->cpumhz = hz / MHZ;
+/n/dump/2025/1015/sys/src/9k/rv/main.c:187 c ./rv/main.c:187,193
+< 	delay(machno*100); /* stagger startup & let cpu0 get to schedinit 1st */
+---
+> 	/*
+> 	 * stagger startup to let cpu0 get to schedinit first and
+> 	 * to de-synchronise the processors.
+> 	 * on the vf2 (1.2GHz), the best multiplier so far is 2.
+> 	 */
+> 	microdelay((2*TK2MS(1)*1000/sys->nmach) * m->machno + 4000);
+> 
+/n/dump/2025/1015/sys/src/9k/rv/main.c:398 c ./rv/main.c:404
+< 	ncinit();
+---
+> 	ncinit();			/* zero user mappings */
+/n/dump/2025/1015/sys/src/9k/rv/main.c:405 d ./rv/main.c:410
+< 	delay(100);			/* drain UART */
+/n/dump/2025/1015/sys/src/9k/rv/main.c:416,417 d ./rv/main.c:420
+< 	delay(100);			/* drain UART */
+< //	print("\nPlan 9 for %s\n\n", RVARCH);	/* see low.c */
+/n/dump/2025/1015/sys/src/9k/rv/main.c:441 c ./rv/main.c:444
+< 	if (!soc.idlewake)
+---
+> 	if (soc.idlewakens == 0)
+/n/dump/2025/1015/sys/src/9k/rv/main.c:443 c ./rv/main.c:446
+< 	print(" sending IPIs (over %lld ns. delay)\n", sys->nsthresh);
+---
+> 	print(" sending IPIs (over %d ns. to next tick)\n", soc.idlewakens);
+/n/dump/2025/1015/sys/src/9k/rv/main.c:659 a ./rv/main.c:663
+> 	supsetmtimecmp();
+/n/dump/2025/1015/sys/src/9k/rv/main.c:913 c ./rv/main.c:917
+< 				idlehands();
+---
+> 				halt();
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/mch.s ./rv/mch.s
+/n/dump/2025/1015/sys/src/9k/rv/mch.s:11,14 d ./rv/mch.s:10
+< /* xuantie c910 adds sfence.vmas */
+< /* as and vaddr are register numbers */
+< //#define BARR_SFENCE_VMAS(as, vaddr) WORD $(2<<25|(as)<<20|(vaddr)<<15|0<<7|013)
+< 
+/n/dump/2025/1015/sys/src/9k/rv/mch.s:138 a ./rv/mch.s:135,143
+> /*
+>  * call splhi from putsatp.
+>  * the PC must be valid before and after loading SATP.
+>  */
+> TEXT _putsatp(SB), 1, $-4
+> 	LOADSATP(R(ARG))
+> 	MOV	R0, R(ARG)
+> 	RET
+> 
+/n/dump/2025/1015/sys/src/9k/rv/mch.s:489 a ./rv/mch.s:495,508
+> 	RET
+> 
+> /* Zawrs extension */
+> 
+> /* wait with no timeout for a pending interrupt or change to *p */
+> TEXT wrsnto(SB), 1, $-4			/* void wrsnto(ulong *p) */
+> 	LRW(ARG, 14)		/* (R(ARG)) -> R14 */
+> 	WORD $(SYSTEM | 0xd<<20)
+> 	RET
+> 
+> /* wait with a short timeout for a pending interrupt or change to *p */
+> TEXT wrssto(SB), 1, $-4			/* void wrssto(ulong *p) */
+> 	LRW(ARG, 14)		/* (R(ARG)) -> R14 */
+> 	WORD $(SYSTEM | 0x1d<<20)
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/mem.h ./rv/mem.h
+/n/dump/2025/1015/sys/src/9k/rv/mem.h:15 a ./rv/mem.h:16
+> #define FUTURE		0	/* for "if (FUTURE)" */
+/n/dump/2025/1015/sys/src/9k/rv/mem.h:214 c ./rv/mem.h:215
+< #define isuseraddr(ptr)	((uintptr)(ptr) <= ADDRSPCSZ)
+---
+> #define isuseraddr(ptr)	((uintptr)(ptr) < ADDRSPCSZ)
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/mmu.c ./rv/mmu.c
+/n/dump/2025/1015/sys/src/9k/rv/mmu.c:99 c ./rv/mmu.c:99
+< 	page->pa = page->va = (uintptr)sys->pteroot; /* zeroed by zerosyssome */
+---
+> 	page->pa = page->va = (uintptr)sys->pteroot; /* zeroed by setstkmach0 */
+/n/dump/2025/1015/sys/src/9k/rv/mmu.c:706 c ./rv/mmu.c:706
+<  * ensure that the resulting page is zeroed (freepage by zerosyssome).
+---
+>  * ensure that the resulting page is zeroed (freepage by setstkmach0).
+/n/dump/2025/1015/sys/src/9k/rv/mmu.c:715 c ./rv/mmu.c:715
+< 	mysys = lowsys;			/* make safe for low.c use */
+---
+> 	mysys = lowsys;
+/n/dump/2025/1015/sys/src/9k/rv/mmu.c:1058,1059 c ./rv/mmu.c:1058
+< 	 * resources used for the allocation (e.g. page table
+< 	 * pages).
+---
+> 	 * resources used for the allocation (e.g., page table pages).
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/mtrap.s ./rv/mtrap.s
+/n/dump/2025/1015/sys/src/9k/rv/mtrap.s:21,25 d ./rv/mtrap.s:20
+< #undef	SPLHI
+< #define SPLHI	CSRRC	CSR(MSTATUS), $Mie, R0
+< 
+< #define SETSB_CALLTRAP MOV $setSB(SB), R3; ENSURELOW(R3); SPLHI; CALLTRAP
+< 
+/n/dump/2025/1015/sys/src/9k/rv/mtrap.s:31,50 d ./rv/mtrap.s:25
+< /* side-effect: patches Ureg with regsave's R2, restores R4 & R9 first */
+< #define PUSHALLM \
+< 	SUB	$UREGSIZE, R2;		/* room for pc, regs, csrs */\
+< 	ENSURELOW(R2);			/* convert sp to physical */ \
+< 	MOV	SAVEMR4(R(MACH)), R4;	/* restore R4 j[cal] temporary */\
+< 	MOV	SAVEMR9(R(MACH)), R9;\
+< 	S(1);\
+< 	JAL	LINK, pushr2_31(SB);\
+< 	/* patch up Ureg on stack */\
+< 	MOV	SAVEMR2(R(MACH)), R9;\
+< 	MOV	R9, (2*XLEN)(R2);	/* push saved R2 from regsave */\
+< 	/* save CSRs */\
+< 	MOV	CSR(MEPC), R9;		MOV R9, 0(R2);	/* push saved pc */\
+< 	MOV	CSR(MSTATUS), R9;	MOV R9, (32*XLEN)(R2);\
+< 	MOV	CSR(MIE), R9;		MOV R9, (33*XLEN)(R2);\
+< 	MOV	CSR(MCAUSE), R9;	MOV R9, (34*XLEN)(R2);\
+< 	MOV	CSR(MTVAL), R9;		MOV R9, (35*XLEN)(R2);\
+< 	MOV	$Mppmach, R9;		MOV R9, (36*XLEN)(R2); /* curmode */ \
+< 	MOV	CSR(MSCRATCH), R9;	MOV R9, (37*XLEN)(R2)
+< 
+/n/dump/2025/1015/sys/src/9k/rv/mtrap.s:129,137 c ./rv/mtrap.s:104,107
+< 	 * M exception from kernel (super) or user mode.
+< 	 * going to have to save & restore almost all the registers.  should
+< 	 * be rare.  shouldn't get here from user mode because exceptions are
+< 	 * almost all delegated directly to supervisor mode.
+< 	 *
+< 	 * calling trap is unlikely to work with the MMU off, despite having
+< 	 * set SB for low addresses.  addresses in up, for example,
+< 	 * will be high, thus fault.  we ought to forward exceptions to super
+< 	 * (somehow; set SCAUSE code and call strap via MRET?) and return.
+---
+> 	 * undelegated M exception from kernel (super) or user mode.  should
+> 	 * only happen rarely because exceptions are almost all delegated
+> 	 * directly to supervisor mode, except for Envcallsup, which we
+> 	 * explicitly did not delegate.
+/n/dump/2025/1015/sys/src/9k/rv/mtrap.s:140,153 d ./rv/mtrap.s:109
+< #ifdef TRAPDEBUG
+< 	MOV	$PAUart0, R(UART0)
+< 	CONSPUT($'M')
+< 	ADD	$'0', R6, R9
+< 	CONSPUT(R9)
+< //	JAL	R0, wfi(SB)		/* JMP only takes local labels */
+< #endif
+< 
+< #ifdef MEASURE
+< 	MOV	$mchexcepts(SB), R2	/* instrumentation in trap.c */
+< 	MOV	$1, R9
+< 	AMOW(Amoadd, AQ|RL, 9, 2, 0)
+< #endif
+< 
+/n/dump/2025/1015/sys/src/9k/rv/mtrap.s:168 c ./rv/mtrap.s:124
+< 	BEQ	R9, R6, totramp		/* we're rebooting? */
+---
+> 	BNE	R9, R6, mfromuser
+/n/dump/2025/1015/sys/src/9k/rv/mtrap.s:170,173 d ./rv/mtrap.s:125
+< 	/* kernel exception other than Envcallsup */
+< 	MOV	SAVEMR6(R(MACH)), R6	/* R6 up */
+< 	PUSHALLM			/* patches R2 from regsave into Ureg */
+< 	SETSB_CALLTRAP
+/n/dump/2025/1015/sys/src/9k/rv/mtrap.s:175,208 d ./rv/mtrap.s:126
+< 	 * pop registers from Ureg, so that changes to this Ureg elsewhere
+< 	 * (e.g. trap) are reflected.
+< 	 * MACH, R2, SB are still correct; USER might not be, so reload it.
+< 	 */
+< 	POPCSR_MOSTREGS(MEPC, MSTATUS)
+< 	JMP	return			/* to kernel */
+< 
+< 	/*
+< 	 * M exception from user mode: SB, MACH, R2, USER all needed reloading.
+< 	 * old MACH value is in CSR(MSCRATCH).  R2 is saved in regsave.
+< 	 */
+< mfromuser:
+< 	MOV	MACHPROC(R(MACH)), R(USER) /* up = m->proc */
+< 	ENSURELOW(R(USER))
+< 	MOV	(2*XLEN)(R(USER)), R2	/* switch to up->kstack */
+< 	ADD	$KSTACK, R2
+< 	AND	$~(BY2V-1), R2		/* vlong alignment */
+< 
+< 	MOV	SAVEMR3(R(MACH)), R3	/* SB */
+< 	PUSHALLM			/* patches R2 from regsave into Ureg */
+< 	MOV	SAVEMR6(R(MACH)), R3
+< 	MOV	R3, (6*XLEN)(R2)	/* patch old r6 into Ureg */
+< 
+< 	SETSB_CALLTRAP
+< 	POPCSR_MOSTREGS(MEPC, MSTATUS)
+< 
+< 	MOV	(3*XLEN)(R2), R3	/* restore user's SB */
+< 	MOV	(6*XLEN)(R2), R6
+< return:
+< 	MOV	MACHPROC(R(MACH)), R(USER) /* reload: up = m->proc */
+< 	MOV	(2*XLEN)(R2), R2	/* restore SP */
+< 	JMP	swapmachret		/* return to CSR(MEPC) address */
+< 
+< /*
+/n/dump/2025/1015/sys/src/9k/rv/mtrap.s:212 d ./rv/mtrap.s:129
+< totramp:
+/n/dump/2025/1015/sys/src/9k/rv/mtrap.s:228 a ./rv/mtrap.s:146,156
+> 
+> 	/* kernel exception other than Envcallsup */
+> mfromuser:
+> 	MOV	$PAUart0, R(UART0)
+> 	CONSPUT($'\n')
+> 	CONSPUT($'?')
+> 	CONSPUT($'M')
+> 	CONSPUT($'E')
+> 	ADD	$'0', R6, R9
+> 	CONSPUT(R9)
+> 	JAL	R0, wfi(SB)		/* JMP only takes local labels */
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/notes/boot-dependencies ./rv/notes/boot-dependencies
+/n/dump/2025/1015/sys/src/9k/rv/notes/boot-dependencies:4 d ./rv/notes/boot-dependencies:3
+< - on a risc, set static base register
+/n/dump/2025/1015/sys/src/9k/rv/notes/boot-dependencies:5 a ./rv/notes/boot-dependencies:5
+> - on a risc, set static base register
+/n/dump/2025/1015/sys/src/9k/rv/notes/boot-dependencies:11,12 d ./rv/notes/boot-dependencies:10
+< 
+< - malloc, including memory sizing
+/n/dump/2025/1015/sys/src/9k/rv/notes/boot-dependencies:14 c ./rv/notes/boot-dependencies:12
+< - mmu on for paging, initially with identity map.
+---
+> - mmu on for paging, initially with low identity map & KZERO->0 high map.
+/n/dump/2025/1015/sys/src/9k/rv/notes/boot-dependencies:16,17 c ./rv/notes/boot-dependencies:14,17
+< - clock interrupts
+< 
+---
+> - size memory
+> - set up malloc
+> - prepare for interrupts
+> - start clock interrupts
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/notes/new.mch.reqs ./rv/notes/new.mch.reqs
+/n/dump/2025/1015/sys/src/9k/rv/notes/new.mch.reqs:3 c ./rv/notes/new.mch.reqs:3
+< - thorough English documentation
+---
+> - thorough English documentation, including ethernet registers & descriptors
+/n/dump/2025/1015/sys/src/9k/rv/notes/new.mch.reqs:9 a ./rv/notes/new.mch.reqs:10
+> - case with cooling
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/notes/status ./rv/notes/status
+/n/dump/2025/1015/sys/src/9k/rv/notes/status:14 a ./rv/notes/status:15
+> 		mine has broken ethernet.
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/p550cpu ./rv/p550cpu
+/n/dump/2025/1015/sys/src/9k/rv/p550cpu:118 c ./rv/p550cpu:118
+< 		.idlewake = 1,		/* flag: send IPIs to wake wfi cpus */
+---
+> 		.idlewakens = 500,	/* ns. to send IPIs to wake wfi cpus */
+/n/dump/2025/1015/sys/src/9k/rv/p550cpu:160 d ./rv/p550cpu:159
+< 	satp
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/pci.c ./rv/pci.c
+/n/dump/2025/1015/sys/src/9k/rv/pci.c:819 c ./rv/pci.c:819
+< 	if(!(pcicfgr16(p, PciPSR) & 0x0010))
+---
+> 	if(!(pcicfgr16(p, PciPSR) & (1<<4)))
+/n/dump/2025/1015/sys/src/9k/rv/pci.c:832,834 c ./rv/pci.c:832
+< 	ptr = pcicfgr32(p, ptr);
+< 
+< 	while(ptr != 0){
+---
+> 	for (ptr = pcicfgr32(p, ptr); ptr != 0; ptr = pcicfgr8(p, ptr+1))
+/n/dump/2025/1015/sys/src/9k/rv/pci.c:837,838 c ./rv/pci.c:835
+< 		 * Can't be in standard header and must be double
+< 		 * word aligned.
+---
+> 		 * Can't be in standard header and must be double-word aligned.
+/n/dump/2025/1015/sys/src/9k/rv/pci.c:840 c ./rv/pci.c:837
+< 		if(ptr < 0x40 || (ptr & ~0xFC))
+---
+> 		if(pcicfgptrbad(ptr))
+/n/dump/2025/1015/sys/src/9k/rv/pci.c:842 c ./rv/pci.c:839
+< 		if(pcicfgr8(p, ptr) == 0x01){
+---
+> 		else if(pcicfgr8(p, ptr) == Pcicappwr){
+/n/dump/2025/1015/sys/src/9k/rv/pci.c:846,849 d ./rv/pci.c:842
+< 
+< 		ptr = pcicfgr8(p, ptr+1);
+< 	}
+< 
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/pfcpu ./rv/pfcpu
+/n/dump/2025/1015/sys/src/9k/rv/pfcpu:154 d ./rv/pfcpu:153
+< 	satp
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/reboot.h ./rv/reboot.h
+/n/dump/2025/1015/sys/src/9k/rv/reboot.h:3,5 c ./rv/reboot.h:3,5
+< 0x63,0x04,0x0f,0x00,0x73,0x70,0x04,0x30,0x83,0xbe,0x81,0x80,0x83,0xb9,0x01,0x81,
+< 0xa2,0x8b,0xea,0x0b,0x93,0xdb,0xab,0x01,0x6a,0x01,0x13,0x51,0xa1,0x01,0x01,0x00,
+< 0xea,0x03,0x93,0xd3,0xa3,0x01,0x0f,0x00,0xf0,0x0f,0x0f,0x10,0x00,0x00,0x73,0x00,
+---
+> 0x63,0x04,0x0f,0x00,0x73,0x70,0x04,0x30,0xb7,0x0e,0x01,0x10,0x83,0xb9,0x81,0x80,
+> 0xa2,0x8b,0xc6,0x0b,0x93,0xdb,0x1b,0x01,0x46,0x01,0x13,0x51,0x11,0x01,0x01,0x00,
+> 0xc6,0x03,0x93,0xd3,0x13,0x01,0x0f,0x00,0xf0,0x0f,0x0f,0x10,0x00,0x00,0x73,0x00,
+/n/dump/2025/1015/sys/src/9k/rv/reboot.h:10 c ./rv/reboot.h:10
+< 0x6a,0x05,0x69,0x81,0x83,0xb5,0x8b,0x01,0x83,0xef,0xc3,0x07,0x63,0x94,0x0d,0x06,
+---
+> 0x46,0x05,0x45,0x81,0x83,0xb5,0x8b,0x01,0x83,0xef,0xc3,0x07,0x63,0x94,0x0d,0x06,
+/n/dump/2025/1015/sys/src/9k/rv/reboot.h:21,22 c ./rv/reboot.h:21
+< 0x00,0x70,0x01,0xd4,0x00,0x00,0x00,0x00,0xff,0xff,0xff,0xff,0x00,0x00,0x00,0x00,
+< 
+---
+> 0xff,0xff,0xff,0xff,0x00,0x00,0x00,0x00,
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/riscv64.h ./rv/riscv64.h
+/n/dump/2025/1015/sys/src/9k/rv/riscv64.h:303 d ./rv/riscv64.h:302
+< #ifndef XUANTIE_MMU
+/n/dump/2025/1015/sys/src/9k/rv/riscv64.h:306,319 d ./rv/riscv64.h:304
+< #else
+< 	/*
+< 	 * xuantie bits, incompatible with priv. spec.
+< 	 */
+< 	PteXattrs	= (VMASK(5)<<59),
+< 	PteXtSec	= (1LL<<59),	/* for trusted world (TEE) */
+< 	PteXtShare	= (1LL<<60),	/* shareable: cacheable coherency in hw */
+< 	PteXtBuf	= (1LL<<61),	/* bufferable */
+< 	PteXtCache	= (1LL<<62),	/* cacheable */
+< 	PteXtStrong	= (1ULL<<63),	/* strong order (a la x86), dev. regs */
+< 
+< //	Pteleafvalid	= (PteP|PteA|PteD|PteXtShare|PteXtBuf|PteXtCache|PteXtStrong),
+< 	Pteleafvalid	= (PteP|PteA|PteD|PteXtShare|PteXtBuf|PteXtCache),
+< #endif
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/riscv64l.h ./rv/riscv64l.h
+/n/dump/2025/1015/sys/src/9k/rv/riscv64l.h:234 d ./rv/riscv64l.h:233
+< #ifndef XUANTIE_MMU
+/n/dump/2025/1015/sys/src/9k/rv/riscv64l.h:236,242 d ./rv/riscv64l.h:234
+< #else
+< #define PteXattrs	(VMASK(5)<<59)
+< #define PteXtSec	(1LL<<59)	/* for trusted world (TEE) */
+< #define PteXtShare	(1LL<<60)	/* shareable: cacheable coherency in hw */
+< #define PteXtBuf	(1LL<<61)	/* bufferable */
+< #define PteXtCache	(1LL<<62)	/* cacheable */
+< #define PteXtStrong	(1ULL<<63)	/* strong order (a la x86), dev. regs */
+/n/dump/2025/1015/sys/src/9k/rv/riscv64l.h:244,246 d ./rv/riscv64l.h:235
+< #define Pteleafvalid	(PteP|PteA|PteD|PteXtShare|PteXtBuf|PteXtCache)
+< #endif
+< 
+/n/dump/2025/1015/sys/src/9k/rv/riscv64l.h:281,283 d ./rv/riscv64l.h:269
+< #ifdef C910
+< #include "rvb/riscv64ladd.h"
+< #else
+/n/dump/2025/1015/sys/src/9k/rv/riscv64l.h:291 d ./rv/riscv64l.h:276
+< #endif
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/riscv64ladd.h ./rv/riscv64ladd.h
+/n/dump/2025/1015/sys/src/9k/rv/riscv64ladd.h:26,28 d ./rv/riscv64ladd.h:25
+< #ifdef C910
+< #include "rvb/riscv64ladd.h"
+< #else
+/n/dump/2025/1015/sys/src/9k/rv/riscv64ladd.h:36 d ./rv/riscv64ladd.h:32
+< #endif
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/start.s ./rv/start.s
+/n/dump/2025/1015/sys/src/9k/rv/start.s:40,41 c ./rv/start.s:40
+< 	 * (with no virtual memory) could fault endlessly.  LOADSATP contains
+< 	 * many fences.
+---
+> 	 * (with no virtual memory) could fault endlessly.
+/n/dump/2025/1015/sys/src/9k/rv/start.s:43 c ./rv/start.s:42,49
+< 	LOADSATP(R0)
+---
+> 	FENCE
+> 	FENCE_I
+> 
+> 	SFENCE_VMA(0, 0)
+> 	MOV	R0, CSR(SATP)
+> 	SFENCE_VMA(0, 0)
+> 	FENCE_I
+> 	FENCE
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/strap.s ./rv/strap.s
+/n/dump/2025/1015/sys/src/9k/rv/strap.s:56 c ./rv/strap.s:56
+<  * that changes to this Ureg elsewhere (e.g. trap, sysexec) are reflected
+---
+>  * that changes to this Ureg elsewhere (e.g., trap, sysexec) are reflected
+/n/dump/2025/1015/sys/src/9k/rv/strap.s:75,80 d ./rv/strap.s:74
+< 
+< #ifdef TRAPDEBUG
+< 	MOV	MCONSUART(R(MACH)), R(UART0)
+< 	CONSPUT($'S')
+< //	JAL	R0, wfi(SB)		/* JMP only takes local labels */
+< #endif
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/te/defs ./rv/te/defs
+/n/dump/2025/1015/sys/src/9k/rv/te/defs:5 c ./rv/te/defs:5
+< CONFDEF= -DHZ=200 -DSV48 # -DTRAPDEBUG # -DDUMP_PTES
+---
+> CONFDEF= -DHZ=200 -DSV48 # -DDUMP_PTES
+/n/dump/2025/1015/sys/src/9k/rv/te/defs:8 c ./rv/te/defs:8
+< RBKTZERO=0x9ff05000
+---
+> RBKTZERO=0xbff05000
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/te/motd ./rv/te/motd
+/n/dump/2025/1015/sys/src/9k/rv/te/motd:1 c ./rv/te/motd:1
+< One emulated hart in machine mode without SBI, but with Sv48.
+---
+> | One emulated hart in machine mode without SBI, but with Sv48.
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/tecpu ./rv/tecpu
+/n/dump/2025/1015/sys/src/9k/rv/tecpu:73,74 c ./rv/tecpu:73
+< 	// uvlong cpuhz = 2*GHZ; 	/* nominal from tinyemu source */
+< 	uvlong timebase = 10*MHZ;	/* nominal clint ticks per second */
+---
+> 	uvlong timebase = 10*MHZ;	/* clint ticks per second */
+/n/dump/2025/1015/sys/src/9k/rv/tecpu:124 d ./rv/tecpu:122
+< 	satp
+/n/dump/2025/1015/sys/src/9k/rv/tecpu:142 d ./rv/tecpu:139
+< 	fakesbi
+/n/dump/2025/1015/sys/src/9k/rv/tecpu:143 a ./rv/tecpu:141
+> 	fakesbi
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/trap.c ./rv/trap.c
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:56,59 d ./rv/trap.c:55
+< static void debugbpt(Ureg*, Cause*);
+< static void dumpgpr(Ureg* ureg);
+< static void faultriscv64(Ureg*, Cause *);
+< 
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:63 a ./rv/trap.c:60
+> static int printenables = 1;		/* debugging control */
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:66,67 d ./rv/trap.c:62
+< ulong	mchexcepts;			/* M fault count from mtrap.s */
+< int	printenables = 1;		/* debugging control */
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:69,70 c ./rv/trap.c:64,66
+< int	intr(Ureg* ureg, Cause *cp);
+< 
+---
+> static void debugbpt(Ureg*, Cause*);
+> static void dumpgpr(Ureg* ureg);
+> static void faultriscv64(Ureg*, Cause *);
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:72 a ./rv/trap.c:69,70
+> int	intr(Ureg* ureg, Cause *cp);
+> 
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:429,437 d ./rv/trap.c:426
+< /* returns interrupt id (irq); 0 is none */
+< uint
+< plicclaim(uint ctxt)
+< {
+< 	Plic *plic = (Plic *)soc.plic;
+< 
+< 	return (plic? plic->context[ctxt].claimcompl: 0);
+< }
+< 
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:439,447 d ./rv/trap.c:427
+< pliccompl(uint irq, uint ctxt)
+< {
+< 	Plic *plic = (Plic *)soc.plic;
+< 
+< 	if (plic)
+< 		plic->context[ctxt].claimcompl = irq;
+< }
+< 
+< void
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:500 c ./rv/trap.c:480
+< 	/* we assert that vectors are unshared, though irqs may be */
+---
+> 	/* we assert that vectors are unshared, though irqs may be shared */
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:893 c ./rv/trap.c:873
+< advancepc(Ureg *ureg)
+---
+> advancepc(Ureg *ureg, ulong instlow)
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:896,897 c ./rv/trap.c:876,879
+< 	 * we often get a page fault here, presumably because user mappings have
+< 	 * been zeroed by mmuswitch.
+---
+> 	 * examine short at PC, which is sufficient to decide if compressed.
+> 	 * if instlow is non-zero, assume it's the short at PC, to try to avoid
+> 	 * a page fault that we otherwise would get here, presumably because
+> 	 * user mappings have been zeroed by mmuswitch.
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:899,901 c ./rv/trap.c:881,883
+< 	/* examine short at PC, which is sufficient to decide if compressed */
+< 	if ((ureg->pc & 1) == 0)
+< 		ureg->pc += ISCOMPRESSED(*(ushort *)ureg->pc)? 2: 4;
+---
+> 	if (instlow == 0 && (ureg->pc & 1) == 0)
+> 		instlow = *(ushort *)ureg->pc;
+> 	ureg->pc += ISCOMPRESSED(instlow)? 2: 4;
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:923 c ./rv/trap.c:905
+< 			// iprint("cpu%d: nested clock interrupt\n", m->machno);
+---
+> 			iprint("cpu%d: nested clock interrupt\n", m->machno);
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:954 a ./rv/trap.c:937
+> 			delay(1000);
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:956 c ./rv/trap.c:939
+< 				idlehands();
+---
+> 				halt();
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1224 c ./rv/trap.c:1207
+< 		advancepc(ureg);
+---
+> 		advancepc(ureg, 0);
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1227 a ./rv/trap.c:1211
+> 	/* dispatch based on cause exception code */
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1304 a ./rv/trap.c:1289,1292
+>  *
+>  * randos claim that the milk-v titan's ur-dp1000 plic claim register may return
+>  * interrupt ids out of order when they are queued, but refuse to quote the
+>  * actual manufacturer's erratum.  ignore them until they put up.
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1309 a ./rv/trap.c:1298,1299
+> 	Plic *plic;
+> 	Plictxt *pctxt;
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1312 a ./rv/trap.c:1303,1309
+> 	ctxt = m->plicctxt + Super;
+> 	plic = (Plic *)soc.plic;
+> 	pctxt = nil;
+> 	if (plic)
+> 		pctxt = &plic->context[ctxt];
+> 	if (Intrdebug)
+> 		iprint("intr: checking plic for ctxt %d\n", ctxt);
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1316,1318 d ./rv/trap.c:1312
+< 	ctxt = m->plicctxt + Super;
+< 	if (Intrdebug && !soc.poll)
+< 		iprint("intr: checking plic for ctxt %d\n", ctxt);
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1320 c ./rv/trap.c:1314,1319
+< 	while (soc.plic && (id = plicclaim(ctxt)) != 0) {
+---
+> 	/*
+> 	 * claimcomopl register returns the next interrupt id (irq) for this
+> 	 * context (priv. mode and hart), or 0 if none.  it also clears id's
+> 	 * interrupt pending bit.
+> 	 */
+> 	while (pctxt && (id = pctxt->claimcompl) != 0) {
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1322 c ./rv/trap.c:1321
+< 		/* id is actual cause, global irq.  map to a vector. */
+---
+> 		/* id is actual cause, global irq.  map id to a vector. */
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1326 d ./rv/trap.c:1324
+< 
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1328 a ./rv/trap.c:1327
+> 
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1330 c ./rv/trap.c:1329,1331
+< 		if (vec == nil) {		/* maybe it's spurious? */
+---
+> 		if (vec)			/* maybe it's spurious? */
+> 			callintrsvc(ureg, vec);
+> 		else {
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1333,1335 c ./rv/trap.c:1334,1337
+< 		} else
+< 			callintrsvc(ureg, vec);
+< 		pliccompl(id, ctxt);
+---
+> 		}
+> 		coherence();
+> 		/* allow plic to deliver this intr id to this hart again. */
+> 		pctxt->claimcompl = id;
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1341 c ./rv/trap.c:1343
+< 			iprint("intr: stuck in plicclaim loop, id %d, polling\n",
+---
+> 			iprint("intr: stuck in plicclaim loop, id %d; polling\n",
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1342 a ./rv/trap.c:1345
+> 			break;
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1348 c ./rv/trap.c:1351
+< 	if (Intrdebug && !soc.poll)
+---
+> 	if (!soc.poll && Intrdebug)
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1399 a ./rv/trap.c:1403
+> 	ushort instlow;
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1402 c ./rv/trap.c:1406
+< 	m->turnedfpoff = 0;
+---
+> 	m->turnedfpoff = instlow = 0;
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1407 a ./rv/trap.c:1412,1414
+> 	/* save instruction before user mapping can change on proc switch */
+> 	if ((pc & 1) == 0)
+> 		instlow = *(ushort *)pc;
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1408 a ./rv/trap.c:1416
+> 
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1415 c ./rv/trap.c:1423
+< 	 * successful exec does not return here, but at the entry
+---
+> 	 * successful exec does not return after exec call, but at the entry
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1419 c ./rv/trap.c:1427
+< 		advancepc(ureg);
+---
+> 		advancepc(ureg, instlow);	/* instlow is still valid */
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1429 a ./rv/trap.c:1438,1440
+> 	USED(ureg);
+> 	if (!Trapdebug)
+> 		return;
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1493 a ./rv/trap.c:1505,1506
+> #define TRAPDBG(a, b, c) if (!Trapdebug) {} else trapdbg(a, b, c)
+> 
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1524,1525 c ./rv/trap.c:1537
+< 	if (Trapdebug)
+< 		trapdbg(ureg, &why, 1);
+---
+> 	TRAPDBG(ureg, &why, 1);
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1531 a ./rv/trap.c:1544
+> 		/* dispatch based on cause fault type */
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1561,1563 c ./rv/trap.c:1574
+< 
+< 	if (Trapdebug)
+< 		trapdbg(ureg, &why, 0);
+---
+> 	TRAPDBG(ureg, &why, 0);
+/n/dump/2025/1015/sys/src/9k/rv/trap.c:1929 c ./rv/trap.c:1940
+< 			advancepc(cur);
+---
+> 			advancepc(cur, 0);
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/umcpu ./rv/umcpu
+/n/dump/2025/1015/sys/src/9k/rv/umcpu:108 c ./rv/umcpu:108
+< 		.idlewake = 1,		/* flag: send IPIs to wake wfi cpus */
+---
+> 		.idlewakens = 1,		/* send IPIs to wake wfi cpus */
+/n/dump/2025/1015/sys/src/9k/rv/umcpu:142 d ./rv/umcpu:141
+< 	satp
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/vfcpu ./rv/vfcpu
+/n/dump/2025/1015/sys/src/9k/rv/vfcpu:114 c ./rv/vfcpu:114
+< 		.idlewake = 1,		/* flag: send IPIs to wake wfi cpus */
+---
+> 		.idlewakens = 500,	/* ns. to send IPIs to wake wfi cpus */
+/n/dump/2025/1015/sys/src/9k/rv/vfcpu:158 d ./rv/vfcpu:157
+< 	satp
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/zte/defs ./rv/zte/defs
+/n/dump/2025/1015/sys/src/9k/rv/zte/defs:4 c ./rv/zte/defs:4
+< CONFDEF= -DSV48			# -DDUMP_PTES # -DTRAPDEBUG
+---
+> CONFDEF= -DSV48			# -DDUMP_PTES
+
+diff -n /n/dump/2025/1015/sys/src/9k/rv/ztecpu ./rv/ztecpu
+/n/dump/2025/1015/sys/src/9k/rv/ztecpu:72,73 c ./rv/ztecpu:72,73
+< 	uvlong cpuhz = 34*1000*1000;  /* from timesync, emulated on 3ghz nuc */
+< 	uvlong timebase = 10*1000*1000;	/* clint ticks per second */
+---
+> 	uvlong cpuhz = 34*MHZ;	/* from timesync, emulated on 3ghz nuc */
+> 	uvlong timebase = 10*MHZ;	/* clint ticks per second */
+/n/dump/2025/1015/sys/src/9k/rv/ztecpu:121 d ./rv/ztecpu:120
+< 	satp
+/n/dump/2025/1015/sys/src/9k/rv/ztecpu:136 a ./rv/ztecpu:136
+> 	fakeptenc
+/n/dump/2025/1015/sys/src/9k/rv/ztecpu:138 d ./rv/ztecpu:137
+< 	fakesbi
+/n/dump/2025/1015/sys/src/9k/rv/ztecpu:139 a ./rv/ztecpu:139
+> 	fakesbi
+/n/dump/2025/1015/sys/src/9k/rv/ztecpu:140 a ./rv/ztecpu:141
+> 	fakeucalloc

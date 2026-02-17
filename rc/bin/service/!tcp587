@@ -1,0 +1,2 @@
+#!/bin/rc
+exec upas/smtpd -c /sys/lib/ssl/fullchain.pem -a -n $3

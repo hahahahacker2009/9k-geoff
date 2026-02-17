@@ -1,0 +1,356 @@
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=utf8">
+<title>Plan 9 &mdash; Release Notes</title>
+</meta>
+</head>
+<body>
+<p style="margin-top: 0; margin-bottom: 0.50in"></p>
+<p style="margin-top: 0; margin-bottom: 0.21in"></p>
+
+<p style="line-height: 1.4em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 12pt"><b>Plan 9 From Bell Labs</b></span></p>
+<p style="line-height: 1.4em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 12pt"><b>Release Notes</b></span></p>
+<p style="line-height: 1.4em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 12pt"><b>July 2021</b></span></p>
+<p style="margin-top: 0; margin-bottom: 0.21in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.4em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 10pt"><i>Plan&nbsp;9&nbsp;Foundation</i></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="margin-top: 0; margin-bottom: 0.33in"></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="margin-top: 0; margin-bottom: -0.40in"></p>
+<p style="margin-top: 0; margin-bottom: 0.50in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 10pt">Copyright&nbsp;&copy;&nbsp;2021&nbsp;Plan&nbsp;9&nbsp;Foundation</span></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 10pt">All&nbsp;Rights&nbsp;Reserved</span></p>
+<p style="margin-top: 0; margin-bottom: 0.20in"></p>
+<p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The current release of the Plan 9 operating system
+contains many improvements and additions to the system
+since the long-ago Fourth Edition release of 2002 from Bell Labs.
+We now assume 21st-century hardware.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+</span><span style="font-size: 10pt"><i>fossil</i></span><span style="font-size: 10pt">(4)
+and
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">(8)
+are now the production file server and block store, respectively,
+and better documented.
+</span><span style="font-size: 10pt"><i>Venti</i></span><span style="font-size: 10pt">
+has been greatly improved internally
+and there is a new
+</span><span style="font-size: 10pt"><i>libventi</i></span><span style="font-size: 10pt">,
+though
+</span><span style="font-size: 10pt"><i>fossil</i></span><span style="font-size: 10pt">
+still uses the old one.
+Note that
+</span><span style="font-size: 10pt"><i>fossil</i></span><span style="font-size: 10pt">
+is currently only safe up to 32TB
+due to use of 32-bit integers to hold block numbers,
+as are
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+index sections.
+</span><span style="font-size: 10pt"><i>kfs</i></span><span style="font-size: 10pt">(4)
+and
+</span><span style="font-size: 10pt"><i>lnfs</i></span><span style="font-size: 10pt">(4)
+are deprecated and
+the old standalone file server
+and the IL protocol are gone.
+</span><span style="font-size: 10pt"><i>cwfs</i></span><span style="font-size: 10pt">(4)
+provides the function of the old file server as a user-mode program,
+plus the ability to communicate via TCP or other non-IL/IPv4 protocols.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+Network booting of PCs via PXE is routine.
+The smaller PC kernels
+(</span><span style="font-size: 10pt"><i>9pc</i></span><span style="font-size: 10pt">
+and
+</span><span style="font-size: 10pt"><i>9pccpu</i></span><span style="font-size: 10pt">)
+can now be loaded without loading
+</span><span style="font-size: 10pt"><i>pcboot</i></span><span style="font-size: 10pt">
+first.
+Better compression with
+</span><span style="font-size: 10pt"><i>lzip</i></span><span style="font-size: 10pt">
+(see
+</span><span style="font-size: 10pt"><i>gzip</i></span><span style="font-size: 10pt">(1))
+and dynamic loading of missing
+</span><span style="font-size: 10pt"><tt>/boot</tt></span><span style="font-size: 10pt">
+executables allow kernels to be still smaller.
+Other machines normally boot via BOOTP/DHCP and TFTP without PXE.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+The PC bootstrap programs are now variants of the PC kernel,
+and use unmodified kernel device drivers, so they can load
+from any supported device.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+The PC port now really assumes Pentium (1993) or newer processor(s).
+386 and 486 code remains for reference, but will decay away.
+Multiprocessors are also the norm now, rather than an exotic architecture.
+Only ISA, PCI and PCI-Express buses are still supported;
+PCMCIA and all subsequent variants are no longer supported.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+PCI message-signalled interrupts are now implemented on the PC,
+which can be particularly helpful when the PC BIOS tables are wrong.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+ARM machines such as the Trimslice and 32-bit Raspberry Pis
+are now supported, including multi-core machines.
+Floating point emulation now includes VFP instructions in addition
+to the old 7500 FPA instructions, so it should be easy to make
+</span><span style="font-size: 10pt"><tt>5l</tt></span><span style="font-size: 10pt">
+</span><span style="font-size: 10pt"><tt>-f</tt></span><span style="font-size: 10pt">
+the default.
+One MIPS machine, the Mikrotik Routerboard 450G, is now supported.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+Compilers now exist for AMD64 and 64-bit PowerPC processors.
+There is a work-in-progress ARM64 compiler
+that can&rsquo;t yet compile the whole system,
+though some programs can be compiled.
+The ARM compiler can now profile programs and generate ELF executables.
+The MIPS loader can now emit ELF64 executables.
+The DEC Alpha, Sun/Oracle SPARC, and Motorola 68000 and 68020
+architectures have been retired.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+Some 10 Gb/s Ethernet adapters are now supported, mainly Intel ones,
+notably the X540 and X550 which run 10GBASE-T over Category 6a copper cables.
+Note that these cards run hot and will shut down if they overheat,
+so dual-port cards such as the X540-T2 are not
+necessarily a better deal than single-port cards.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+Support for PCI-E Intel Gigabit Ethernet adapters now includes the
+i21[089].
+The i217 stubbornly refuses to transmit.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+IPv6 support is better (in part due to access to the Internet via native IPv6),
+and includes tunnelling through IPv4 to reach the wider IPv6 internet;
+see
+</span><span style="font-size: 10pt"><i>6in4</i></span><span style="font-size: 10pt">(8).
+Hanging bugs in ICMPv6, found through native IPv6 use, have been fixed, and
+</span><span style="font-size: 10pt"><i>dial</i></span><span style="font-size: 10pt">(2)
+now dials all addresses (v4 and v6) concurrently until it connects.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+USB support has improved and now includes USB 2 (EHCI).
+There are drivers for USB Ethernet dongles and the like;
+see
+</span><span style="font-size: 10pt"><i>usb</i></span><span style="font-size: 10pt">(3)
+and
+</span><span style="font-size: 10pt"><i>usb</i></span><span style="font-size: 10pt">(4).
+USB 3 (XHCI) controllers can be recognised and disabled
+to reduce their interrupt load.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+The cryptographic infrastructure is being updated.
+SHA2 is now available; see
+</span><span style="font-size: 10pt"><i>sechash</i></span><span style="font-size: 10pt">(2).
+Use of RC4 and SSLv2 are being deprecated but will take a while to eliminate
+due to backward compatibility.
+In particular,
+</span><span style="font-size: 10pt"><i>secstore</i></span><span style="font-size: 10pt">(1)
+and
+</span><span style="font-size: 10pt"><i>factotum</i></span><span style="font-size: 10pt">(4)
+have use of SSLv2 hard-wired into their protocols.
+</span><span style="font-size: 10pt"><i>ssh1</i></span><span style="font-size: 10pt">(1)
+no longer uses RC4.
+</span><span style="font-size: 10pt"><i>tls</i></span><span style="font-size: 10pt">(3)
+and
+</span><span style="font-size: 10pt"><i>tls</i></span><span style="font-size: 10pt">(2)
+can now cope with SSLv3 and TLS 1.[0-2].
+</span><span style="font-size: 10pt"><i>cpu</i></span><span style="font-size: 10pt">(1)
+and
+</span><span style="font-size: 10pt"><i>drawterm</i></span><span style="font-size: 10pt">(8)
+now attempt TLS connections and may fall back to SSLv2.
+</span><span style="font-size: 10pt"><i>import</i></span><span style="font-size: 10pt">(1)
+and
+</span><span style="font-size: 10pt"><i>exportfs</i></span><span style="font-size: 10pt">(8)
+now implement TLS encryption.
+</span><span style="font-size: 10pt"><i>import</i></span><span style="font-size: 10pt">
+used to default to no encryption,
+but now defaults to trying TLS, SSLv2 and then clear text,
+with a warning if TLS can&rsquo;t be used.
+Note that currently clear-text imports must be used if it is necessary to
+mount an imported
+</span><span style="font-size: 10pt"><i>srv</i></span><span style="font-size: 10pt">(3)
+channel;
+this is being investigated.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+Related to the cryptographic upgrade,
+support for 9P1 (the 15-year-old 9P) is gradually being dropped;
+everything should be converted to 9P2000 by now.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+There is now native support for SATA devices
+(with block addresses up to 48 bits wide)
+via AHCI,
+and for NVMe solid-state disks.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+</span><span style="font-size: 10pt"><i>Cdfs</i></span><span style="font-size: 10pt">
+now supports access to data (not audio nor video)
+on DVDs and Blu-ray discs.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+VESA video on PCs now works fairly reliably, even on multiprocessors.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+ATA-over-Ethernet is supported;
+see
+</span><span style="font-size: 10pt"><i>aoe</i></span><span style="font-size: 10pt">(3).
+iSCSI is also supported.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+Unicode Runes are now 21 bits wide and UTF sequences may be 4 bytes long.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+Restarting the system without a hardware reset now works well;
+see
+</span><span style="font-size: 10pt"><i>fshalt</i></span><span style="font-size: 10pt">(8).
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+</span><span style="font-size: 10pt"><i>ndb/dns</i></span><span style="font-size: 10pt">
+has been extended and improved in various ways but
+its UDP server still has hard-to-find memory leaks and eventually corruption.
+We can only recommend dedicating machines to act as UDP nameservers and
+rebooting them frequently.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+</span><span style="font-size: 10pt"><i>virtual machines.</i></span><span style="font-size: 10pt">
+Recent releases of Virtualbox (e.g., 5.2.26)
+will run Plan 9, though slowly.
+If you want to try anyway, in Settings, in the System &amp; Acceleration tabs,
+choose &lsquo;</span><span style="font-size: 10pt"><tt>Paravirtualization</tt></span><span style="font-size: 10pt">
+</span><span style="font-size: 10pt"><tt>Interface</tt></span><span style="font-size: 10pt">
+</span><span style="font-size: 10pt"><tt>Hyper-V</tt></span><span style="font-size: 10pt">&rsquo;.
+Recent releases of Parallels (e.g., 13.3.0)
+and Vmware Esxi 6.7
+can be configured to run Plan 9:
+choose the Intel Gigabit CT Ethernet controller.
+Parallels is slower, with higher network latency.
+Imaginary hardware is of less importance than running well on real hardware,
+and the increased Ethernet latency in most virtual machines hosted on
+general-purpose operating systems is appalling.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+</span><span style="font-size: 10pt"><i>64-bit kernels.</i></span><span style="font-size: 10pt">
+We are now also distributing a 64-bit-capable kernel,
+</span><span style="font-size: 10pt"><tt>/sys/src/9k</tt></span><span style="font-size: 10pt">,
+which has two ports, to the 64-bit
+</span><span style="font-size: 10pt"><tt>amd64</tt></span><span style="font-size: 10pt">
+and
+</span><span style="font-size: 10pt"><tt>riscv64</tt></span><span style="font-size: 10pt">
+architectures,
+intended for use as a cpu or file server;
+VGA graphics, USB, etc. have been omitted to date.
+The late Jim McKie
+(</span><span style="font-size: 10pt"><i>jmk</i></span><span style="font-size: 10pt">)
+created
+</span><span style="font-size: 10pt"><tt>9k</tt></span><span style="font-size: 10pt">
+from our 32-bit kernel.
+It implements the same system calls, and drivers some of the same devices,
+with an emphasis on PCI-Express devices.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+The
+</span><span style="font-size: 10pt"><tt>riscv64</tt></span><span style="font-size: 10pt">
+port currently runs on the Microchip Polarfire Icicle,
+pre-release Beagle V,
+and HiFive Unmatched.
+Richard Miller contributed the RISC-V compiler suites.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+The
+</span><span style="font-size: 10pt"><tt>9</tt></span><span style="font-size: 10pt">
+and
+</span><span style="font-size: 10pt"><tt>9k</tt></span><span style="font-size: 10pt">
+kernels have diverged somewhat, but we will be attemping to minimise
+source differences.
+In particular, the
+</span><span style="font-size: 10pt"><tt>boot</tt></span><span style="font-size: 10pt">
+directories are identical,
+and the
+</span><span style="font-size: 10pt"><tt>ip</tt></span><span style="font-size: 10pt">
+directories are almost identical,
+but some device drivers differ slightly between the two kernels.
+ACPI is almost entirely ignored and use of MSI avoids most BIOS table
+(e.g., MPS) bugs.
+Note that the
+</span><span style="font-size: 10pt"><i>malloc</i></span><span style="font-size: 10pt">(2)
+and
+</span><span style="font-size: 10pt"><i>pool</i></span><span style="font-size: 10pt">(2)
+allocators now use
+</span><span style="font-size: 10pt"><i>uintptr</i></span><span style="font-size: 10pt">
+variables internally and in their interfaces,
+and so can cope with 64-bit addresses,
+permitting allocating huge tracts of memory.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">&#8729;
+</span><span style="font-size: 10pt"><i>Regfree</i></span><span style="font-size: 10pt">
+(see
+</span><span style="font-size: 10pt"><i>regexp</i></span><span style="font-size: 10pt">(2))
+now exists and should be used instead of
+</span><span style="font-size: 10pt"><i>free</i></span><span style="font-size: 10pt">
+to free compiled regular expressions.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The Plan 9 Wiki
+(</span><span style="font-size: 10pt"><tt>http://plan9foundation.org/wiki/plan9</tt></span><span style="font-size: 10pt">)
+is the place to visit to learn more and stay current.
+The Usenet group
+(</span><span style="font-size: 10pt"><tt>comp.os.plan9</tt></span><span style="font-size: 10pt">)
+used to a good place to visit,
+but it has degenerated.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Good Luck!
+</span></p><p style="margin-top: 0; margin-bottom: 0.50in"></p>
+</body>
+</html>
+

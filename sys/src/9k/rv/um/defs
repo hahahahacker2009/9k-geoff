@@ -1,0 +1,6 @@
+# sifive unmatched
+PHYSMEM=0x80200000u
+BANK0SIZE=(GB-2*MB)
+KTZERO=0xffffffc080200000	# sv39 but skip first 2MB of RAM @ 2GB
+CONFDEF=-DSIFIVEUART -DERRATUM_CIP_1200
+SFX=bin

@@ -1,0 +1,515 @@
+/*
+ * boot - first process; connect to a root file server and exec init.
+ *
+ * boot() is called from main in generated boot$CONF.c, created by this:
+ *	awk -f ../mk/parse -- -mkbootconf $CONF > boot$CONF.c	# 9k
+ * kernel manually creates process 1 and forces it to exec boot.
+ */
+#include <u.h>
+#include <libc.h>
+#include <auth.h>
+#include <fcall.h>
+#include <tos.h>		/* just for debugging */
+#include "../boot/boot.h"
+
+#define PARTSRV "partfs.sdXX"
+
+enum {
+	Dontpost,
+	Post,
+};
+enum {
+	Alignmagic = 0x12345678,
+};
+
+char	cputype[64];
+char	sys[2*64];
+char 	reply[256];
+int	printcol;
+int	mflag;
+int	fflag;
+int	kflag;
+int	debugboot;
+int	nousbboot;
+int	promptwait = 15*1000;
+static int alignmagic = Alignmagic;
+
+char	*bargv[Nbarg];
+int	bargc;
+
+static void	swapproc(void);
+static Method	*rootserver(char*);
+static void	kbmap(void);
+
+/*
+ * we should inherit the standard fds all referring to /dev/cons,
+ * but we're being paranoid.
+ */
+static void
+opencons(void)
+{
+	close(0);
+	close(1);
+	close(2);
+	bind("#c", "/dev", MBEFORE);
+	open("/dev/cons", OREAD);
+	open("/dev/cons", OWRITE);
+	open("/dev/cons", OWRITE);
+}
+
+/*
+ * init will reinitialize its namespace.
+ * #ec gets us plan9.ini settings (*var variables).
+ */
+static void
+bindenvsrv(void)
+{
+	bind("#ec", "/env", MREPL);
+	bind("#e", "/env", MBEFORE|MCREATE);
+	bind("#s", "/srv/", MREPL|MCREATE);
+}
+
+static void
+debuginit(int argc, char **argv)
+{
+	int fd;
+
+	if(getenv("debugboot"))
+		debugboot = 1;
+	if(getenv("nousbboot"))
+		nousbboot = 1;
+#ifdef DEBUG
+	print("argc=%d\n", argc);
+	for(fd = 0; fd < argc; fd++)
+		print("%#p %s ", argv[fd], argv[fd]);
+	print("\n");
+#endif	/* DEBUG */
+	SET(fd);
+	USED(argc, argv, fd);
+}
+
+/*
+ * read disk partition tables here so that readnvram via factotum
+ * can see them.  ideally we would have this information in
+ * environment variables before attaching #S, which would then
+ * parse them and create partitions.
+ */
+static void
+partinit(void)
+{
+	char *rdparts;
+
+	rdparts = getenv("readparts");
+	if(!rdparts || strcmp(rdparts, "1") == 0)
+		readparts();
+	free(rdparts);
+}
+
+/*
+ *  pick a method and initialize it
+ */
+static Method *
+pickmethod(int argc, char **argv)
+{
+	Method *mp;
+
+	if(method[0].name == nil)
+		fatal("no boot methods");
+	mp = rootserver(argc ? *argv : 0);
+	(*mp->config)(mp);
+	return mp;
+}
+
+/*
+ *  authentication agent
+ *  sets hostowner, creating an auth discontinuity
+ */
+static void
+doauth(int cpuflag)
+{
+	dprint("auth...");
+	authentication(cpuflag);
+}
+
+/*
+ *  connect to the root file system
+ */
+static int
+connectroot(Method *mp, int islocal, int ishybrid)
+{
+	int fd, n;
+	char buf[32];
+
+	print("%s...", mp->name);
+	fd = (*mp->connect)();
+	if(fd < 0)
+		fatal("can't connect to file server");
+	if(0 && getenv("srvold9p"))	// TDDO: restore
+		fd = old9p(fd);
+	if(!islocal && !ishybrid){
+		if(cfs)
+			fd = (*cfs)(fd);
+	}
+	print("version...");
+	buf[0] = '\0';
+	n = fversion(fd, 0, buf, sizeof buf);
+	if(n < 0)
+		fatal("can't init 9P");
+	srvcreate("boot", fd);
+	return fd;
+}
+
+/*
+ *  create the name space, mount the root fs
+ */
+static int
+nsinit(int fd, char **rspp)
+{
+	int afd;
+	char *rp, *rsp;
+	AuthInfo *ai;
+	static char rootbuf[64];
+
+	if(bind("/", "/", MREPL) < 0)
+		fatal("bind /");
+	rp = getenv("rootspec");
+	if(rp == nil)
+		rp = "";
+
+	afd = fauth(fd, rp);
+	if(afd >= 0){
+		ai = auth_proxy(afd, auth_getkey, "proto=p9any role=client");
+		if(ai == nil)
+			print("authentication failed (%r), trying mount anyways\n");
+	}
+	if(mount(fd, afd, "/root", MREPL|MCREATE|MCACHE, rp) < 0)
+		fatal("mount /");
+	rsp = rp;
+	rp = getenv("rootdir");
+	if(rp == nil)
+		rp = rootdir;
+	if(bind(rp, "/", MAFTER|MCREATE) < 0){
+		if(strncmp(rp, "/root", 5) == 0){
+			fprint(2, "boot: couldn't bind $rootdir=%s to root: %r\n", rp);
+			fatal("second bind /");
+		}
+		snprint(rootbuf, sizeof rootbuf, "/root/%s", rp);
+		rp = rootbuf;
+		if(bind(rp, "/", MAFTER|MCREATE) < 0){
+			fprint(2, "boot: couldn't bind $rootdir=%s to root: %r\n", rp);
+			if(strcmp(rootbuf, "/root//plan9") != 0)
+				fatal("second bind /");
+			/* undo installer's work */
+			fprint(2, "**** warning: remove rootdir=/plan9 "
+				"entry from plan9.ini\n");
+			rp = "/root";
+			if(bind(rp, "/", MAFTER|MCREATE) < 0)
+				fatal("second bind /");
+		}
+	}
+	setenv("rootdir", rp);
+	*rspp = rsp;
+	return afd;
+}
+
+int
+chmod(char *file, int mode)
+{
+	Dir *dir;
+
+	dir = dirstat(file);
+	if (dir == nil) {
+		dprint("can't stat %s: %r\n", file);
+		return -1;
+	}
+	dir->mode &= ~0777;
+	dir->mode |= mode & 0777;
+	dirwstat("/srv/" PARTSRV, dir);
+	free(dir);
+	return 0;
+}
+
+static void
+execinit(void)
+{
+	int iargc;
+	char *cmd, cmdbuf[64], *iargv[16];
+
+	/* exec init */
+	cmd = getenv("init");
+	if(cmd == nil){
+		snprint(cmdbuf, sizeof cmdbuf, "/%s/init -%s%s", cputype,
+			cpuflag ? "c" : "t", mflag ? "m" : "");
+		cmd = cmdbuf;
+	}
+	iargc = tokenize(cmd, iargv, nelem(iargv)-1);
+	cmd = iargv[0];
+
+	/* make iargv[0] basename(iargv[0]) */
+	if(iargv[0] = strrchr(iargv[0], '/'))
+		iargv[0]++;
+	else
+		iargv[0] = cmd;
+
+	iargv[iargc] = nil;
+
+	chmod("/srv/" PARTSRV, 0600);
+	exec(cmd, iargv);
+	fatal(cmd);
+}
+
+static void
+dumpstk(int *p)
+{
+	for (; (uintptr)p < (uintptr)_tos; p++)
+		print("%#p: %#ux\n", p, *p);
+}
+
+char *fakeargv[] = { "boot", nil };
+
+/* called from main in generated boot$CONF.c */
+void
+boot(int argc, char *argv[])
+{
+	int fd, afd, islocal, ishybrid;
+	char *rsp, *p;
+	Method *mp;
+
+	if (alignmagic != Alignmagic)
+		write(2, "boot data seg unaligned!\n", 29);
+	opencons();
+	if (alignmagic != Alignmagic)
+		write(2, "boot data seg unaligned!\n", 29);
+	bindenvsrv();
+	if (argv == 0 || *argv == 0) {
+		/* common problem with new ports; check sysexec & main9.s */
+		fprint(2, "boot: argc %d argv %#p; defaulting to no args\n",
+			argc, argv);
+		argc = 1;
+		argv = fakeargv;
+	}
+	debuginit(argc, argv);
+
+	ARGBEGIN{
+	case 'k':
+		kflag = 1;
+		break;
+	case 'm':
+		mflag = 1;
+		break;
+	case 'f':
+		fflag = 1;
+		break;
+	}ARGEND
+
+	readfile("#e/cputype", cputype, sizeof(cputype));
+
+	if ((p = getenv("bootpromptwait")) != nil)
+		promptwait = atoi(p);
+
+#ifdef USB
+	/*
+	 *  set up usb keyboard & mouse, if any.
+	 *  starts partfs on first disk, if any, to permit nvram on usb.
+	 */
+	if (!nousbboot)
+		usbinit(Dontpost);
+#endif
+
+	dprint("pickmethod...");
+	mp = pickmethod(argc, argv);
+	if (mp == nil)
+		exits("no method picked");
+	islocal = strcmp(mp->name, "local") == 0;
+	ishybrid = strcmp(mp->name, "hybrid") == 0;
+
+	/* if root is via tcp, ether0 should be configured here */
+	kbmap();			/*  load keymap if it's there. */
+
+	/* don't trigger aoe until the network has been configured */
+	dprint("bind #Æ...");
+	bind("#Æ", "/dev", MAFTER);	/* nvram could be here */
+	dprint("bind #S...");
+	bind("#S", "/dev", MAFTER);	/* nvram could be here */
+	dprint("partinit...");
+	partinit();
+
+	doauth(cpuflag);	/* authentication usually changes hostowner */
+	rfork(RFNAMEG);		/* leave existing subprocs in own namespace */
+#ifdef USB
+	if (!nousbboot)
+		usbinit(Post);	/* restart partfs under the new hostowner id */
+#endif
+	fd = connectroot(mp, islocal, ishybrid);
+//	write(1, "ns...", 5);
+	afd = nsinit(fd, &rsp);
+	close(fd);
+
+	settime(islocal, afd, rsp);
+	if(afd > 0)
+		close(afd);
+	swapproc();
+//	write(1, "init...", 7);
+	execinit();
+	exits("failed to exec init");
+}
+
+static Method*
+findmethod(char *a)
+{
+	Method *mp;
+	int i, j;
+	char *cp;
+
+	if((i = strlen(a)) == 0)
+		return nil;
+	cp = strchr(a, '!');
+	if(cp)
+		i = cp - a;
+	for(mp = method; mp->name; mp++){
+		j = strlen(mp->name);
+		if(j > i)
+			j = i;
+		if(strncmp(a, mp->name, j) == 0)
+			break;
+	}
+	if(mp->name)
+		return mp;
+	return nil;
+}
+
+/*
+ *  ask user from whence cometh the root file system
+ */
+static Method*
+rootserver(char *arg)
+{
+	char prompt[256];
+	Method *mp;
+	char *cp;
+	int n;
+
+	/* look for required reply */
+	dprint("read #e/nobootprompt...");
+	readfile("#e/nobootprompt", reply, sizeof(reply));
+	if(reply[0]){
+		mp = findmethod(reply);
+		if(mp)
+			goto HaveMethod;
+		print("boot method %s not found\n", reply);
+		reply[0] = 0;
+	}
+
+	/* make list of methods */
+	mp = method;
+	n = sprint(prompt, "root is from (%s", mp->name);
+	for(mp++; mp->name; mp++)
+		n += sprint(prompt+n, ", %s", mp->name);
+	sprint(prompt+n, ")");
+
+	/* create default reply */
+	dprint("read #e/bootargs...");
+	readfile("#e/bootargs", reply, sizeof(reply));
+	if(reply[0] == 0 && arg != 0)
+		strcpy(reply, arg);
+	if(reply[0]){
+		mp = findmethod(reply);
+		if(mp == 0)
+			reply[0] = 0;
+	}
+	if(reply[0] == 0)
+		strcpy(reply, method->name);
+
+	/* parse replies */
+	do{
+		dprint("outin...");
+		outin(prompt, reply, sizeof(reply));
+		mp = findmethod(reply);
+	}while(mp == nil);
+
+HaveMethod:
+	bargc = tokenize(reply, bargv, Nbarg-2);
+	bargv[bargc] = nil;
+	cp = strchr(reply, '!');
+	if(cp)
+		strcpy(sys, cp+1);
+	dprint("pickmethod done\n");
+	return mp;
+}
+
+static void
+swapproc(void)
+{
+	int fd;
+
+	fd = open("#c/swap", OWRITE);
+	if(fd < 0){
+		warning("opening #c/swap");
+		return;
+	}
+	if(write(fd, "start", 5) <= 0)
+		warning("starting swap kproc");
+	close(fd);
+}
+
+int
+old9p(int fd)
+{
+	int p[2];
+
+	if(pipe(p) < 0)
+		fatal("pipe");
+
+	print("srvold9p...");
+	switch(fork()) {
+	case -1:
+		fatal("rfork srvold9p");
+	case 0:
+		dup(fd, 1);
+		close(fd);
+		dup(p[0], 0);
+		close(p[0]);
+		close(p[1]);
+		execl("/srvold9p", "srvold9p", "-s", 0);
+		fatal("exec srvold9p");
+	default:
+		close(fd);
+		close(p[0]);
+	}
+	return p[1];
+}
+
+static void
+kbmap(void)
+{
+	char *f;
+	int n, in, out;
+	char buf[1024];
+
+	f = getenv("kbmap");
+	if(f == nil)
+		return;
+	if(bind("#κ", "/dev", MAFTER) < 0){
+		warning("can't bind #κ");
+		return;
+	}
+
+	in = open(f, OREAD);
+	if(in < 0){
+		warning("can't open kbd map");
+		return;
+	}
+	out = open("/dev/kbmap", OWRITE);
+	if(out < 0) {
+		warning("can't open /dev/kbmap");
+		close(in);
+		return;
+	}
+	while((n = read(in, buf, sizeof(buf))) > 0)
+		if(write(out, buf, n) != n){
+			warning("write to /dev/kbmap failed");
+			break;
+		}
+	close(in);
+	close(out);
+}

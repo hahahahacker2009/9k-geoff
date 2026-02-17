@@ -1,0 +1,12 @@
+#!/bin/rc
+# configpath config - print $ARCH/config or config, whichever exists
+if (test -f $ARCH/$ARCH$1)
+	echo $ARCH/$ARCH$1
+if not if (test -f $ARCH/$1)
+	echo $ARCH/$1
+if not if (test -f ../$ARCH/$ARCH$1)		# .. for takesnap mk clean
+	echo ../$ARCH/$ARCH$1
+if not if (test -f ../$ARCH/$1)
+	echo ../$ARCH/$1
+if not
+	echo $1

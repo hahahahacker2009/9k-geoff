@@ -1,0 +1,34 @@
+## Starting application at 0x80200000 ...
+--
+
+1 of 8 l2 cache ways enabled at entry; setting to 7
+plic at 0xffff80000c000000: max prio 0x7
+
+Plan 9 for p550
+
+built Sun Jun 29 02:20:18 PDT 2025
+cpu0: risc-v RV64GCSUZbb sync_is sifive p550 hart 1 plic M context 2 at 1400 MHz
+senvcfg 0x0
+using 48-bit virtual addresses, can exploit 128T bytes, and idling with WFI, sending IPIs over 0 ns.
+clint direct access: no msip, no mtime, no mtimecmp.
+clint timebase: 1 MHz
+no super trap on unaligned access for 0xffff8000bff02fc9, read 0x55443322
+resetting etherdwmac4, we hope...#l-1: dwmac4: mac address 8c1f6413cd51 already set
+
+#l0: dwmac4: 1Gbps regs 0x50400000 irq 61: 8c1f6413cd51
+sbi starting hart 0	sbi starting hart 2	sbi starting hart 3
+4 cpus running, 0 missing
+16G memory: 973K+626M kernel (523M of Page structs), 15G user, 17M unused
+#l0: dwmac4: mac address 8c1f6413cd51 already set
+dhcp...ddno current process
+  1:      boot pc 0xbd06 dbgpc 0xbd06     Await (Wakeme) ut 1 st 1 bss 0x18000 qpc 0x0 nl 0 nd 0 lpc 0xffff80008020f982 pri 13
+  2: genrandom pc 0xffff80008020cf14 dbgpc 0x0    Wakeme (Wakeme) ut 5338 st 0 bss 0x0 qpc 0x0 nl 0 nd 0 lpc 0xffff80008020f982 pri 2
+  3:     alarm pc 0x0 dbgpc 0x0    Wakeme (Wakeme) ut 0 st 0 bss 0x0 qpc 0x0 nl 0 nd 0 lpc 0xffff80008020f982 pri 13
+  4: rxmitproc pc 0x0 dbgpc 0x0    Wakeme (Wakeme) ut 0 st 0 bss 0x0 qpc 0x0 nl 0 nd 0 lpc 0xffff80008020f982 pri 13
+  5:   #l0xmit pc 0x0 dbgpc 0x0    Wakeme (Wakeme) ut 0 st 0 bss 0x0 qpc 0x0 nl 0 nd 0 lpc 0xffff80008020f982 pri 15
+  6:   #l0recv pc 0x0 dbgpc 0x0    Wakeme (Wakeme) ut 0 st 0 bss 0x0 qpc 0x0 nl 0 nd 0 lpc 0xffff80008020f982 pri 15
+  7:  ipconfig pc 0x9a38 dbgpc 0x9a38     Sleep (Wakeme) ut 0 st 0 bss 0x2b000 qpc 0x0 nl 0 nd 0 lpc 0xffff80008020f982 pri 13
+  8:etherread4 pc 0x0 dbgpc 0x0    Wakeme (Wakeme) ut 0 st 0 bss 0x0 qpc 0x0 nl 0 nd 0 lpc 0xffff80008020f982 pri 13
+  9:recvarpproc pc 0x0 dbgpc 0x0    Wakeme (Wakeme) ut 0 st 0 bss 0x0 qpc 0x0 nl 0 nd 0 lpc 0xffff80008020f982 pri 13
+ 10:etherread6 pc 0x0 dbgpc 0x0    Wakeme (Wakeme) ut 0 st 0 bss 0x0 qpc 0x0 nl 0 nd 0 lpc 0xffff80008020f982 pri 13
+

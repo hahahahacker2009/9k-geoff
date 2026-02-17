@@ -1,0 +1,104 @@
+--
+
+PHYSMEM 0x80200000 sys->pmbase 0x80200000
+cpu0: 1 of 16 shared l3 cache ways enabled at entry; setting to 15
+plic at 0xffff80000c000000: max prio 0x7
+testing plic enables; valid contexts: 0 1 2 3 4 5 6 7
+
+Plan 9 for p550
+
+built Sun Aug 3 03:43:34 PDT 2025
+cpu0: risc-v RV64GCSUZbb sync_is sifive p550 hart 3 plic M context 6 at 1400 MHz
+senvcfg 0x0
+4-level page tables in use
+using 48-bit virtual addresses, can exploit 128T bytes, and idling with WFI, sending IPIs over 0 ns.
+clint direct access: no msip, no mtime, no mtimecmp.
+clint timebase: 1 MHz
+no super trap on unaligned access for 0xffff8000bff02fc9, read 0x55443322
+resetting etherdwmac4, we hope...#l-1: dwmac4: dwmac eswin version 0x1052
+
+#l0: dwmac4: 1Gbps regs 0x50400000 irq 61: 8c1f6413cd51
+16G memory: 976K+626M kernel (523M of Page structs), 15G user, 17M unused
+dhcp...garp sent for 8c1f6413cd51 96.78.174.39
+factotum...tcp...version...time...
+. /rc/lib/rcmain /rc/bin/cpurc
+flag p
+finit
+flag i
+. /rc/bin/cpurc
+date
+echo -n 'cpurc: '
+cpurc: . dot
+cd /lib/ndb
+test -s local
+test -s common
+test -s coll
+ndb/cs
+cat /dev/sysname
+mntgen -s slashn
+chmod 666 /srv/slashn
+dot /cfg/p550/namespace
+test -e /cfg/p550/namespace
+wc -l
+test -e /srv/usb
+test -e '#u/usb'
+. /rc/bin/cpurc.local
+echo -n 'cpurc.local: '
+cpurc.local: 9fs other
+test -e '/env/*envloaded'
+. loadcfgpxe
+ndb/query sys p550 ether
+test -e /cfg/pxe/8c1f6413cd51
+dot /cfg/p550/cpurc
+test -e /cfg/p550/cpurc
+test -e /srv/dns
+test -e /env/dns
+echo -n dns...
+dns...ndb/dns
+rm '#�/caphash'
+/386 /_fs_main /acme /adm /amd64 /arm /arm64 /bin /boot /cfg /cron /dev /dist /env /env /fd /fd /lib /mail /mips /mips2 /mnt /mnt /n /net /net.alt /power /power64 /proc /public /rc /riscv /riscv64 /rls /root /srv /sys /tmp /usr systems we are debugging bin/ lib/ tmp/
+/386: '/386' cannot exec directory
+exit ''
+
+init: starting /bin/rc
+p550# cat /dev/sysstat
+          0        9398       12364        3352        3394           0           0        1000           0           0 
+p550# cat /dev/irqalloc
+ 61  61          0  -  ether0
+ 62  62       1122  -  ether0
+ 63  63          0  -  ether0
+ 64  64          0  -  ether0
+ 65  65          0  -  ether0
+ 66  66       1227  -  ether0
+ 67  67          0  -  ether0
+ 68  68          0  -  ether0
+ 69  69          0  -  ether0
+100 100       1264  -  eia0
+226   0      10200  -  clint clock
+297   0       1264  -  page faults (instr)
+298   0       1041  -  page faults (load)
+300   0       1166  -  page faults (store)
+p550# cat /net/ether0/ifstat*
+#l0: dwmac4
+cfg 0x102003
+rintr 1313 rsleep 1660
+tintr 1131 tsleep 1603
+rcv Blocks not yet processed:	highwater 11/2000 curr 1 hitmax 0
+rcv descrs processed at once:	highwater 10/999 curr 1 hitmax 0
+xmit descr queue len:	highwater 5/999 curr 2 hitmax 0
+p550# date
+Sun Aug  3 03:45:39 PDT 2025
+p550# mips
+mips: '/bin/mips' file does not exist
+p550# ?cd /usr/geoff/bin
+p550# bind -a rc /bin
+p550# bind -a riscv64 /bin
+p550# mips
+1449
+p550# mips -m
+4266
+p550# date
+Sun Aug  3 03:46:12 PDT 2025
+p550# mflops
+354.4
+p550# 

@@ -1,0 +1,29 @@
+</$objtype/mkfile
+BIN=/$objtype/bin
+
+TARG=rio
+OFILES=\
+	rio.$O\
+	data.$O\
+	fsys.$O\
+	scrl.$O\
+	time.$O\
+	util.$O\
+	wctl.$O\
+	wind.$O\
+	xfid.$O\
+
+HFILES=dat.h\
+	fns.h\
+
+LIB=/$objtype/lib/libnofp.a
+UPDATE=\
+	mkfile\
+	$HFILES\
+	${OFILES:%.$O=%.c}\
+
+</sys/src/cmd/mkone
+
+syms:V:
+	$CC -a $CFLAGS rio.c	> syms
+	$CC -aa $CFLAGS *.c 	>>syms

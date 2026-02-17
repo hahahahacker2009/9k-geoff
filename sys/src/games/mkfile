@@ -1,0 +1,73 @@
+</$objtype/mkfile
+
+TARG=4s\
+	5s\
+	ana\
+	catclock\
+	cell\
+	festoon\
+#	fireworks\
+	juggle\
+	life\
+	memo\
+	mixer\
+	quiz\
+
+OFILES=
+HFILES=
+
+</sys/src/cmd/mkmany
+BIN=/$objtype/bin/games
+
+DIRS=\
+	agui\
+	blabs\
+	fsim\
+	gps\
+	mahjongg\
+#	mandel\
+	mp3dec\
+	mp3enc\
+#	music\
+#	pac\
+#	pac4dec\
+#	pacenc\
+#	plumb\
+#	sapper\
+#	smiley\
+#	sokoban\
+	sudoku\
+#	swar\
+
+4s.$O 5s.$O xs.$O:	xs.h
+catclock.$O:	catback.p eyes.p
+
+$O.4s $O.5s: xs.$O /$objtype/lib/libnofp.a
+
+all:V:	dirall
+install:V:	dirinstall
+clean:V:
+	for (i in $DIRS) @{
+		cd $i
+		mk clean
+	}
+	rm -f *.[$OS] [$OS].* y.tab.? y.debug y.output $TARG
+
+nuke:V:
+	for (i in $DIRS) @{
+		cd $i
+		mk nuke
+	}
+	rm -f *.[$OS] [$OS].* y.tab.? y.debug y.output $TARG
+
+dirinstall:V:
+	for (i in $DIRS) @{
+		cd $i
+		mk install
+	}
+
+dirall:V:
+	for (i in $DIRS) @{
+		cd $i
+		mk all
+	}

@@ -1,0 +1,14 @@
+#!/bin/rc
+
+if(test -r '#u'/usb) {
+	if(! test -r /dev/usb)
+		bind -a '#u' /dev
+	if(test -r /srv/usb)
+		mount -a /srv/usb /dev
+	if not {
+		usb/usbd		# will start kb
+#		usb/kb -a 2
+#		usb/usbaudio -V -s usbaudio.$sysname
+	}
+}
+exit ''

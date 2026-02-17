@@ -1,0 +1,72 @@
+Plan 9 Fifth Edition from Geoff Collyer
+
+This is the Plan 9 source code distributed by Geoff Collyer. You can see all of his changes since the last commit in Bell Labs Plan 9 in /sys/doc/release.ps. I made this repository by copying his /sys to the last Bell Labs iso (available at p9f.org/dl) and add little local modification. In particular:
+- restore /sys/src/cmd/samterm/main.c to the labs version
+- restore /sys/src/cmd/aux/vga to the labs version
+- apply these 9legacy patches: dist-inst-pbslba dist-venti-bloom
+dist-console dist-mkmulti dist-inst-9fat lib-snprint lib-wiki-links
+wikifs-links mimetype-zip 9p-buffers-win (modified for lzip) and maybe
+more that I can't remember
+- disallow relaying in /mail/lib/smtpd.conf
+- use ESMTP by default in /mail/lib/remotemail
+- add etherigbepci to k10 config
+- replace Geoff's /sys/src/9/bcm with the version of Richard Miller
+- change ™ to ® as p9f now owns the Plan 9 trademark
+- add p9f and 9p.io servers to /lib/ndb, add cpu-tls service
+- path=(/bin .) for rcmain, many more rc commands
+
+This is not 9legacy.  This distribution move faster, but many patches
+are not applied, I'm still looking for unapplied fixes.  Also, I made
+9k version of some 9legacy patches. Some notable differences:
+- there is a riscv64 port of 9k!
+- k10 does not have support for graphics.  Looks for l64real,
+realmode.c.  We use kernel realmode, not 9front's aux/realemu
+- cpu have tls support, service cpu-tls is port 17014. It will warns if it fall back to ssl
+- rc has interactive cd spelling correction since Jul 5 2017
+- awk, pic has been converted to not rely on APE
+- the kernel and userland is 64-bit ready, in contrast to 9legacy.
+Look for 9legacy patch uintptr.
+
+There are some surprise I encountered with the kernels, that might
+make you don't want this distribution:
+- mpacpi, e820 of 9/pc only works on real hardware
+- mpacpi is broken for 9k/k10 and not used.  For now, multiprocessor
+of k10 is broken, even on real hardware.
+
+----------
+
+This is a re-release of the final version of the 4th Edition of Plan 9
+from Bell Labs distributed directly by Bell Labs.
+
+4th Edition was originally released by Lucent Technologies in 2002. It
+was released under the terms the Lucent Public License Version 1.02.
+4th Edition continues the development of the same ideas, but in many
+ways represents the base of what most people think of as "modern" Plan
+9 today. The ubiquitous file protocol, 9P, got its first revision, to
+9P2000, which caused changes to many parts of the system. It also saw
+the debut of venti(8) and fossil(4), which began replacing the
+venerable old file server, fs(4). Authentication largely moved to a
+separate agent, factotum(4). Updates moved to replica, and the wiki
+was created. The original release notes for this edition can be found
+at /sys/doc/release4.ms.
+
+While this release is a recognizable ancestor of the latest Plan 9
+available, it is still quite old, and this release is mostly for
+educational and research purposes. The file protocol and
+authentication mechanisms are continued in modern Plan 9, though, so
+researchers looking to run this should have an easier time than with
+all previous releases. This is a second release of the 4th Edition,
+marking the final state of Plan 9 as distributed directly by Bell
+Labs.
+
+The only changes between this release and the original 4th Edition
+release are the new NOTICE, LICENSE, and README files, and moving the
+old ones. In particular, any copyright notices attributing things to
+Lucent Technologies or Bell Labs, or notices on restrictions of their
+use, should be read as historical; all such rights have been
+transferred to the Plan 9 Foundation and released as open source.
+Parts (notably, the fonts) maintain trademark and copyright to their
+respective parties (such as Bigelow & Holmes Inc.) and were included
+in Plan 9 by permission; those copyrights are unaffected by the
+transfer to Plan 9 Foundation and remain in effect per the terms found
+in this distribution.

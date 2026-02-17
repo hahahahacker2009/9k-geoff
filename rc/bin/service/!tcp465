@@ -1,0 +1,2 @@
+#!/bin/rc
+exec tlssrv -c/sys/lib/ssl/fullchain.pem -lsmtp -r`{cat $3/remote} /bin/upas/smtpd -a -n $3 >[2]/sys/log/smtpd

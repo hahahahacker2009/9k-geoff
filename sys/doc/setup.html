@@ -1,0 +1,777 @@
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=utf8">
+<title>Setting Up Plan 9</title>
+</meta>
+</head>
+<body>
+<p style="margin-top: 0; margin-bottom: 0.50in"></p>
+<p style="margin-top: 0; margin-bottom: 0.21in"></p>
+
+<p style="line-height: 1.4em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 12pt"><b>Setting Up Plan 9</b></span></p>
+<p style="margin-top: 0; margin-bottom: 0.21in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.4em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 10pt"><i>Geoff&nbsp;Collyer</i></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.4em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 10pt">Bell&nbsp;Laboratories</span></p>
+<p style="line-height: 1.4em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 10pt">Murray&nbsp;Hill,&nbsp;New&nbsp;Jersey&nbsp;07974</span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.33in"></p>
+<p style="line-height: 1.4em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 10pt"><i>ABSTRACT</i></span></p>
+<p style="margin-top: 0; margin-bottom: 0.19in"></p>
+<p style="line-height: 1.2em; margin-left: 1.50in; text-indent: 0.35in; margin-right: 1.50in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">How to set up a clone of the MH Plan 9 system
+from bare hardware and a stack of Blu-Ray backup discs.
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="margin-top: 0; margin-bottom: 0.50in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>Overview
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">This document assumes that you have essentially the same hardware
+as we do in MH, plus a set of Blu-Ray discs containing our backups of our
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+arenas.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The overall plan is to:
+upgrade the firmware of each Intel SR1520ML system;
+get your Coraid RAID array configured, partitioned and running;
+get your
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+store configured, loaded and running;
+get your fossils configured and running;
+and finally
+set up your KVM and serial servers and power bars.
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>Firmware
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">To get the second Ethernet interface working well,
+you&rsquo;ll need to apply this firmware update to each Intel SR1520ML system.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Insert a USB stick containing the files in
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 10pt"></span><span style="font-size: 10pt"><tt>/public/firmware/intel/sr1520ml/testbios</tt></span><span style="font-size: 10pt"></span></p>
+<p style="margin-top: 0; margin-bottom: 0.02in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">and reset the machine.
+Get into BIOS setup by pressing
+</span><span style="font-size: 10pt"><tt>F2</tt></span><span style="font-size: 10pt">
+repeatedly during the minute-long power-on self-test,
+and select
+</span><span style="font-size: 10pt"><tt>-&gt;</tt></span><span style="font-size: 10pt">
+</span><span style="font-size: 10pt"><tt>Boot Manager</tt></span><span style="font-size: 10pt">
+</span><span style="font-size: 10pt"><tt>-&gt;</tt></span><span style="font-size: 10pt">
+</span><span style="font-size: 10pt"><tt>EFI Shell</tt></span><span style="font-size: 10pt">
+</span><span style="font-size: 10pt"><tt>-&gt;</tt></span><span style="font-size: 10pt">
+</span><span style="font-size: 10pt"><i>newline</i></span><span style="font-size: 10pt">.
+Type
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>cd&nbsp;fs0:test_bios</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>fs0:</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>iflash32.efi&nbsp;/u&nbsp;/ni&nbsp;forMPtbl.Cap</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Power cycle the machine when it prompts for a reset.
+Get into BIOS setup and select
+</span><span style="font-size: 10pt"><tt>-&gt;</tt></span><span style="font-size: 10pt">
+</span><span style="font-size: 10pt"><tt>Advanced</tt></span><span style="font-size: 10pt">
+</span><span style="font-size: 10pt"><tt>-&gt;</tt></span><span style="font-size: 10pt">
+</span><span style="font-size: 10pt"><tt>Processor Configuration</tt></span><span style="font-size: 10pt">
+</span><span style="font-size: 10pt"><tt>-&gt;</tt></span><span style="font-size: 10pt">
+</span><span style="font-size: 10pt"><tt>enable vt for directed i/o</tt></span><span style="font-size: 10pt">
+and
+</span><span style="font-size: 10pt"><tt>multi-thread support in mps table</tt></span><span style="font-size: 10pt">.
+Save the changes and exit.
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>Coraid
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Put your Coraid on a UPS.
+Populate your Coraid with disks and configure it.
+Pick a shelf number and decide how you want to split the drives into
+logical units (if you don&rsquo;t want to just use all the disks as a single
+raid 5 unit with spares).
+We use shelf number 1, and
+</span><span style="font-size: 10pt"><i>9pcfs</i></span><span style="font-size: 10pt">
+is set up to expect that (see
+</span><span style="font-size: 10pt"><tt>/sys/src/9/pc/boot.fs</tt></span><span style="font-size: 10pt">).
+Type this on your Coraid&rsquo;s keyboard (or serial console):
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>SR&nbsp;shelf&nbsp;unset&gt;&nbsp;cecon&nbsp;/net/ether0</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>SR&nbsp;shelf&nbsp;unset&gt;&nbsp;cecon&nbsp;/net/ether1</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>SR&nbsp;shelf&nbsp;unset&gt;&nbsp;cecon&nbsp;/net/ether2</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>SR&nbsp;shelf&nbsp;unset&gt;&nbsp;shelf&nbsp;1</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Add
+</span><span style="font-size: 10pt"><tt>aoeif=</tt></span><span style="font-size: 10pt">
+and
+</span><span style="font-size: 10pt"><tt>aoedev=</tt></span><span style="font-size: 10pt">
+lines to
+</span><span style="font-size: 10pt"><i>plan9.ini</i></span><span style="font-size: 10pt">
+files on your servers; see
+</span><span style="font-size: 10pt"><i>aoe</i></span><span style="font-size: 10pt">(3),
+</span><span style="font-size: 10pt"><i>sdaoe</i></span><span style="font-size: 10pt">(3)
+and
+</span><span style="font-size: 10pt"><i>plan9.ini</i></span><span style="font-size: 10pt">(8).
+Our CPU servers use these to see the main partition on our Coraid
+(which is shelf 1) as
+</span><span style="font-size: 10pt"><tt>/dev/sde0</tt></span><span style="font-size: 10pt">
+while booting (one can add other units later):
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>aoeif=ether1</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>aoedev=e!#</tt></span><span style="font-size: 9pt">&aelig;</span><span style="font-size: 9pt"><tt>/aoe/1.0</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The Coraid console can be reached via Ethernet using
+</span><span style="font-size: 10pt"><i>cec</i></span><span style="font-size: 10pt">(8).
+You&rsquo;ll want to think about what other systems should share an Ethernet switch
+with your Coraid.
+Only those on the switch will be able to reach the
+Coraid using AoE or cec, and this can provide useful isolation for
+security since AoE and cec are unrouted Ethernet protocols.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Connect the Coraid PS/2 keyboard, mouse and video to the KVM switch.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Connect your Coraid and some existing Plan 9 system with a SATA
+connector (it could be just a laptop with a local fossil) to an Ethernet switch.
+This Plan 9 system needs
+</span><span style="font-size: 10pt"><tt>fs</tt></span><span style="font-size: 10pt">,
+</span><span style="font-size: 10pt"><tt>aoe</tt></span><span style="font-size: 10pt">,
+and
+</span><span style="font-size: 10pt"><tt>sdaoe</tt></span><span style="font-size: 10pt">
+compiled into its kernel.
+Connect to the Coraid console via
+serial port, keyboard, or
+</span><span style="font-size: 10pt"><i>cec</i></span><span style="font-size: 10pt">(8),
+and configure it as 2 spare drives, a
+</span><span style="font-size: 10pt"><tt>raid5</tt></span><span style="font-size: 10pt">
+lun 0 of 11 drives, a
+</span><span style="font-size: 10pt"><tt>raidL</tt></span><span style="font-size: 10pt">
+lun 1 of 1 drive, and a
+</span><span style="font-size: 10pt"><tt>raidL</tt></span><span style="font-size: 10pt">
+lun 2 of 1 drive.
+Follow the Coraid manual to initialise the units;
+type this on your Coraid&rsquo;s console:
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>SR&nbsp;shelf&nbsp;1&gt;&nbsp;spare&nbsp;1.13-14</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>SR&nbsp;shelf&nbsp;1&gt;&nbsp;make&nbsp;0&nbsp;raid5&nbsp;1.0-10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&nbsp;this&nbsp;takes&nbsp;~4&nbsp;hours</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>SR&nbsp;shelf&nbsp;1&gt;&nbsp;make&nbsp;1&nbsp;raidl&nbsp;1.11</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>SR&nbsp;shelf&nbsp;1&gt;&nbsp;make&nbsp;2&nbsp;raidl&nbsp;1.12</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>SR&nbsp;shelf&nbsp;1&gt;&nbsp;online&nbsp;0&nbsp;1&nbsp;2</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Lun 0 is usable almost immediately; you need not wait for the raid 5
+construction to finish.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Make
+</span><span style="font-size: 10pt"><tt>/dev/sd[fg]0/data</tt></span><span style="font-size: 10pt">
+visible per
+</span><span style="font-size: 10pt"><i>sdaoe</i></span><span style="font-size: 10pt">(3)
+by typing on the Plan 9 system&rsquo;s console:
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>echo&nbsp;config&nbsp;switch&nbsp;on&nbsp;spec&nbsp;f&nbsp;type&nbsp;aoe//dev/aoe/1.1&nbsp;&gt;/dev/sdctl</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>echo&nbsp;config&nbsp;switch&nbsp;on&nbsp;spec&nbsp;g&nbsp;type&nbsp;aoe//dev/aoe/1.2&nbsp;&gt;/dev/sdctl</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">(See
+</span><span style="font-size: 10pt"><tt>/rc/bin/addaoe</tt></span><span style="font-size: 10pt">
+for a canned invocation.)
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>Partitions
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Use
+</span><span style="font-size: 10pt"><i>disk/prep</i></span><span style="font-size: 10pt">
+on Plan 9 to configure
+</span><span style="font-size: 10pt"><tt>/dev/sd[efg]0/data</tt></span><span style="font-size: 10pt">
+to match these partitions
+(we don&rsquo;t bother with
+</span><span style="font-size: 10pt"><i>fdisk</i></span><span style="font-size: 10pt">
+partitions because they can&rsquo;t hold large enough sector numbers):
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>;&nbsp;disk/prep&nbsp;/dev/sde0/data</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;nvram&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0&nbsp;1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(1&nbsp;sectors,&nbsp;512&nbsp;B&nbsp;)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;empty&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1&nbsp;10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(9&nbsp;sectors,&nbsp;4.50&nbsp;KB)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;fscfg&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;10&nbsp;12&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(2&nbsp;sectors,&nbsp;1.00&nbsp;KB)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;empty&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;12&nbsp;14&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(2&nbsp;sectors,&nbsp;1.00&nbsp;KB)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;9fat&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;14&nbsp;204814&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(204800&nbsp;sectors,&nbsp;100.00&nbsp;MB)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;swap&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;204814&nbsp;2097166&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(1892352&nbsp;sectors,&nbsp;924.00&nbsp;MB)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;fossil&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2097166&nbsp;8388622&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(6291456&nbsp;sectors,&nbsp;3.00&nbsp;GB)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;main&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;8388622&nbsp;20971534&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(12582912&nbsp;sectors,&nbsp;6.00&nbsp;GB)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;sources&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;20971534&nbsp;33554446&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(12582912&nbsp;sectors,&nbsp;6.00&nbsp;GB)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;bloom&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;33554446&nbsp;34603022&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(1048576&nbsp;sectors,&nbsp;512.00&nbsp;MB)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;other&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;34603022&nbsp;663748622&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(629145600&nbsp;sectors,&nbsp;300.00&nbsp;GB)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;outfs&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;663748622&nbsp;670040078&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(6291456&nbsp;sectors,&nbsp;3.00&nbsp;GB)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;arena0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;670040078&nbsp;4881873405&nbsp;&nbsp;&nbsp;&nbsp;(4211833327&nbsp;sectors,&nbsp;1.96&nbsp;TB)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;empty&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4881873405&nbsp;4883970557&nbsp;&nbsp;&nbsp;&nbsp;(2097152&nbsp;sectors,&nbsp;1.00&nbsp;GB)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>;&nbsp;disk/prep&nbsp;/dev/sdf0/data</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;empty&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0&nbsp;128&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(128&nbsp;sectors,&nbsp;64.00&nbsp;KB)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;isect&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;128&nbsp;241172608&nbsp;&nbsp;&nbsp;&nbsp;(241172480&nbsp;sectors,&nbsp;115.00&nbsp;GB)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;empty&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;241172608&nbsp;488397053&nbsp;&nbsp;&nbsp;&nbsp;(247224445&nbsp;sectors,&nbsp;117.88&nbsp;GB)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>;&nbsp;disk/prep&nbsp;/dev/sdg0/data</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;empty&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0&nbsp;128&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(128&nbsp;sectors,&nbsp;64.00&nbsp;KB)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;isect&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;128&nbsp;241172608&nbsp;&nbsp;&nbsp;&nbsp;(241172480&nbsp;sectors,&nbsp;115.00&nbsp;GB)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;empty&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;241172608&nbsp;488397053&nbsp;&nbsp;&nbsp;&nbsp;(247224445&nbsp;sectors,&nbsp;117.88&nbsp;GB)</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Populate
+</span><span style="font-size: 10pt"><tt>/dev/sde0/fscfg</tt></span><span style="font-size: 10pt">
+(which we use to configure
+</span><span style="font-size: 10pt"><tt>/dev/fs</tt></span><span style="font-size: 10pt">)
+with these contents:
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>;&nbsp;cat&nbsp;/dev/fs/ctl</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>cat&nbsp;main&nbsp;/dev/sde0/main</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>cat&nbsp;bloom&nbsp;/dev/sde0/bloom</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>cat&nbsp;fossil&nbsp;/dev/sde0/fossil</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>cat&nbsp;arena0&nbsp;/dev/sde0/arena0</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">and configure your chosen Plan 9 system&rsquo;s
+</span><span style="font-size: 10pt"><tt>/dev/fs</tt></span><span style="font-size: 10pt">
+identically.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Initialise
+</span><span style="font-size: 10pt"><i>9fat</i></span><span style="font-size: 10pt">.
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>disk/format&nbsp;-b&nbsp;/386/pbslba&nbsp;-d&nbsp;-r&nbsp;2&nbsp;/dev/sde0/9fat&nbsp;/386/9load</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Initialise
+</span><span style="font-size: 10pt"><i>nvram</i></span><span style="font-size: 10pt">.
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>cp&nbsp;/cfg/example/nvram&nbsp;/dev/sde0/nvram</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>Venti
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Initialise your
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+store, specifying 1-gigabyte arenas.
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>venti/fmtarenas&nbsp;arena.&nbsp;/dev/sde0/arena0</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>venti/fmtisect&nbsp;isect0.&nbsp;/dev/sdf0/isect</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>venti/fmtisect&nbsp;isect1.&nbsp;/dev/sdg0/isect</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>venti/fmtbloom&nbsp;/dev/sde0/bloom</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>9fs&nbsp;pie</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>bind&nbsp;-a&nbsp;/n/pie/cfg&nbsp;/cfg</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>venti/fmtindex&nbsp;/cfg/pie/venti.conf</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Connect your Blu-Ray drive to the chosen Plan 9 system&rsquo;s SATA connector.
+Restore from Blu-Ray disc into your
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+store:
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>cd&nbsp;/sys/lib/backup</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>sam&nbsp;funcs&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&nbsp;make&nbsp;sure&nbsp;backupinit&nbsp;sets&nbsp;correct&nbsp;values</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>restore&nbsp;0&nbsp;/dev/sdE1&nbsp;#&nbsp;if&nbsp;sdE1&nbsp;is&nbsp;your&nbsp;Blu-Ray&nbsp;drive</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Follow directions and it will start populating
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">,
+starting with
+the first blu-ray disc.
+Repeat, replacing 0 with the number of the
+first arena on each disc, until you&rsquo;ve processed them all.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Your
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+store should now contain the contents of the MH one as of a
+few months ago.
+Injecting the newer sealed arenas on the MH
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+store into yours should bring yours up to date.
+A command similar to
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 10pt"></span><span style="font-size: 10pt"><tt>rx&nbsp;pie&nbsp;venti/rdarena&nbsp;&gt;x;&nbsp;venti/wrarena&nbsp;x</tt></span><span style="font-size: 10pt"></span></p>
+<p style="margin-top: 0; margin-bottom: 0.02in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">is often used to do this;
+see
+</span><span style="font-size: 10pt"><tt>/sys/lib/backup/venti2venti</tt></span><span style="font-size: 10pt">
+for an example.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Store the
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+configuration in
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">.
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>ramfs</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>venti/conf&nbsp;-w&nbsp;/dev/sde0/arena0&nbsp;/cfg/pie/venti.conf</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Start your
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+server.
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>venti=tcp!127.0.0.1!17034</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>venti/venti&nbsp;-c&nbsp;/dev/sde0/arena0</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>Fossils
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Initialise your fossils.
+For your main file system, use the last
+nightly dump score from the last arena in your
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+store.
+Assuming that that
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+score (without leading &lsquo;vac:&rsquo;) is in
+</span><span style="font-size: 10pt"><tt>$score</tt></span><span style="font-size: 10pt">:
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>fossil/flfmt&nbsp;-v&nbsp;$score&nbsp;/dev/sde0/fossil</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>fossil/flfmt&nbsp;/dev/sde0/other</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>fossil/flfmt&nbsp;-v&nbsp;$score&nbsp;/dev/sde0/main</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Store the fossil configurations in the fossils.
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>fossil/conf&nbsp;-w&nbsp;/dev/sde0/fossil&nbsp;/cfg/pie/fossil.stand.conf</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>fossil/conf&nbsp;-w&nbsp;/dev/sde0/other&nbsp;&nbsp;/cfg/pie/fossil.other.conf</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>fossil/conf&nbsp;-w&nbsp;/dev/sde0/main&nbsp;&nbsp;&nbsp;/cfg/pie/fossil.main.conf</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Start the fossil servers.
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>fossil/fossil&nbsp;-f&nbsp;/dev/sde0/fossil</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>fossil/fossil&nbsp;-f&nbsp;/dev/sde0/other</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>fossil/fossil&nbsp;-f&nbsp;/dev/sde0/main</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Mount the fossils.
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>mount&nbsp;-cC&nbsp;/srv/fossil.stand.open&nbsp;/n/stand</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>mount&nbsp;-cC&nbsp;/srv/fossil.other.open&nbsp;/n/other</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>mount&nbsp;-cC&nbsp;/srv/fossil.main.open&nbsp;/n/main</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The machine that is to be your main file server should have a
+</span><span style="font-size: 10pt"><tt>plan9.ini</tt></span><span style="font-size: 10pt">
+or
+</span><span style="font-size: 10pt"><tt>/cfg/pxe</tt></span><span style="font-size: 10pt">
+file that looks like this (replace
+</span><span style="font-size: 10pt"><i>a.b.c.d</i></span><span style="font-size: 10pt">
+with the ip address of your
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+server):
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>;&nbsp;cat&nbsp;00151730ceb8</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>ether0=type=igbepcie</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>ether1=type=igbepcie</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>console=0</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>aoeif=ether1</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>#&nbsp;1&nbsp;is&nbsp;the&nbsp;shelf&nbsp;number</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>aoedev=e!#</tt></span><span style="font-size: 9pt">&aelig;</span><span style="font-size: 9pt"><tt>/aoe/1.0</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>#&nbsp;*fakeintrs=1</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>*kernelpercent=10</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>bootfile=ether0!/386/9pcfs</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>#&nbsp;bootfile=ether0!/386/9pccpu</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>fscfg=/dev/sde0/fscfg</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>venti=tcp!a.b.c.d!17034</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>*pxeini=1</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>*bootppersist=ether0</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>*noe820print=1</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>nvram=#S/sde0/nvram</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Your other CPU servers should have similar ones, but with only
+</span><span style="font-size: 10pt"><tt>9pccpu</tt></span><span style="font-size: 10pt">
+(of the
+</span><span style="font-size: 10pt"><tt>bootfile</tt></span><span style="font-size: 10pt">
+clauses)
+uncommented.
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>KVM
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Set up your IP KVM.
+Ours is an Austin-Hughes UIP-1602 with firmware revision 4.0.5.
+I called the MH one
+</span><span style="font-size: 10pt"><tt>kvmmh.cs.bell-labs.com</tt></span><span style="font-size: 10pt">
+for now.
+It&rsquo;s best reached by
+</span><span style="font-size: 10pt"><tt>http</tt></span><span style="font-size: 10pt">
+or
+</span><span style="font-size: 10pt"><tt>https</tt></span><span style="font-size: 10pt">.
+The administrative user is
+</span><span style="font-size: 10pt"><i>super</i></span><span style="font-size: 10pt">
+with our usual
+</span><span style="font-size: 10pt"><i>root</i></span><span style="font-size: 10pt">
+password.
+Enable Java and pop-ups in your web browser and connect to the URL
+</span><span style="font-size: 10pt"><tt>https://kvmmh.cs.bell-labs.com</tt></span><span style="font-size: 10pt">
+(substituting the name of your KVM).
+Once logged in, you select a system by typing
+ScrollLock-ScrollLock-space (three keystrokes) and navigating the menu
+system.
+Up and down arrows move through the list of systems, pressing
+RETURN switches to the highlit system.
+An ESC character will back you out of menus.
+The initial user name and password at power-on are both
+</span><span style="font-size: 10pt"><tt>00000000</tt></span><span style="font-size: 10pt">.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Always use category
+</span><span style="font-size: 10pt"><b>5e</b></span><span style="font-size: 10pt">
+or better cables; the video seems to require it.
+Using plain category 5 cables fails at least some of the time.
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>Serial
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Set up your Perle serial concentrator and arrange
+</span><span style="font-size: 10pt"><i>consolefs</i></span><span style="font-size: 10pt">(4)
+access.
+The MH one is
+</span><span style="font-size: 10pt"><tt>serialmh.cs.bell-labs.com.</tt></span><span style="font-size: 10pt">
+One accesses serial ports on the Perle CS9000 server with
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>telnet&nbsp;-r&nbsp;net!serialmh!10001&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#&nbsp;for&nbsp;line&nbsp;1</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">but at most one simultaneous
+</span><span style="font-size: 10pt"><i>telnet</i></span><span style="font-size: 10pt">
+connection per line is permitted,
+so to allow sharing, one would normally use
+</span><span style="font-size: 10pt"><i>consolefs</i></span><span style="font-size: 10pt">
+via
+</span><span style="font-size: 10pt"><i>C</i></span><span style="font-size: 10pt">:
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>C&nbsp;chips</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"></span><span style="font-size: 10pt"><tt>/cfg/fish/consoledb</tt></span><span style="font-size: 10pt">
+has the mapping between host names and Perle line
+numbers, for the curious.
+This is arranged by
+</span><span style="font-size: 10pt"><tt>/cfg/fish/startserial</tt></span><span style="font-size: 10pt">.
+</span><span style="font-size: 10pt"><tt>/cfg/fish/restartserial</tt></span><span style="font-size: 10pt">
+will kill all processes involved in processing
+serial lines (and all
+</span><span style="font-size: 10pt"><i>telnet</i></span><span style="font-size: 10pt">
+processes) and restart them.
+This can be handy if connections to the serial concentrator get stuck.
+There is an
+</span><span style="font-size: 10pt"><i>admin</i></span><span style="font-size: 10pt">
+login with our usual Unix
+</span><span style="font-size: 10pt"><i>root</i></span><span style="font-size: 10pt">
+password:
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>;&nbsp;telnet&nbsp;-r&nbsp;net!serialmh!10001</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>serial.cs.bell</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>login:&nbsp;admin</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>password:&nbsp;</tt></span><span style="font-size: 9pt"><i>unix-pw</i></span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>^U</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>boot&nbsp;from:&nbsp;ether0!/386/9pccpu</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>achille&nbsp;(135.104.9.2!67):&nbsp;/386/9pccpu</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>894709+986216+378404=2259329</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>entry:&nbsp;0xf0100020</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>Plan&nbsp;9</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>Power bars
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Set up your power bars.
+The upper MH power bar,
+</span><span style="font-size: 10pt"><i>ibootbarhigh</i></span><span style="font-size: 10pt">,
+has these systems on these outlets:
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>1&nbsp;&nbsp;&nbsp;fish/chips</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>2&nbsp;&nbsp;&nbsp;pie/bovril</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>3&nbsp;&nbsp;&nbsp;&mdash;</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>4&nbsp;&nbsp;&nbsp;boundary</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>5&nbsp;&nbsp;&nbsp;&mdash;</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>6&nbsp;&nbsp;&nbsp;&mdash;</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>7&nbsp;&nbsp;&nbsp;&mdash;</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>8&nbsp;&nbsp;&nbsp;&mdash;</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The lower power bar,
+</span><span style="font-size: 10pt"><i>ibootbarlow</i></span><span style="font-size: 10pt">,
+has these systems on these outlets:
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>1&nbsp;&nbsp;&nbsp;martha&nbsp;(sources)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>2&nbsp;&nbsp;&nbsp;haggis/neeps</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>3&nbsp;&nbsp;&nbsp;mince/tatties</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>4&nbsp;&nbsp;&nbsp;lookout</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>5&nbsp;&nbsp;&nbsp;yon&nbsp;(ethel)</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>6&nbsp;&nbsp;&nbsp;&mdash;</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>7&nbsp;&nbsp;&nbsp;&mdash;</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>8&nbsp;&nbsp;&nbsp;roku&nbsp;(diversiorum)</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">One connects to
+</span><span style="font-size: 10pt"><tt>https://ibootbarhigh.cs.bell-labs.com</tt></span><span style="font-size: 10pt">
+or
+</span><span style="font-size: 10pt"><tt>https://ibootbarlow.cs.bell-labs.com</tt></span><span style="font-size: 10pt">;
+these are outside systems.
+Login as user
+</span><span style="font-size: 10pt"><i>admin</i></span><span style="font-size: 10pt">
+with our usual Unix
+</span><span style="font-size: 10pt"><i>root</i></span><span style="font-size: 10pt">
+password.
+Select check boxes of systems you want to power-cycle and click
+</span><span style="font-size: 10pt"><tt>Cycle</tt></span><span style="font-size: 10pt">.
+The documentation claims that rebooting and resetting the power bars
+does not change the power to the outlets;
+</span><span style="font-size: 12pt"></span><span style="font-size: 12pt"><b>this is a lie</b></span><span style="font-size: 12pt">!
+</span><span style="font-size: 10pt">One way to reset them is to press the recessed black
+</span><span style="font-size: 10pt"><tt>reset</tt></span><span style="font-size: 10pt">
+button on the front,
+probably with a paper clip; this does bring back power bars that have
+dropped off the network due to using their
+</span><span style="font-size: 10pt"><i>telnet</i></span><span style="font-size: 10pt">
+interface,
+and without cycling power.
+However, upgrading the firmware reboots the power bar,
+and that
+</span><span style="font-size: 10pt"><b>does</b></span><span style="font-size: 10pt">
+cycle the power to the outlets; it also resets the
+power bar&rsquo;s state to unconfigured, so you have to reconfigure it all
+over again.
+Firmware in MH has been upgraded from 1.20.154 to 1.4b.241.
+Using the
+</span><span style="font-size: 10pt"><i>telnet</i></span><span style="font-size: 10pt">
+interface makes the
+</span><span style="font-size: 10pt"><i>ibootbars</i></span><span style="font-size: 10pt">
+drop off the network,
+but in theory one can use the command
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>set&nbsp;outlet&nbsp;1&nbsp;name&nbsp;fish/chips</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">to name outlet 1
+</span><span style="font-size: 10pt"><tt>fish/chips</tt></span><span style="font-size: 10pt">.
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>set&nbsp;upload&nbsp;enable&nbsp;yes</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">enables firmware upgrades.
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>Beyond
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">You should now be able to add terminals and CPU servers
+in the usual way to bring up the rest of your cluster.
+</span></p><p style="margin-top: 0; margin-bottom: 0.50in"></p>
+</body>
+</html>
+

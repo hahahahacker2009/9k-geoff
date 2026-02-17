@@ -1,0 +1,14 @@
+#!/bin/rc
+# ssh host arg... - invoke ssh v1.  if it fails, try v2.
+rfork e
+
+if (test -w /dev/label) {
+	olab=`{cat /dev/label}
+	label ssh $*
+}
+
+if (! /$cputype/bin/ssh1 $* >[2]/dev/null)
+	exec /$cputype/bin/ssh2 $*
+
+if (test -w /dev/label)
+	label $olab

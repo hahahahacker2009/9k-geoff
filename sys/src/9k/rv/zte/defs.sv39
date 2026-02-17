@@ -1,0 +1,2 @@
+# tinyemu in Sv39
+LDFLAGS=-c			# uncompressed is much faster on tinyemu

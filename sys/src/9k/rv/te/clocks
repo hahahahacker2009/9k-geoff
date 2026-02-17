@@ -1,0 +1,31 @@
+: fm; temu
+tinyemu: plan 9 j.out hdr, magic 0x178e0000
+don't have svpbmt
+clint mmio access: msip, mtime, mtimecmp.
+PHYSMEM 0x80000000 sys->pmbase 0x80000000
+
+Plan 9 for te
+
+l2init: no cache flush mechanism but it's not needed.
+1,765,994 clint ticks is 6,000,036 tsc cycs and 375,002 rdtime ticks 3 cycs/clint
+timebase given as 10,000,000 Hz
+op null:	1000 took 8,037 tsc cycles, 502 constant ticks and 2,522 clint ticks
+op read time:	1000 took 31,037 tsc cycles, 1,939 constant ticks and 19,245 clint ticks
+clocks are wonky or emulated:
+difftscperclint 1 < tscperclintglob*2/3 2
+op read & set time:	1000 took 72,037 tsc cycles, 4,502 constant ticks and 31,351 clint ticks
+op set timecmp:	1000 took 55,037 tsc cycles, 3,440 constant ticks and 15,943 clint ticks
+VMAP = 0xffffff8000000000
+plic at 0xffff800040100000: max priority 0, ignoring plic
+built Thu Sep 25 00:43:51 PDT 2025 One emulated hart in machine mode without SBI.
+cpu0: risc-v RV64GCSU tinyemu hart 0 plic M context 0 at 34 MHz
+mideleg 0x222 medeleg 0xfdff menvcfg 0x0 senvcfg 0x0
+4-level page tables in use
+using 48-bit virtual addresses, can exploit 128T bytes
+idling with WFI, not sending IPIs over 0 ns.
+clint timebase: 10 MHz
+no super trap on unaligned access for 0xffff80009ff02fc9, read 0x55443322
+memory map to 128T: 0x80000000-0x9ffffffc size 512M
+#l0: tinyemu: 100Mbps regs 0x40011000 irq 2: 020000000001
+510M memory: 964K+66M kernel (15M of Page structs), 444M user
+dhcp...>>>Terminated

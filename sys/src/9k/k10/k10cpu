@@ -1,0 +1,154 @@
+# k10 cpu server, with usb for kbd input & serial
+dev +dev
+	root
+	cons
+	arch
+	env
+	pipe
+	proc
+	mnt
+	srv
+	dup
+	rtc
+	ssl
+	tls
+	cap
+	pnp		pci
+	bridge		log
+	kprof
+	segment
+	ether		netif
+	ip		arp chandial ip ipv6 ipaux iproute netlog nullmedium pktmedium
+#	fs
+	uart
+	sd
+#	wd
+
+#	kbmap
+# usb kbd and mouse need these; kbd for input via scan codes
+	kbin
+	usb
+
+sd +dev
+	sdahci		pci sdscsi
+	sdnvme		pci sdscsi
+# sdata is included only for apu2s with old bios (e.g., 4.0.4)
+	sdata		pci sdscsi
+
+uart +dev
+	uarti8250
+#	uartox		pci
+	uartpci		pci
+
+ip +dev
+	tcp
+	udp
+	ipifc
+	icmp
+	icmp6
+	ipmux
+
+link +dev
+	etherxgbe	pci
+	etherigbe	pci
+# only needed on VMs
+	etherigbepci	pci ethermii
+	ethermedium
+	loopbackmedium
+	netdevmedium
+	usbehci		usbehcipc
+	usbohci
+#	usbxhcipc
+#	x86watchdog
+
+misc +dev
+	cache
+	mp		apic ioapic pci sipi
+
+boot cpu
+	tcp
+
+rootdir
+	boot$CONF.out boot
+	/amd64/bin/auth/factotum factotum
+	/amd64/bin/ip/ipconfig ipconfig
+	/amd64/bin/usb/usbd usbd
+
+conf
+	int cpuserver = 1;
+
+amd64
+	l32p
+	l64v
+	l64idt
+	l64syscall
+	l64fpu
+	main
+	apu
+	arch
+	archk10
+	asm
+	bootconf
+	cga
+	fpu
+	i8080
+	i8254
+	i8259
+# only needed for VMs
+	kbd
+	map
+	mmu
+	multiboot
+	noacpi
+	trap
+	vsvm
+port
+	alarm
+	allocb
+	awaitbit
+	byteserial
+	chan
+	ctype
+	dev
+	devtab
+	edf
+	fault
+	image
+	latin1
+	logpow
+	page
+	parse
+	pgrp
+	portclock
+# prf blows up before anything prints
+	noprf
+	print
+	proc
+	ps
+	qio
+	qlock
+	qmalloc
+	random
+	rebootcmd
+	sane
+	segment
+	sum
+	sysauth
+	syscall
+	syscallfmt
+	sysfile
+	sysproc
+	sysseg
+	systab
+	taslock
+	tod
+	watermarks
+
+#
+# controls which directories to look in for source files; must be relative to ..
+dir
+	ip
+	port
+	386
+	k10
+#	pc	-.I.

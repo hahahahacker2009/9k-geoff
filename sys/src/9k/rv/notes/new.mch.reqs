@@ -1,0 +1,10 @@
+look for these in a new machine:
+
+- thorough English documentation, including ethernet registers & descriptors
+- u-boot with pxe
+- cache and dma coherence
+- serial console via usb connector, not gpio pins
+- robust against i/o register probes and ram probes
+- kernel isn't required to enable zillions of clock signals
+- straight-forward reset, sbi or another
+- case with cooling

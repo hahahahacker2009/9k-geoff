@@ -1,0 +1,9 @@
+</$objtype/mkfile
+
+TARG=compress
+OFILES=compress.$O
+
+BIN=/$objtype/bin
+LIB=/$objtype/lib/libnofp.a
+</sys/src/cmd/mkone
+CFLAGS=-FTVw

@@ -1,0 +1,196 @@
+# 9k risc-v cpu server for hifive p550 with eic7700x
+dev +dev
+	root
+	cons
+	arch
+	env
+	pipe
+	proc
+	mnt
+	srv
+	dup
+#	rtc
+	ssl
+	tls
+	cap
+	pnp		pci
+	kprof
+	segment
+	ether		netif
+	ip		arp chandial ip ipv6 ipaux iproute netlog nullmedium pktmedium
+	uart
+	bridge		log
+	sd
+# needed for usb kbd input via scan codes
+#	kbin
+#	usb
+
+sd +dev
+#	sdmmc		sdpf	# don't know what the unmatched provides
+#	sdahci		pci sdscsi
+#	sdnvme		pci sdscsi
+
+uart +dev
+	uarti8250
+
+ip +dev
+	tcp
+	udp
+	ipifc
+	icmp
+	icmp6
+#	ipmux
+
+link +dev
+	etherdwmac4
+	ethermedium
+	loopbackmedium
+	netdevmedium
+#	usbehci		usbehcipc
+
+misc +dev
+	cache
+
+boot cpu
+	tcp
+
+rootdir
+	boot$CONF.out		boot
+	/riscv64/bin/auth/factotum
+	/riscv64/bin/ip/ipconfig
+	/cfg/example/nvram.coll	nvram
+
+conf
+	#include "riscv64.h"
+
+	int cpuserver = 1;
+	uvlong cpuhz = 1400*MHZ;	/* rdtsc tick freq */
+	uvlong timebase = MHZ;		/* clint tick freq */
+	Membank membanks[] = {		/* (address, size) pairs */
+		PHYSMEM, BANK0SIZE,	/* don't move Sys thus reboottramp */
+		PHYSMEM+BANK0SIZE, 15ULL*GB,
+	//	PHYSMEM+16ULL*GB,  16ULL*GB,	/* optional, unsafe to probe */
+		0
+	};
+	char defnvram[] = "/boot/nvram";
+
+	uintptr uartregs[] = { PAUart0 };
+	int nuart = nelem(uartregs);
+	vlong uartfreq = 200*MHZ;
+	int prmsdelay = 1;
+	int dmaincoherent = 1;		/* hw botch */
+
+	uchar ether0mac[] = { 0x8c, 0x1f, 0x64, 0x13, 0xcd, 0x51, };
+
+	Soc soc = {
+		.clint	 = (char *)PAClint,
+		.ether	 = { (char *)0x50400000, /* (char *)0x50410000, */ },
+		.l2cache = 0,
+		.pl2caches = {  (char *)0x00104000, (char *)0x00108000,
+				(char *)0x0010c000, (char *)0x00110000, },
+		.l3cache = (char *)0x02010000,
+		.pci	 = (char *)0x40000000,	/* ecam for cfg space */
+		.pcictl  = (char *)0x50000000,	/* "elbi" mgmt regs */
+		.pcivend = (char *)0x54000000,	/* "dbi" regs */
+		.plic    = (char *)0x0c000000,	/* common */
+		.sdmmc   = (char *)0x50460000,
+		.uart	 = (char *)PAUart0,
+		.uncached = (char *)(0xc0LL<<32),
+
+		.hobbled = 0,			/* no visible mgmt harts */
+		.idlewakens = 500,	/* ns. to send IPIs to wake wfi cpus */
+		.dwuart	= 1,
+	};
+	Ioconf ioconfs[] = {	/* devices whose drivers vmap their regs */
+		{ "ether", 2*PGSZ, &soc.ether[0], Attachenable|61, .xirqs = 8, },
+		{ "ether", 2*PGSZ, &soc.ether[1], Attachenable|70, .xirqs = 8, },
+		0
+	};
+	Ioconf socconf[] = { /* devices without drivers that vmap their regs */
+		{ "clint", 64*KB, &soc.clint, },
+		{ "l2cache", PGSZ, &soc.l2cache, },
+		/* TODO: better way to iterate over pl2caches */
+		{ "pl2caches[0]", PGSZ, &soc.pl2caches[0], },
+		{ "pl2caches[1]", PGSZ, &soc.pl2caches[1], },
+		{ "pl2caches[2]", PGSZ, &soc.pl2caches[2], },
+		{ "pl2caches[3]", PGSZ, &soc.pl2caches[3], },
+		{ "l3cache", PGSZ, &soc.l3cache, },
+		{ "pci",   256*MB, &soc.pci, 220, },	/* pcie ecam cfg */
+		{ "pcictl", 2*MB, &soc.pcictl, 220, },	/* pcie br & ctl */
+		{ "pcivend", PGSZ, &soc.pcivend, },
+		{ "plic",  64*MB, &soc.plic, },		/* common */
+		{ "uart",  64*KB, &soc.uart, 100, },
+		{ "sdmmc", PGSZ, &soc.sdmmc, 79, },
+		0
+	};
+
+riscv64
+	start
+	low
+	mtrap
+	strap
+	mch
+	main
+	allocb
+	arch
+	archrv
+	archeic7700
+	color
+	csr
+	dmamalloc
+	fakeptenc
+	fp
+	fpu
+	ioconf
+#	kbd
+	map
+	memory
+	mmu
+	sane
+	sbi
+	sbicall
+	sbiecall
+	trap
+	fakeucalloc
+port
+	alarm
+	awaitbit
+	byteserial
+	chan
+	ctype
+	dev
+	devtab
+	edf
+	fault
+	image
+#	latin1
+	logpow
+	page
+	parse
+	pgrp
+	portclock
+	prf
+	print
+	proc
+	ps
+	qio
+	qlock
+	qmalloc
+	random
+	rebootcmd
+	segment
+	sysauth
+	syscall
+	syscallfmt
+	sysfile
+	sysproc
+	sysseg
+	systab
+	taslock
+	tod
+	watermarks
+
+# controls which directories to look in for source files; must be relative to ..
+dir
+	ip
+	port

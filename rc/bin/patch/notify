@@ -1,0 +1,5 @@
+#!/bin/rc
+
+for(i){
+	patch/list $i | mail -s 'patch/list '^$i 9trouble `{cat /n/sources/patch/$i/email}
+}

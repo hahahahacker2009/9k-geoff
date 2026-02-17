@@ -1,0 +1,5 @@
+#!/bin/rc
+# mkfilelist
+for(i in $*)
+	if(! ~ $i */*)
+		echo $i

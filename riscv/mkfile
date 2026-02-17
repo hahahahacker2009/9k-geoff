@@ -1,0 +1,6 @@
+</sys/src/mkfile.proto
+
+O=i
+CC=ic
+AS=ia
+LD=il

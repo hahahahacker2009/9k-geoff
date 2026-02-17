@@ -1,0 +1,16 @@
+</$objtype/mkfile
+
+HFILES=\
+	gzip.h\
+	zip.h\
+
+TARG=\
+	gzip\
+	gunzip\
+	zip\
+	unzip\
+
+LIB=/$objtype/lib/libnofp.a
+BIN=/$objtype/bin
+
+</sys/src/cmd/mkmany

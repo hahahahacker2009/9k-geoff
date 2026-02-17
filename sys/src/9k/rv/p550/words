@@ -1,0 +1,84 @@
+sifive hifive premier p550 (aka hf-106), dma incoherent
+
+1.4(-1.8) GHz risc-v eswin eic7700x:
+	4 × sifive U84 RV64GC_Zba_Zbb cpus + 2 × S7 RV64IMAC (mgmt).
+		mgmt harts are not visible.
+	triple-issue, 13-stage pipeline, out-of-order
+	2 dies? no. die1 device addresses are die0 addresses + 0x20000000
+	each die can have some ram
+16GB ecc memory at 0x80000000
+39-bit, 48-bit virtual addresses
+24mhz clint clock
+all rv64 cpus and memory caches are coherent, but not dma!
+	aggressive prefetcher was polluting caches, causing corruption
+	of tcp packets.
+l1, l2 are private, l3 is shared
+	4 l2 controllers, 1 of 2 potential l3 controllers
+has standard clint & plic interrupt controllers
+	plic intr id = global intr + 5
+5 priv modes: m h u vs vu; intr modes are m hs vs
+opensbi 1.4 doesn't delegate interrupts to S mode, it forwards them from M.
+new hypervisor exceptions beyond 16
+serial console (5 uarts) 8250-compatible through micro-usb connector
+2 × Synopsys dwc eqos gmac 4.10 ethernet
+	ether0 uses irqs other than the first one: 62 and 66
+	heavy load rendered the system unusable due to 25% tcp checksum errors
+	cache flushing and uncached accesses to descriptors and buffers
+		don't help; alignment and padding do.
+	touching ether1's registers hangs the system
+has watchdog timers, usb, pcie slot, 2 m.2 slots (m for nvme & e key)
+	nvme and all the usb controllers are attached via pcie
+firmware is opensbi 1.4 (sbi v2 with HSM), and u-boot 2024.01.
+cpu server only
+
+** must use bootm to start a uImage kernel or else interrupts won't
+   work and sbi will lie about harts' states.
+
+linux skips first (reserved) 2MB, with kernel at 0x80200000.
+>220 plic interrupts and 8 contexts (but no hobbled mgmt hart).
+
+virtual map for sv39
+kseg0	0xffffffc000000000 (-256GB)
+kzero	0xffffffc080000000 (kseg0 + physmem)
+
+virtual map for sv48
+kseg0	0xffff800000000000 (-128TB)
+kzero	0xffff800080000000 (kseg0 + physmem)
+
+name		irq (plic interrupt id)
+msi		1-10
+ether0		61-69
+ether1		70-78
+mmc0		79
+mmc1		81
+uart0		100
+uart1		101 ...
+pcie		220
+
+memory map
+0x00104000	0x4000		private l2 cache for hart 0
+0x00108000	0x4000		private l2 cache for hart 1
+0x0010c000	0x4000		private l2 cache for hart 2
+0x00110000	0x4000		private l2 cache for hart 3
+0x02000000	0x4000		clint
+0x02010000	0x4000		shared l3 cache
+0x08000000	0x400000	shared l3 cache loosely-integrated memory (4MB)
+0x0c000000	0x4000000	plic0, 512 intrs
+0x2c000000	0x4000000	plic1, 512 intrs
+0x40000000	0x40000000	system port space, appears to be uncached
+0x40000000	256MB		pcie config space
+0x50000000	2MB		pcie csr, phy regs
+0x50400000	0x10000		eic7700-qos-eth 0
+0x50410000	0x10000		eic7700-qos-eth 1
+0x50450000	0x10000		sdhci emmc
+0x50460000	0x10000		sdio0 mmc
+0x50470000	0x10000		sdio1 mmc
+0x50800000	0x4000		wdt0 ...
+0x50900000	0x10000		uart 0 ...
+0x50940000	0x10000		uart 4
+0x51810324			noc watchdog
+0x51828000	0x80000		clock, reset
+0x54000000	0xb10000	pcie cfg & ctlr regs
+0x59000000			maybe sram?
+0x80000000	16GB		dram
+0xc000000000	-		uncached view of dram at 2GB

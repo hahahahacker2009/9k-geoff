@@ -1,0 +1,8 @@
+</sys/doc/fonts
+
+venti.ps:V:
+	echo up to date
+
+venti.html: venti.html.save
+	cp venti.html.save venti.html
+

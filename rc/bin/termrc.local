@@ -1,0 +1,17 @@
+#!/bin/rc
+# local terminal startup
+
+# used only by upas, as default return domain appended to all unqualified
+# return addresses, even local ones, and as one of the values of \l in rewrite.
+#site=collyer.net
+#fileserver=fs
+#facedom=astro
+facedom=FACEDOM
+#cpu=cpu
+#pccpu=consoles		# 386 for temu, aux/pm; 386, amd64 or arm to run gs
+JREGALLOC=30		# max risc-v register to allocate in [ij]c
+
+ndb/cs
+sysname=`{cat /dev/sysname}
+#echo -n ipv6on...
+#{ ipv6on; addroutes } &

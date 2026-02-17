@@ -1,0 +1,6 @@
+#!/bin/rc
+
+aux/listen -q -t /rc/bin/service.auth -d /rc/bin/service tcp
+# auth/secstored
+# sleep 0.2
+# auth/secstore -s 127.1 -n -G factotum | read -m >>/mnt/factotum/ctl

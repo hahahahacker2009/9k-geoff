@@ -1,0 +1,975 @@
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=utf8">
+<title>Fossil, an Archival File Server</title>
+</meta>
+</head>
+<body>
+<p style="margin-top: 0; margin-bottom: 0.50in"></p>
+<p style="margin-top: 0; margin-bottom: 0.21in"></p>
+
+<p style="line-height: 1.4em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 12pt"><b>Fossil, an Archival File Server</b></span></p>
+<p style="margin-top: 0; margin-bottom: 0.21in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.4em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 10pt"><i>Sean&nbsp;Quinlan</i></span></p>
+<p style="line-height: 1.4em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 10pt"><i>Jim&nbsp;McKie</i></span></p>
+<p style="line-height: 1.4em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 10pt"><i>Russ&nbsp;Cox</i></span></p>
+<p style="line-height: 1.4em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 10pt"><i>jmk,rsc@plan9.bell-labs.com</i></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="margin-top: 0; margin-bottom: 0.33in"></p>
+<p style="line-height: 1.4em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 10pt"><i>ABSTRACT</i></span></p>
+<p style="margin-top: 0; margin-bottom: 0.19in"></p>
+<p style="line-height: 1.2em; margin-left: 1.50in; text-indent: 0.35in; margin-right: 1.50in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">This paper describes the internals and 
+operation of Fossil, an archival file server built for Plan 9.
+Fossil has not yet replaced the current Plan 9 file server
+and
+</span><span style="font-size: 10pt"><tt>kfs</tt></span><span style="font-size: 10pt">,
+but that is our eventual intent.
+Both fossil and this documentation are
+works in progress.  Comments on either are most welcome.
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="margin-top: 0; margin-bottom: 0.50in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>1.
+Introduction
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Fossil is an archival file server built for Plan 9.
+In a typical configuration, it maintains a traditional file system
+in a local disk partition and periodically archives snapshots of the file system
+to a Venti server.  These archives are made available through
+a file system interface.
+Fossil can also be run without a Venti server, in which case the
+snapshots (if any) occupy local disk space.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The bulk of this paper explains the underlying data structures:
+Venti trees, the Venti archival file system format, and finally Fossil&rsquo;s
+file system format.
+The end of the paper discusses the architecture of the Fossil server.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The presentation of the data structures is very detailed, perhaps
+too detailed for most readers.
+The intent is to record all the details necessary to make structural
+changes to the file system format.
+Feel free to jump ahead when boredom strikes.
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>2.
+Venti trees and directory hierarchies
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Venti [3] is an archival block storage server.
+Once a block is stored, it can be retrieved by presenting the 20-byte
+SHA1 hash of its contents, called a
+</span><span style="font-size: 10pt"><i>score</i></span><span style="font-size: 10pt">.
+Blocks on Venti have a maximum length of about 56 kilobytes,
+though in practice smaller blocks are used.
+To store a byte stream of arbitrary length, Venti uses a hash tree.
+Conceptually, the data stream is broken into fixed-size (say,
+</span><span style="font-size: 10pt"><i>dsize</i></span><span style="font-size: 10pt">-byte)
+chunks, which are stored on the Venti server.
+The resulting scores are concatenated into a new pointer stream, which is
+broken into fixed size (say,
+</span><span style="font-size: 10pt"><i>psize</i></span><span style="font-size: 10pt">-byte)
+chunks, which are stored on the Venti server.
+(</span><span style="font-size: 10pt"><i>Psize</i></span><span style="font-size: 10pt">
+is different from
+</span><span style="font-size: 10pt"><i>dsize</i></span><span style="font-size: 10pt">
+so that we can ensure that each pointer block holds an
+integral number of pointers.)
+This yields a new pointer stream, and so on, until there is a single block
+and finally a single score describing the entire tree.
+The resulting structure looks like:
+</span></p><center><img src="fossil0.png"></center>
+</center>
+<p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The leaves are the original data stream.  Those blocks have type
+</span><span style="font-size: 10pt"><tt>VtDataType</tt></span><span style="font-size: 10pt">.
+The first pointer stream has type
+</span><span style="font-size: 10pt"><tt>VtPointerType0</tt></span><span style="font-size: 10pt">,
+the next has type
+</span><span style="font-size: 10pt"><tt>VtPointerType1</tt></span><span style="font-size: 10pt">,
+and so on.
+The figure ends with a single block of type
+</span><span style="font-size: 10pt"><tt>VtPointerType2</tt></span><span style="font-size: 10pt">,
+but in general trees can have height up to
+</span><span style="font-size: 10pt"><tt>VtPointerType6</tt></span><span style="font-size: 10pt">.
+For a
+</span><span style="font-size: 10pt"><i>dsize</i></span><span style="font-size: 10pt">
+of 8192 bytes
+and
+</span><span style="font-size: 10pt"><i>psize</i></span><span style="font-size: 10pt">
+of 8180 bytes (409 pointers),
+this gives a maximum stream size of approximately 10 zettabytes
+(2</span><span style="font-size: 8pt"><sup>73</sup></span><span style="font-size: 10pt"> or 10</span><span style="font-size: 8pt"><sup>22</sup></span><span style="font-size: 10pt"> bytes).
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Data blocks are truncated to remove trailing runs of zeros before
+storage to Venti; they are zero-filled back to
+</span><span style="font-size: 10pt"><i>dsize</i></span><span style="font-size: 10pt">
+bytes after retrieval from Venti.
+Similarly, trailing runs of pointers to zero-length blocks are
+removed from and added back to pointer blocks.
+These simple rules happen to make it particularly efficient to store
+large runs of zeros, as might occur in a data stream with &lsquo;&lsquo;holes:&rsquo;&rsquo;
+the zero-length block itself can be interpreted as a tree of any
+depth encoding an all-zero data stream.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Reconstructing the data stream requires the score and type of the
+topmost block in the tree, the data chunk size, the pointer chunk size,
+and the data stream size.
+(From the data stream size and the chunk sizes we could derive the
+depth of the tree and thus the type of the topmost block, but it is convenient
+to allow trees that are deeper than necessary.)
+This information is kept in a 40-byte structure called a
+</span><span style="font-size: 10pt"><tt>VtEntry</tt></span><span style="font-size: 10pt">:
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>VtEntry:</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;gen[4]&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">generation&nbsp;number</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;psize[2]&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">size&nbsp;of&nbsp;pointer&nbsp;blocks</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;dsize[2]&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">size&nbsp;of&nbsp;data&nbsp;blocks</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;flags[1]</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;zero[5]</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;size[6]&nbsp;</tt></span><span style="font-size: 9pt">length&nbsp;of&nbsp;file</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;score[20]&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">score&nbsp;of&nbsp;root&nbsp;block&nbsp;in&nbsp;tree</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">(In this notation,
+</span><span style="font-size: 10pt"><tt>name[sz]</tt></span><span style="font-size: 10pt">
+indicates a
+</span><span style="font-size: 10pt"><tt>sz</tt></span><span style="font-size: 10pt">-byte
+field called
+</span><span style="font-size: 10pt"><tt>name</tt></span><span style="font-size: 10pt">.
+Integers are stored in big-endian order.
+</span><span style="font-size: 10pt"><tt>Size</tt></span><span style="font-size: 10pt">
+really is a 48-bit field.)
+</span><span style="font-size: 10pt"><tt>Flags</tt></span><span style="font-size: 10pt">
+is made up of the following bit fields.
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>0x01&nbsp;&nbsp;&nbsp;&nbsp;VtEntryActive&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">entry&nbsp;is&nbsp;allocated</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>0x02&nbsp;&nbsp;&nbsp;&nbsp;VtEntryDir&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">entry&nbsp;describes&nbsp;a&nbsp;Venti&nbsp;directory&nbsp;(q.v.)</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>0x1C&nbsp;&nbsp;&nbsp;&nbsp;VtEntryDepthMask&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">mask&nbsp;for&nbsp;tree&nbsp;depth</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>0x20&nbsp;&nbsp;&nbsp;&nbsp;VtEntryLocal&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">reserved&nbsp;(q.v.)</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The depth of the described tree is stored in the 3 bits indicated:
+a tree with a topmost node of type
+</span><span style="font-size: 10pt"><tt>VtPointerType3</tt></span><span style="font-size: 10pt">
+has depth 4.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">With
+</span><span style="font-size: 10pt"><tt>VtEntry</tt></span><span style="font-size: 10pt">
+we can build more complicated data structures,
+ones with multiple or nested data streams.
+A data stream consisting of
+</span><span style="font-size: 10pt"><tt>VtEntry</tt></span><span style="font-size: 10pt">
+structures is called a Venti directory.
+It is identical in structure to the Venti data stream
+we described earlier except that the bottom-level type is
+</span><span style="font-size: 10pt"><tt>VtDirType</tt></span><span style="font-size: 10pt">,
+and
+the
+</span><span style="font-size: 10pt"><tt>VtEntry</tt></span><span style="font-size: 10pt">
+describing a Venti directory has the
+</span><span style="font-size: 10pt"><tt>VtEntryDir</tt></span><span style="font-size: 10pt">
+flag bit set.
+The
+</span><span style="font-size: 10pt"><i>dsize</i></span><span style="font-size: 10pt">
+for a Venti directory
+is a multiple of 40 so that each data chunk holds
+an integer number of
+</span><span style="font-size: 10pt"><tt>VtEntry</tt></span><span style="font-size: 10pt">
+structures.
+By analogy with Venti directories,
+we call the original data stream a
+Venti file.
+Note that Venti files are assumed
+</span><span style="font-size: 10pt"><i>not</i></span><span style="font-size: 10pt">
+to contain pointers to other Venti blocks.
+The only pointers to Venti blocks occur in 
+</span><span style="font-size: 10pt"><tt>VtEntry</tt></span><span style="font-size: 10pt">
+structures in
+Venti directories
+(and in the internal hash tree structure of the
+individual files and directories).
+Note also that these directories are nothing more than pointer lists.
+In particular, there are no names or metadata like in a file system.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">To make it easier to pass hierarchies between applications,
+the root of a hierarchy is described in a 300-byte structure
+called a
+</span><span style="font-size: 10pt"><tt>VtRoot</tt></span><span style="font-size: 10pt">:
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>VtRoot:</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;version[2]&nbsp;&nbsp;</tt></span><span style="font-size: 9pt"><tt>2</tt></span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;name[128]&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">name&nbsp;of&nbsp;structure&nbsp;(just&nbsp;a&nbsp;comment)</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;type[128]&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">string&nbsp;describing&nbsp;structure&nbsp;(</span><span style="font-size: 9pt"><tt>vac</tt></span><span style="font-size: 9pt">)</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;score[20]&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">pointer&nbsp;to&nbsp;</span><span style="font-size: 9pt"><tt>VtDirType</tt></span><span style="font-size: 9pt">&nbsp;block</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;blockSize[2]&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">maximum&nbsp;block&nbsp;size&nbsp;in&nbsp;structure</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;prev[20]&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">previous&nbsp;</span><span style="font-size: 9pt"><tt>VtRoot</tt></span><span style="font-size: 9pt">&nbsp;in&nbsp;chain,&nbsp;if&nbsp;any</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">This structure is stored to Venti and its score is passed
+between applications, typically in the form
+&lsquo;&lsquo;</span><span style="font-size: 10pt"><i>type</i></span><span style="font-size: 10pt"><tt>:</tt></span><span style="font-size: 10pt"><i>rootscore</i></span><span style="font-size: 10pt">,&rsquo;&rsquo;
+where
+</span><span style="font-size: 10pt"><i>type</i></span><span style="font-size: 10pt">
+is the type field from the
+</span><span style="font-size: 10pt"><tt>VtRoot</tt></span><span style="font-size: 10pt">
+structure, and
+</span><span style="font-size: 10pt"><i>rootscore</i></span><span style="font-size: 10pt">
+is the score of the
+</span><span style="font-size: 10pt"><tt>VtRoot</tt></span><span style="font-size: 10pt">
+block.
+</span><span style="font-size: 10pt"><tt>VtRoot</tt></span><span style="font-size: 10pt">
+structures can be chained together using the
+</span><span style="font-size: 10pt"><i>prev</i></span><span style="font-size: 10pt">
+field to encode an archival history
+of the data structure.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">For example, a small Venti hierarchy might look like:
+</span></p><center><img src="fossil1.png"></center>
+</center>
+<p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Venti files are shown as white boxes, while directories are shown
+as shaded boxes.  Each shaded square represents a
+</span><span style="font-size: 10pt"><tt>VtEntry</tt></span><span style="font-size: 10pt">.
+Arrows represent pointers from
+</span><span style="font-size: 10pt"><tt>VtEntry</tt></span><span style="font-size: 10pt">
+structures to other
+Venti files or directories.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The hierarchical structure provided by Venti files and directories
+can be used as the base for more complicated data structures.
+Because this structure captures all the information
+about pointers to other blocks, tools written to traverse
+Venti hierarchies can traverse the more complicated
+data structures as well.
+For example,
+</span><span style="font-size: 10pt"><i>venti/copy</i></span><span style="font-size: 10pt">
+(see
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">(1))
+copies a Venti hierarchy from one Venti server to another,
+given the root
+</span><span style="font-size: 10pt"><tt>VtEntry</tt></span><span style="font-size: 10pt">.
+Because the traditional file system described in later sections is
+layered on a Venti hierarchy, 
+</span><span style="font-size: 10pt"><i>venti/copy</i></span><span style="font-size: 10pt">
+can copy it without fully understanding its structure.
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>3.
+Vac file system format
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The Venti archive format
+</span><span style="font-size: 10pt"><i>vac</i></span><span style="font-size: 10pt">
+builds a traditional file system using a Venti hierarchy.
+Each vac file is implemented as a Venti file;
+each vac directory is implemented as a Venti
+directory and a Venti file to provide traditional file system metadata.
+The metadata is stored in a structure called a
+</span><span style="font-size: 10pt"><tt>DirEntry</tt></span><span style="font-size: 10pt">:
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>DirEntry:</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;magic[4]&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt"><tt>0x1c4d9072</tt></span><span style="font-size: 9pt"><tt>&nbsp;(DirMagic)</tt></span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;version[2]&nbsp;&nbsp;</tt></span><span style="font-size: 9pt"><tt>9</tt></span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;elem[s]&nbsp;</tt></span><span style="font-size: 9pt">name&nbsp;(final&nbsp;path&nbsp;element&nbsp;only)</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;entry[4]&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">entry&nbsp;number&nbsp;for&nbsp;Venti&nbsp;file&nbsp;or&nbsp;directory</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;gen[4]&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">generation&nbsp;number</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;mentry[4]&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">entry&nbsp;number&nbsp;for&nbsp;Venti&nbsp;file&nbsp;holding&nbsp;metadata</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;mgen[4]&nbsp;</tt></span><span style="font-size: 9pt">generation&nbsp;number</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;qid[8]&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">unique&nbsp;file&nbsp;serial&nbsp;number</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;uid[s]&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">owner</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;gid[s]&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">group</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;mid[s]&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">last&nbsp;modified&nbsp;by</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;mtime[4]&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">last&nbsp;modification&nbsp;time</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;ctime[4]&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">creation&nbsp;time</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;atime[4]&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">last&nbsp;access&nbsp;time</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;mode[4]&nbsp;</tt></span><span style="font-size: 9pt">mode&nbsp;bits</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The notation
+</span><span style="font-size: 10pt"><tt>name[s]</tt></span><span style="font-size: 10pt">
+denotes a string stored as a two-byte length
+and then that many bytes.
+The above describes Version 9 of the 
+</span><span style="font-size: 10pt"><tt>DirEntry</tt></span><span style="font-size: 10pt">
+format.  Versions 7 and 8 are very similar; they can be
+read by the current
+</span><span style="font-size: 10pt"><i>vac</i></span><span style="font-size: 10pt">
+source code but are not written.
+Earlier versions were not widespread.
+A
+</span><span style="font-size: 10pt"><tt>DirEntry</tt></span><span style="font-size: 10pt">
+may be followed by optional extension sections, though none
+are currently used.
+The
+</span><span style="font-size: 10pt"><tt>mode</tt></span><span style="font-size: 10pt">
+bits include bits commonly used by
+Unix and Windows, in addition to those used by Plan 9.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The
+</span><span style="font-size: 10pt"><tt>entry</tt></span><span style="font-size: 10pt">
+field is an index into the parallel Venti directory.
+The
+</span><span style="font-size: 10pt"><tt>gen</tt></span><span style="font-size: 10pt">
+field must match the
+</span><span style="font-size: 10pt"><tt>gen</tt></span><span style="font-size: 10pt">
+field in the corresponding
+</span><span style="font-size: 10pt"><tt>VtEntry</tt></span><span style="font-size: 10pt">
+in the directory;
+it is used to detect
+stale indices.
+Similarly,
+</span><span style="font-size: 10pt"><tt>mentry</tt></span><span style="font-size: 10pt">
+and
+</span><span style="font-size: 10pt"><tt>mgen</tt></span><span style="font-size: 10pt">
+are the index and generation number
+for the metadata Venti file,
+if the
+</span><span style="font-size: 10pt"><tt>DirEntry</tt></span><span style="font-size: 10pt">
+describes a vac directory.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The relation between Venti files and directories and
+vac files and directories can be seen in this figure:
+</span></p><center><img src="fossil2.png"></center>
+</center>
+<p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">In reality, the story is slightly more complicated.
+The metadata file in a Vac directory
+is not just the concatenation of
+</span><span style="font-size: 10pt"><tt>DirEntry</tt></span><span style="font-size: 10pt">
+structures.
+Instead, it is the concatenation of
+</span><span style="font-size: 10pt"><tt>MetaBlocks</tt></span><span style="font-size: 10pt">.
+A
+</span><span style="font-size: 10pt"><tt>MetaBlock</tt></span><span style="font-size: 10pt">
+contains some number of
+</span><span style="font-size: 10pt"><tt>DirEntry</tt></span><span style="font-size: 10pt">
+structures along with a sorted index to make it easy
+to look for a particular
+</span><span style="font-size: 10pt"><tt>DirEntry</tt></span><span style="font-size: 10pt">
+by its
+</span><span style="font-size: 10pt"><tt>elem</tt></span><span style="font-size: 10pt">
+field.
+The details are in the source code.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">As shown in the diagram,
+the root directory of the file system is summarized by
+three
+</span><span style="font-size: 10pt"><tt>VtEntry</tt></span><span style="font-size: 10pt">
+structures describing
+the Venti directory for the children of the root,
+the Venti file for the metadata describing the children of the root,
+and a Venti file holding metadata for the root directory itself.
+These
+</span><span style="font-size: 10pt"><tt>VtEntry</tt></span><span style="font-size: 10pt">
+structures are placed in a Venti directory of their own,
+described by the single 
+</span><span style="font-size: 10pt"><tt>VtEntry</tt></span><span style="font-size: 10pt">
+in the
+root block.
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>4.
+Fossil file system format
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Fossil uses the vac format, with some small changes.
+The changes only affect the data on the local disk; the data
+archived to Venti is exactly in vac format.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Blocks stored on local disk may contain scores pointing at local disk
+blocks or at Venti blocks. 
+Local block addresses are stored as 20-byte scores in which the first 16 bytes
+are all zero and the last 4 bytes specify a block number in the disk.
+Before a block is archived, all the
+blocks it points to must be archived, and the local scores in the block
+must be changed to Venti scores.
+Using block addresses rather than content hashes for local data
+makes the local file system easier to manage: if a local block&rsquo;s contents
+change, the pointer to the block does not need to change.
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>4.1.
+Snapshots
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Fossil is an archival file server.
+It takes periodic snapshots of the file system,
+which are made accessible through the file system.
+Specifically, the active file system is presented in
+</span><span style="font-size: 10pt"><tt>/active</tt></span><span style="font-size: 10pt">.
+Ephemeral snapshots (those that are kept on local disk and eventually deleted)
+are presented in
+</span><span style="font-size: 10pt"><tt>/snapshot/</tt></span><span style="font-size: 10pt"><i>yyyy</i></span><span style="font-size: 10pt"><tt>/</tt></span><span style="font-size: 10pt"><i>mmdd</i></span><span style="font-size: 10pt"><tt>/</tt></span><span style="font-size: 10pt"><i>hhmm</i></span><span style="font-size: 10pt">,
+where
+</span><span style="font-size: 10pt"><i>yyyy</i></span><span style="font-size: 10pt">
+is the full year,
+</span><span style="font-size: 10pt"><i>mm</i></span><span style="font-size: 10pt">
+is the month number,
+</span><span style="font-size: 10pt"><i>dd</i></span><span style="font-size: 10pt">
+is the day number,
+</span><span style="font-size: 10pt"><i>hh</i></span><span style="font-size: 10pt">
+is the hour,
+and
+</span><span style="font-size: 10pt"><i>mm</i></span><span style="font-size: 10pt">
+is the minute.
+Archival snapshots (those that are archived to Venti and persist forever)
+are presented in
+</span><span style="font-size: 10pt"><tt>/archive/</tt></span><span style="font-size: 10pt"><i>yyyy</i></span><span style="font-size: 10pt"><tt>/</tt></span><span style="font-size: 10pt"><i>mmdds</i></span><span style="font-size: 10pt">,
+where
+</span><span style="font-size: 10pt"><i>yyyy</i></span><span style="font-size: 10pt">,
+</span><span style="font-size: 10pt"><i>mm</i></span><span style="font-size: 10pt">,
+and
+</span><span style="font-size: 10pt"><i>dd</i></span><span style="font-size: 10pt">
+are year, month, and day as before,
+and
+</span><span style="font-size: 10pt"><i>s</i></span><span style="font-size: 10pt">
+is a sequence number if more than one
+archival snapshot is done in a day.
+For the first snapshot,
+</span><span style="font-size: 10pt"><i>s</i></span><span style="font-size: 10pt">
+is null.
+For the subsequent snapshots,
+</span><span style="font-size: 10pt"><i>s</i></span><span style="font-size: 10pt">
+is
+</span><span style="font-size: 10pt"><tt>.1</tt></span><span style="font-size: 10pt">,
+</span><span style="font-size: 10pt"><tt>.2</tt></span><span style="font-size: 10pt">,
+</span><span style="font-size: 10pt"><tt>.3</tt></span><span style="font-size: 10pt">,
+etc.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">To implement the snapshots, the file server maintains a
+current
+</span><span style="font-size: 10pt"><i>epoch</i></span><span style="font-size: 10pt">
+for the active file system.
+Each local block has a label that records, among other things,
+the epoch in which the block was allocated.
+If a block was allocated in an epoch earlier than the current one,
+it is immutable and treated as copy-on-write.
+Taking a snapshot can be accomplished by
+recording the address of the current root block and then 
+incrementing the epoch number.
+Notice that the copy-on-write method makes
+snapshots both time efficient and space efficient.
+The only time cost is waiting for all current file system
+requests to finish and then incrementing a counter.
+After a snapshot, blocks only get copied when they are
+next modified, so the per-snapshot
+space requirement is proportional
+to the amount of new data rather than the total
+size of the file system.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The blocks in the archival snapshots are moved to Venti,
+but the blocks in the ephemeral snapshots take up space
+in the local disk file.
+To allow reclamation of this disk space, the file system
+maintains a 
+</span><span style="font-size: 10pt"><i>low</i></span><span style="font-size: 10pt">
+</span><span style="font-size: 10pt"><i>epoch</i></span><span style="font-size: 10pt">,
+which is the epoch of the earliest ephemeral snapshot
+still available.
+Fossil only allows access to snapshots with epoch numbers
+between the 
+low epoch and the current epoch
+(also called the high epoch).
+Incrementing the low epoch thus makes old
+snapshots inaccessible.
+The space required to store those snapshots can then
+be reclaimed, as described below.
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>4.2.
+Local blocks
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The bulk of the local disk file is the local blocks.
+Each block has a 14-byte label associated with it, of the format:
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>Label:</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;state[1]&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">block&nbsp;state</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;type[1]&nbsp;</tt></span><span style="font-size: 9pt">block&nbsp;type</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;epoch[4]&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">allocation&nbsp;epoch</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;epochClose[4]&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">close&nbsp;epoch</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;tag[4]&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">random&nbsp;tag</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The
+</span><span style="font-size: 10pt"><tt>type</tt></span><span style="font-size: 10pt">
+is an analogue of the block types described earlier,
+though different names are used, to distinguish between
+pointers blocks in a hash tree for a data stream
+and pointer blocks for a directory stream.
+The
+</span><span style="font-size: 10pt"><tt>epoch</tt></span><span style="font-size: 10pt">
+was mentioned in the last section.
+The other fields are explained below.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">There are two distinguished blocks states
+</span><span style="font-size: 10pt"><tt>BsFree</tt></span><span style="font-size: 10pt">
+(</span><span style="font-size: 10pt"><tt>0x00</tt></span><span style="font-size: 10pt">)
+and
+</span><span style="font-size: 10pt"><tt>BsBad</tt></span><span style="font-size: 10pt">
+(</span><span style="font-size: 10pt"><tt>0xFF</tt></span><span style="font-size: 10pt">),
+which mark blocks that are available for allocation
+and blocks that are bad and should be avoided.
+If
+</span><span style="font-size: 10pt"><tt>state</tt></span><span style="font-size: 10pt">
+is not one of these values, it is a bitwise
+&lsquo;</span><span style="font-size: 10pt"><i>or</i></span><span style="font-size: 10pt">&rsquo;
+of the following flags:
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>0x01&nbsp;&nbsp;&nbsp;&nbsp;BsAlloc&nbsp;</tt></span><span style="font-size: 9pt">block&nbsp;is&nbsp;in&nbsp;use</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>0x02&nbsp;&nbsp;&nbsp;&nbsp;BsCopied&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">block&nbsp;has&nbsp;been&nbsp;copied</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>0x04&nbsp;&nbsp;&nbsp;&nbsp;BsVenti&nbsp;</tt></span><span style="font-size: 9pt">block&nbsp;has&nbsp;been&nbsp;stored&nbsp;on&nbsp;Venti</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>0x08&nbsp;&nbsp;&nbsp;&nbsp;BsClosed&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">block&nbsp;has&nbsp;been&nbsp;unlinked&nbsp;from&nbsp;active&nbsp;file&nbsp;system</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The flags are explained as they arise in the discussions below.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">It is convenient to store some extra fields in the
+</span><span style="font-size: 10pt"><tt>VtEntry</tt></span><span style="font-size: 10pt">
+structure when it describes a Venti file or directory
+stored on local disk.
+Specifically, we set the
+</span><span style="font-size: 10pt"><tt>VtEntryLocal</tt></span><span style="font-size: 10pt">
+flag bit
+and then use the bytes 7-16 of the score (which would
+otherwise be zero, since it is a local score) to hold these fields:
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;archive[1]&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">boolean:&nbsp;this&nbsp;is&nbsp;an&nbsp;archival&nbsp;snapshot</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;snap[4]&nbsp;</tt></span><span style="font-size: 9pt">epoch&nbsp;number&nbsp;if&nbsp;root&nbsp;of&nbsp;snapshot</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;tag[4]&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">random&nbsp;tag</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The extended
+</span><span style="font-size: 10pt"><tt>VtEntry</tt></span><span style="font-size: 10pt">
+structure is called an
+</span><span style="font-size: 10pt"><tt>Entry</tt></span><span style="font-size: 10pt">.
+The
+</span><span style="font-size: 10pt"><tt>tag</tt></span><span style="font-size: 10pt">
+field
+in the
+</span><span style="font-size: 10pt"><tt>Label</tt></span><span style="font-size: 10pt">
+and the
+</span><span style="font-size: 10pt"><tt>Entry</tt></span><span style="font-size: 10pt">
+is used to identify dangling pointers or other file system corruption:
+all the local blocks in a hash tree must
+have tags matching the tag in the
+</span><span style="font-size: 10pt"><tt>Entry</tt></span><span style="font-size: 10pt">.
+If this
+</span><span style="font-size: 10pt"><tt>Entry</tt></span><span style="font-size: 10pt">
+points at the root of a snapshot,
+the
+</span><span style="font-size: 10pt"><tt>snap</tt></span><span style="font-size: 10pt">
+field is the epoch of the snapshot.
+If the snapshot is intended to be archived to Venti,
+the
+</span><span style="font-size: 10pt"><tt>archive</tt></span><span style="font-size: 10pt">
+field is non-zero.
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>4.3.
+Block reclamation
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The blocks in the active file system form a tree: each
+block has only one parent.
+Once a copy-on-write block 
+</span><span style="font-size: 10pt"><i>b</i></span><span style="font-size: 10pt">
+is replaced by its copy, it is no longer
+needed by the active file system.
+At this point,
+</span><span style="font-size: 10pt"><i>b</i></span><span style="font-size: 10pt">
+is unlinked from the active file system.
+We say that
+</span><span style="font-size: 10pt"><i>b</i></span><span style="font-size: 10pt">
+is now
+</span><span style="font-size: 10pt"><i>closed</i></span><span style="font-size: 10pt">:
+it is needed only for snapshots.
+When a block is closed, the
+</span><span style="font-size: 10pt"><tt>BsClosed</tt></span><span style="font-size: 10pt">
+bit is set in its state, and the current epoch (called the block&rsquo;s closing epoch)
+is stored in the
+</span><span style="font-size: 10pt"><tt>epochClose</tt></span><span style="font-size: 10pt">
+label field.
+(Open blocks have an
+</span><span style="font-size: 10pt"><tt>epochClose</tt></span><span style="font-size: 10pt">
+of
+</span><span style="font-size: 10pt"><tt>~0</tt></span><span style="font-size: 10pt">).
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">A block is referenced by snapshots with epochs
+between the block&rsquo;s allocation epoch and its closing epoch.
+Once the file system&rsquo;s low epoch grows to be greater than or equal to the block&rsquo;s
+closing epoch, the block is no longer needed for any snapshots
+and can be reused.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">In a typical configuration, where nightly archival snapshots
+are taken and written to Venti, it is desirable to reclaim
+the space occupied by now-archived blocks if possible.
+To do this, Fossil keeps track of whether the pointers
+in each block are unique to that block.
+When a block
+</span><span style="font-size: 10pt"><i>bb</i></span><span style="font-size: 10pt">
+is allocated, a pointer to
+</span><span style="font-size: 10pt"><i>bb</i></span><span style="font-size: 10pt">
+is written into exactly one active block (say,
+</span><span style="font-size: 10pt"><i>b</i></span><span style="font-size: 10pt">).
+In the absence of snapshots, the pointer to
+</span><span style="font-size: 10pt"><i>bb</i></span><span style="font-size: 10pt">
+will remain unique to
+</span><span style="font-size: 10pt"><i>b</i></span><span style="font-size: 10pt">,
+so that if the pointer is zeroed,
+</span><span style="font-size: 10pt"><i>bb</i></span><span style="font-size: 10pt">
+can be immediately reused.
+Snapshots complicate this invariant:
+when
+</span><span style="font-size: 10pt"><i>b</i></span><span style="font-size: 10pt">
+is copied-on-write, all its pointers
+are no longer unique to it.
+At time of the copy, the
+</span><span style="font-size: 10pt"><tt>BsCopied</tt></span><span style="font-size: 10pt">
+state bit in the block&rsquo;s label
+is set to note the duplication of the pointers contained within.
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>4.4.
+Disk layout
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The file system header describes the file system layout and has this format:
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>Header:</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;magic[4]&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">0x3776AE89&nbsp;(HeaderMagic)</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;version[2]&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">1&nbsp;(HeaderVersion)</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;blockSize[2]&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt"><i>file&nbsp;system&nbsp;block&nbsp;size</i></span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;super[4]&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">block&nbsp;offset&nbsp;of&nbsp;super&nbsp;block</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;label[4]&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">block&nbsp;offset&nbsp;of&nbsp;labels</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;data[4]&nbsp;</tt></span><span style="font-size: 9pt">data&nbsp;blocks</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;end[4]&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">end&nbsp;of&nbsp;file&nbsp;system</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The corresponding file system layout is:
+</span></p><center><img src="fossil3.png"></center>
+</center>
+<p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The numbers to the right of the blocks are byte offsets
+of the boundaries.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The super block describes the file system itself and looks like:
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>Super:</tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;magic[4]&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">0x2340A3B1&nbsp;(SuperMagic)</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;version[2]&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">1&nbsp;(SuperVersion)</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;epochLow[4]&nbsp;</tt></span><span style="font-size: 9pt">file&nbsp;system&nbsp;low&nbsp;epoch</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;epochHigh[4]&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">file&nbsp;system&nbsp;high&nbsp;(active)&nbsp;epoch</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;qid[8]&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">next&nbsp;qid&nbsp;to&nbsp;allocate</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;active[4]&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">data&nbsp;block&nbsp;number:&nbsp;root&nbsp;of&nbsp;active&nbsp;file&nbsp;system</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;next[4]&nbsp;</tt></span><span style="font-size: 9pt">data&nbsp;block&nbsp;number:&nbsp;root&nbsp;of&nbsp;next&nbsp;file&nbsp;system&nbsp;to&nbsp;archive</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;current[4]&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">data&nbsp;block&nbsp;number:&nbsp;root&nbsp;of&nbsp;file&nbsp;system&nbsp;currently&nbsp;being&nbsp;archived</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;last[20]&nbsp;&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">Venti&nbsp;score&nbsp;of&nbsp;last&nbsp;successful&nbsp;archive</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="line-height: 1.1em; margin-left: 1.28in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 9pt"><tt>&nbsp;&nbsp;&nbsp;&nbsp;name[128]&nbsp;&nbsp;&nbsp;</tt></span><span style="font-size: 9pt">name&nbsp;of&nbsp;file&nbsp;system&nbsp;(just&nbsp;a&nbsp;comment)</span><span style="font-size: 9pt"><tt></tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>5.
+Fossil server
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The Fossil server is a user-space program that runs on a standard Plan 9 kernel.
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>5.1.
+Process structure
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The file server is structured as a set of processes synchronizing
+mostly through message passing along queues.
+The processes are given names, which can be seen in the output of
+</span><span style="font-size: 10pt"><tt>ps</tt></span><span style="font-size: 10pt">
+</span><span style="font-size: 10pt"><tt>-a</tt></span><span style="font-size: 10pt">.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"></span><span style="font-size: 10pt"><tt>Listen</tt></span><span style="font-size: 10pt">
+processes announce on various network addresses.
+A
+</span><span style="font-size: 10pt"><tt>con</tt></span><span style="font-size: 10pt">
+process handles each incoming connection, reading 9P requests
+and adding them to a central message queue.
+</span><span style="font-size: 10pt"><tt>Msg</tt></span><span style="font-size: 10pt">
+processes remove 9P requests from the queue,
+handle them, and write the responses to the appropriate
+file descriptors.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The
+</span><span style="font-size: 10pt"><tt>disk</tt></span><span style="font-size: 10pt">
+process handles disk I/O requests made by the other processes.
+The
+</span><span style="font-size: 10pt"><tt>flush</tt></span><span style="font-size: 10pt">
+process writes dirty blocks from the in-memory block cache to disk.
+The
+</span><span style="font-size: 10pt"><tt>unlink</tt></span><span style="font-size: 10pt">
+process frees previously linked blocks once the blocks that point at them
+have been written to disk.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">A
+</span><span style="font-size: 10pt"><tt>consI</tt></span><span style="font-size: 10pt">
+reads from each console file (typically a pipe posted in
+</span><span style="font-size: 10pt"><tt>/srv</tt></span><span style="font-size: 10pt">),
+adding the typed characters to the input queue.
+The
+</span><span style="font-size: 10pt"><tt>cons</tt></span><span style="font-size: 10pt">
+process echoes input and runs the commands, saving
+output in a ring buffer.
+Because there is only one
+</span><span style="font-size: 10pt"><tt>cons</tt></span><span style="font-size: 10pt">
+process, only one console command may be executing at a time.
+A
+</span><span style="font-size: 10pt"><tt>consO</tt></span><span style="font-size: 10pt">
+process copies this ring buffer to each console file.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The
+</span><span style="font-size: 10pt"><tt>periodic</tt></span><span style="font-size: 10pt">
+process runs periodic events, like
+flushing the root metadata to disk or
+taking snapshots of the file system.
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>5.2.
+Block cache
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Fossil maintains an in-memory block cache which 
+holds both local disk blocks and Venti blocks.
+Cache eviction follows a least recently used policy.
+Dirty blocks are restricted to at most half the cache.
+This can be changed by editing
+</span><span style="font-size: 10pt"><tt>DirtyPercentage</tt></span><span style="font-size: 10pt">
+in 
+</span><span style="font-size: 10pt"><tt>dat.h</tt></span><span style="font-size: 10pt">.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The block cache uses soft updates [1] to ensure that the on-disk
+file system is always self-consistent.
+Thus there is no
+</span><span style="font-size: 10pt"><i>halt</i></span><span style="font-size: 10pt">
+console command
+and no need to check a file system 
+that was shut down without halting.
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>5.3.
+Archiving
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">A background process writes blocks in archival snapshots to Venti.
+Although
+</span><span style="font-size: 10pt"><tt>/archive/</tt></span><span style="font-size: 10pt"><i>yyyy</i></span><span style="font-size: 10pt"><tt>/</tt></span><span style="font-size: 10pt"><i>mmdds</i></span><span style="font-size: 10pt"></span><span style="font-size: 10pt">
+is a copy of only
+</span><span style="font-size: 10pt"><tt>/active</tt></span><span style="font-size: 10pt">
+at the time of the snapshot,
+the archival process archives the
+entire file tree rather than just
+the subtree rooted at
+</span><span style="font-size: 10pt"><tt>/active</tt></span><span style="font-size: 10pt">.
+The snapshots
+</span><span style="font-size: 10pt"><tt>/snapshot/</tt></span><span style="font-size: 10pt"><i>yyyy</i></span><span style="font-size: 10pt"><tt>/</tt></span><span style="font-size: 10pt"><i>mmdd</i></span><span style="font-size: 10pt"><tt>/</tt></span><span style="font-size: 10pt"><i>hhmm</i></span><span style="font-size: 10pt">
+are stored as empty directories.
+Once all the blocks have been archived,
+a 
+</span><span style="font-size: 10pt"><tt>VtRoot</tt></span><span style="font-size: 10pt">
+header for the file system is archived.
+The score of that header is recorded in
+</span><span style="font-size: 10pt"><tt>super.score</tt></span><span style="font-size: 10pt">
+and also printed on the file server console.
+The score can used by
+</span><span style="font-size: 10pt"><i>flfmt</i></span><span style="font-size: 10pt">
+to restore a file system (see
+</span><span style="font-size: 10pt"><i>fossil</i></span><span style="font-size: 10pt">(4)).
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>5.4.
+Contrast with the old file server
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The most obvious difference between Fossil and the 
+old Plan 9 file server [2] is that Fossil uses a Venti server as 
+its archival storage in place of a WORM juke box.
+There are a few other architectural differences to be 
+aware of.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Fossil is a user-level program run on a standard kernel.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Fossil does not have any way to concatenate, stripe, or
+mirror disk files.  For functionality similar to the old file server&rsquo;s
+configuration strings, use the experimental file stack device 
+(see
+</span><span style="font-size: 10pt"><i>fs</i></span><span style="font-size: 10pt">(3)).
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Fossil speaks only 9P2000.  Old 9P (aka 9P1) is not supported.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>6.
+References
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">[1] Gregory R. Ganger, Marshall Kirk McKusick, Craig A. N. Soules,
+and Yale N. Patt.
+&lsquo;&lsquo;Soft Updates: A Solution to the Metadata Update Problem
+in File Systems,&rsquo;&rsquo;
+</span><span style="font-size: 10pt"><i>ACM Transactions on Computer Systems</i></span><span style="font-size: 10pt">,
+Vol 18., No. 2, May 2000, pp. 127-153.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">[2] Sean Quinlan, &lsquo;&lsquo;A Cached WORM File System,&rsquo;&rsquo;
+</span><span style="font-size: 10pt"><i>Software&mdash;Practice and Experience</i></span><span style="font-size: 10pt">,
+Vol 21., No 12., December 1991, pp. 1289-1299.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">[3] Sean Quinlan and Sean Dorward, &lsquo;&lsquo;Venti: A New Approach to Archival Storage,&rsquo;&rsquo;
+</span><span style="font-size: 10pt"><i>Usenix Conference on File and Storage Technologies</i></span><span style="font-size: 10pt">,
+2002.
+</span></p><p style="margin-top: 0; margin-bottom: 0.50in"></p>
+</body>
+</html>
+

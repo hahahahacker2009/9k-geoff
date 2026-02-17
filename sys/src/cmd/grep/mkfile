@@ -1,0 +1,18 @@
+</$objtype/mkfile
+
+TARG=grep
+HFILES=\
+	grep.h\
+
+LIB=/$objtype/lib/libnofp.a
+OFILES=\
+	y.tab.$O\
+	main.$O\
+	comp.$O\
+	sub.$O\
+
+YFILES=grep.y\
+
+BIN=/$objtype/bin
+</sys/src/cmd/mkone
+

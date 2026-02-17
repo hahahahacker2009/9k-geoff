@@ -1,0 +1,94 @@
+#!/bin/rc
+# terminal start-up
+TIMESYNCARGS=(-n -a1000000)	# accuracy in nanosec
+
+mntgen -s slashn && chmod 666 /srv/slashn
+
+# parallelism for mk
+NPROC = `{wc -l </dev/sysstat}
+
+# bind all likely devices (#S was bound in boot)
+for(i in t m v P u '$' Σ f L)
+	/bin/bind -a '#'^$i /dev >/dev/null >[2=1]
+
+# set up any partitions
+diskparts
+
+# start up local swapping
+disk=`{ls /dev/sd*/swap >[2]/dev/null}
+if (! ~ $#disk 0)
+	swap $disk(1) >/dev/null >[2=1]
+rm /env/disk
+
+# we do this before we have a name.  we may need to do network
+# setup so that we can get a name.
+if(test -e /rc/bin/termrc.local)
+	. /rc/bin/termrc.local
+
+# cs sets sysname (termrc.local may already have started it so check)
+if(! test -e /srv/cs)
+	ndb/cs
+sysname=`{cat /dev/sysname}
+if (~ $#sysname 0 || ~ $sysname '') {
+	sysname = gnot			# default
+	echo -n $sysname >/dev/sysname
+}
+
+# machine-specific startup (e.g., for devices not probed)
+. loadcfgpxe
+if(test -e /cfg/$sysname/termrc)
+	. /cfg/$sysname/termrc
+
+# start dns if we have an internet
+if(test -e /net/ipifc/0/ctl && ! test -e /srv/dns && ! test -e /env/dns)
+	ndb/dns -rF
+
+# start timesync if it isn't running and we weren't told not to
+if(! ps|grep -s timesync)
+	if(! ~ $TIMESYNCARGS '')
+		aux/timesync $TIMESYNCARGS
+
+# add the loop-back device
+if(grep -s loopback /dev/drivers) {
+	ip/ipconfig loopback /dev/null 127.1
+	ip/ipconfig loopback /dev/null ::1 /128
+}
+
+usbstart
+if (~ $terminal 'ARM '*pi*)
+	mouseport=ps2
+if(~ $#mouseport 0){
+	echo -n 'mouseport is (ps2, ps2intellimouse, 0, 1, 2)[ps2]: '
+	mouseport=`{read}
+	if(~ $#mouseport 0)
+		mouseport=ps2
+}
+if(~ $#vgasize 0){
+	echo -n 'vgasize [640x480x8]: '
+	vgasize=`{read}
+	if(~ $#vgasize 0)
+		vgasize=640x480x8
+}
+if(~ $#monitor 0){
+	echo -n 'monitor is [xga]: '
+	monitor=`{read}
+	if(~ $#monitor 0)
+		monitor=xga
+}
+if(test -f /dev/mousectl){
+	switch($mouseport){
+	case ps2 ps2intellimouse 0 1 2
+		aux/mouse $mouseport
+		# parse vgasize into fields
+		vgasize=`{echo $vgasize}
+		if(! ~ $"monitor '' && ! ~ `{cat /dev/user} none)
+			aux/vga -l $vgasize
+		if(~ $accupoint 1)
+			pipefile -dr /bin/aux/accupoint /dev/mouse
+	}
+}
+
+if (test -f /dev/apm)
+	aux/apm
+
+dontkill '^(ipconfig|factotum|mntgen|fossil|cs|dns|listen|reboot)$'

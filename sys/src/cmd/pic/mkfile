@@ -1,0 +1,39 @@
+< /$objtype/mkfile
+
+TARG=pic
+OFILES=picy.$O\
+	picl.$O\
+	main.$O\
+	print.$O\
+	misc.$O\
+	symtab.$O\
+	blockgen.$O\
+	boxgen.$O\
+	circgen.$O\
+	arcgen.$O\
+	linegen.$O\
+	movegen.$O\
+	textgen.$O\
+	input.$O\
+	for.$O\
+	pltroff.$O\
+	system.$O\
+
+HFILES=pic.h\
+	y.tab.h\
+
+YFILES=picy.y\
+
+BIN=/$objtype/bin
+</sys/src/cmd/mkone
+CFLAGS=-FTVw
+YFLAGS=-d
+
+picy.c:D:	y.tab.c
+	mv $prereq $target
+
+picl.c:D:	picl.lx
+	{ echo '#include <u.h>'; echo '#include <libc.h>'; $LEX -t $prereq } >$target
+
+clean:V:
+	rm -f *.[$OS] [$OS].out y.tab.? y.debug $TARG picy.c picl.c

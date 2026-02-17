@@ -1,0 +1,21 @@
+#!/bin/rc
+# diffy [diff-opts] [file...] - diff file against yesterday's version(s)
+rfork e
+diffopts=()
+while(! ~ $#* 0 && ~ $1 -* && ! ~ $1 --){
+	diffopts=($diffopts $1)
+	shift
+}
+if(~ $1 --)
+	shift
+#if(! ~ $#* 1)
+#	diffopts=($diffopts -m)
+if (~ $#* 0)
+	* = (.)
+for(f) {
+	dumpdir=`{yesterday $f}
+	if (test -e $dumpdir)
+		ape/diff -u $diffopts $dumpdir $f
+	if not
+		echo $dumpdir missing >[1=2]
+}

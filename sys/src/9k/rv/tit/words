@@ -1,0 +1,25 @@
+milk-v titan, dma incoherent?
+
+ur-dp1000 rv64gcbh soc with 2 clusters of 4 2GHz ur-cp1000 cpus.
+48-bit virtual addresses
+rva22 compliant.
+clint clock 10MHz
+cycle clock 250MHz
+l1-l4 caches
+device tree: ultrarisc/dp1000.dtsi at refs/heads/linux-6.6.y
+	https://github.com/deepin-community/kernel/blob/refs/heads/linux-6.6.y/arch/riscv/boot/dts/ultrarisc/dp1000.dtsi
+
+memory map
+0x08000000	clint, 64K
+0x09000000	plic, 64M
+0x20300000	uart0
+0x20310000	uart1
+	...
+0x38000000	ether0 (dwmac 5.10a)
+0x80000000	16gb dram
+
+intrs/irqs (via plic)
+17		uart0
+18		uart1
+84		ether0
+160 used

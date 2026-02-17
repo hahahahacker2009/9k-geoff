@@ -1,0 +1,228 @@
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=utf8">
+<title>Venti Backups to Blu-Ray Discs</title>
+</meta>
+</head>
+<body>
+<p style="margin-top: 0; margin-bottom: 0.50in"></p>
+<p style="margin-top: 0; margin-bottom: 0.21in"></p>
+
+<p style="line-height: 1.4em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 12pt"><b>Venti Backups to Blu-Ray Discs</b></span></p>
+<p style="margin-top: 0; margin-bottom: 0.21in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.4em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 10pt"><i>Geoff&nbsp;Collyer</i></span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.4em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 10pt">Bell&nbsp;Laboratories</span></p>
+<p style="line-height: 1.4em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: center;">
+<span style="font-size: 10pt">Murray&nbsp;Hill,&nbsp;New&nbsp;Jersey&nbsp;07974</span></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.33in"></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="margin-top: 0; margin-bottom: 0.50in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>Overview
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">As a precaution against multiple disks in our
+Plan 9
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+server&rsquo;s RAID array failing at about the same time,
+or other catastrophic failure, we record
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+arenas,
+after they are sealed,
+onto dual-layer Blu-Ray discs (BDs).
+One could use other large optical discs instead.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The advertised capacity of a dual-layer BD is 50GB,
+but those aren&rsquo;t even disk-manufacturer&rsquo;s (decimal) gigabytes,
+which would give a capacity of
+</span><span style="font-size: 10pt">50</span><span style="font-size: 10pt">&times;</span><span style="font-size: 10pt">10</span><span style="font-size: 10pt"><sup></sup></span><sup><span style="font-size: 7pt"></span><span style="font-size: 7pt">9</span><span style="font-size: 7pt"></span><span style="font-size: 10pt"></span></sup><span style="font-size: 10pt"> bytes,
+which is roughly equivalent to 46.6 gigabytes,
+as the term is used by everyone but disk manufacturers.
+In the case of BDs,
+even that is an exaggeration, with the actual capacity being
+closer to </span><span style="font-size: 10pt">48.</span><span style="font-size: 10pt"></span><span style="font-size: 10pt"><i></i></span><span style="font-size: 10pt"></span><span style="font-size: 10pt">44</span><span style="font-size: 10pt">&times;</span><span style="font-size: 10pt">10</span><span style="font-size: 10pt"><sup></sup></span><sup><span style="font-size: 7pt"></span><span style="font-size: 7pt">9</span><span style="font-size: 7pt"></span><span style="font-size: 10pt"></span></sup><span style="font-size: 10pt"> bytes,
+so the claimed capacity should be read as &lsquo;50 BD-gigabytes&rsquo;,
+where a
+</span><span style="font-size: 10pt"><i>BD-gigabyte</i></span><span style="font-size: 10pt">
+is 968,800,338 bytes.
+The default
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+arena size is 512MB, but for some reason our server is configured
+with 1GB arenas, so we could fit 46 of them on a BD.
+To leave a little extra room for lead-in, lead-out, inter-track gaps,
+lossless-linking and the like,
+we record 45 arenas per BD.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">The scripts used and records kept are in
+</span><span style="font-size: 10pt"><tt>/sys/lib/backup</tt></span><span style="font-size: 10pt">
+and pertain to the file server on which they are stored.
+You will probably want to edit
+</span><span style="font-size: 10pt"><tt>funcs</tt></span><span style="font-size: 10pt">
+to set default file server and Blu-ray device, at minimum.
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>Creating and Updating Backups
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">We start
+</span><span style="font-size: 10pt"><i>cdfs</i></span><span style="font-size: 10pt">
+after inserting a disc (virgin or partially-written),
+then use
+</span><span style="font-size: 10pt"><i>venti/rdarena</i></span><span style="font-size: 10pt">
+to copy the next sealed but not backed-up arena
+to the start of the unwritten portion of the BD by writing to
+</span><span style="font-size: 10pt"><tt>/mnt/cd/wd/x</tt></span><span style="font-size: 10pt">.
+We don&rsquo;t fixate data BDs, as that seems to tickle a bug,
+perhaps in our Sony Blu-Ray burners, that only records the first track
+in the disc index upon fixation.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">One can find out which arenas are sealed and which are open by viewing
+</span><span style="font-size: 10pt"><tt>http://</tt></span><span style="font-size: 10pt"><i>venti-server</i></span><span style="font-size: 10pt"><tt>/index</tt></span><span style="font-size: 10pt">.
+We also periodically print the most recent
+</span><span style="font-size: 10pt"><i>fossil</i></span><span style="font-size: 10pt">
+dump scores and save the paper with the discs.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">All of this is packaged up as scripts in
+</span><span style="font-size: 10pt"><tt>/sys/lib/backup</tt></span><span style="font-size: 10pt">,
+notably
+</span><span style="font-size: 10pt"><tt>backup</tt></span><span style="font-size: 10pt">.
+A typical invocation would be just
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.50in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><tt>cd&nbsp;/sys/lib/backup</tt></span></p>
+<p style="line-height: 1.2em; margin-left: 1.50in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><tt>backup</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.02in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">which will guide its invoker as to which discs to insert into a Blu-ray
+burner and when.
+This works for a first full backup and for subsequent incremental backups
+of just the newly-sealed arenas.
+There is provision for burning multiple backup sets, the default being
+</span><span style="font-size: 10pt"><tt>set1</tt></span><span style="font-size: 10pt">.
+To burn a second set, we would
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.50in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><tt>cd&nbsp;/sys/lib/backup</tt></span></p>
+<p style="line-height: 1.2em; margin-left: 1.50in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><tt>newset&nbsp;set2&nbsp;bd</tt></span></p>
+<p style="line-height: 1.2em; margin-left: 1.50in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><tt>backup&nbsp;-s&nbsp;set2</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.02in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"></span><span style="font-size: 10pt"><tt>backup</tt></span><span style="font-size: 10pt">
+and related scripts keep track of which BD is current and how many
+tracks are recorded, and which arenas have been dumped to BD.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">We have recorded two sets of BD backups, one of which will go to
+Antwerp to seed their
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+server and also serve as off-site backup for Murray Hill.
+</span></p><p style="margin-top: 0; margin-bottom: 0.17in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><b>Restoring from Backups
+</b></span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">After a disaster, or when setting up a new
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+server from BD backups,
+the first step is to get Plan 9 running on the new
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+server.
+This could be done by installing into a smallish (2GB)
+</span><span style="font-size: 10pt"><i>fossil</i></span><span style="font-size: 10pt">
+partition from a Plan 9 installation CD, if necessary.
+One would then initialise the new disk partitions per
+</span><span style="font-size: 10pt"><i>venti-fmt</i></span><span style="font-size: 10pt">(8)
+and read all the arenas on all the BDs into the new
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+by running
+</span><span style="font-size: 10pt"><i>venti/wrarena</i></span><span style="font-size: 10pt">
+once per BD track (arena).
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">To add the contents of a backup BD to a (possibly fresh)
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+store,
+shut down the
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+server,
+format the arenas partition, then
+run
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.50in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><tt>restore&nbsp;</tt></span><span style="font-size: 10pt"><i>first-arena-number</i></span><span style="font-size: 10pt"><tt></tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.02in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">after inserting a BD into the Blu-ray drive.
+Repeat this for each BD in the backup set.
+When all the arenas have been restored,
+it will be necessary to build a new
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+index,
+the usual steps being to run
+</span><span style="font-size: 10pt"><i>checkarenas</i></span><span style="font-size: 10pt">,
+</span><span style="font-size: 10pt"><i>fmtisect</i></span><span style="font-size: 10pt">,
+</span><span style="font-size: 10pt"><i>fmtbloom</i></span><span style="font-size: 10pt">,
+</span><span style="font-size: 10pt"><i>fmtindex</i></span><span style="font-size: 10pt">,
+and
+</span><span style="font-size: 10pt"><i>buildindex -b</i></span><span style="font-size: 10pt">,
+all from
+</span><span style="font-size: 10pt"><i>venti-fmt</i></span><span style="font-size: 10pt">(8).
+Then the
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+server may be restarted.
+</span></p><p style="margin-top: 0; margin-bottom: 0.05in"></p>
+<p style="line-height: 1.2em; margin-left: 1.00in; text-indent: 0.35in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt">Once the
+</span><span style="font-size: 10pt"><i>venti</i></span><span style="font-size: 10pt">
+storage has been restored,
+a new
+</span><span style="font-size: 10pt"><i>fossil</i></span><span style="font-size: 10pt">
+partition (perhaps the existing one or another one)
+can be initialised from the last
+</span><span style="font-size: 10pt"><i>fossil</i></span><span style="font-size: 10pt">
+dump score corresponding to the last arena on BD
+(see
+</span><span style="font-size: 10pt"><i>fossil/flfmt</i></span><span style="font-size: 10pt">
+in
+</span><span style="font-size: 10pt"><i>fossil</i></span><span style="font-size: 10pt">(4)):
+</span></p><p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="line-height: 1.2em; margin-left: 1.50in; text-indent: 0.00in; margin-right: 1.00in; margin-top: 0; margin-bottom: 0; text-align: justify;">
+<span style="font-size: 10pt"><tt>fossil/flfmt&nbsp;-v&nbsp;c388</tt></span><span style="font-size: 10pt"><i>...</i></span><span style="font-size: 10pt"><tt>32b5&nbsp;/dev/sdC0/fossil</tt></span></p>
+<p style="margin-top: 0; margin-bottom: 0.02in"></p>
+
+<p style="margin-top: 0; margin-bottom: 0.08in"></p>
+<p style="margin-top: 0; margin-bottom: 0.50in"></p>
+</body>
+</html>
+

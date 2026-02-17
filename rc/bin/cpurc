@@ -1,0 +1,101 @@
+#!/bin/rc
+# cpurc - cpu server startup
+boottime=`{date}
+boottime=$"boottime
+
+# cs sets /dev/sysname
+ndb/cs
+sysname=`{cat /dev/sysname}
+
+# sysname sanity checks
+if (~ $#sysname 0 || ~ $sysname '') {
+	sysname = helix			# default
+	echo -n $sysname >/dev/sysname
+}
+prompt=($sysname^'# ' '	')
+
+# get rid of need for dirs in /n
+mntgen -s slashn && chmod 666 /srv/slashn
+
+# complete namespace
+. /cfg/$sysname/namespace
+
+# parallelism for mk
+NPROC = `{wc -l </dev/sysstat}
+
+# enable usb keyboard, among other usb devices
+if (! test -e /srv/usb && test -e '#u/usb')
+	usb/usbd
+
+# site-specific startup
+listener=()
+. /rc/bin/cpurc.local
+. loadcfgpxe
+
+# cpu-specific startup
+# if it runs aux/listen, it must first run ndb/dns.
+if(! test -e '/env/*envloaded')		# loaded directly without 9boot?
+	. loadcfgpxe
+. /cfg/$sysname/cpurc
+
+# if we're not a server, start a dns resolver
+if(! test -e /srv/dns && ! test -e /env/dns) {
+	echo -n dns...
+	ndb/dns	-rF
+}
+
+auth/keyfs -wp -m /mnt/keys /adm/keys >/dev/null >[2=1]
+auth/cron >>/sys/log/cron >[2=1] &
+
+# don't turn on dong's tcp port hog defense; our firewall drops
+# the out-of-sequence keepalives it uses, thus dropping
+# inside-to-outside connections after 5 minutes.
+#if( test -e /net/tcp/clone)
+#	echo -n tcpporthogdefense on > /net/tcp/0/ctl
+
+# keep other bootes processes from creating capabilities (optional)
+rm '#¤/caphash' > /dev/null >[2=1]
+
+# start up internet if we don't already have an address
+#if(! grep u /net/ipselftab | grep -sv 127.0.0.1) {
+#	echo -n ipconfig for ip...
+#	ip/ipconfig
+#}
+if(! grep -s 127.0.0.1 /net/ipselftab) @ {
+	echo -n loopbacks...
+	ip/ipconfig loopback /dev/null 127.1
+	ip/ipconfig loopback /dev/null ::1 /128
+} &
+
+# start listeners if it hasn't already been done (dicey check; auth can be slow)
+if(! netstat -n | grep -s '^tcp.*Listen.* (7|9|21|22|23|25|110|113|565|993|17007|17009|17010|17013) .*' &&
+    ! ~ $listener yes) {
+	echo -n listen...
+	await 2 aux/listen -q
+}
+
+if(! ps|grep -s timesync) {
+	echo -n timesync...
+	await 2 starttimesync
+	echo
+}
+# reboot cpu server if we lose the file server; needs time already set
+if (! ~ $sysname fs)
+	aux/reboot &
+
+# cpu-specific late startup
+. /cfg/$sysname/cpustart
+
+# prevent killing specific processes when out of memory.
+# processes started via listen must be killable, so exclude listen.
+dontkill '^(ipconfig|factotum|mntgen|venti|fossil|cs|dns|reboot)$' &
+
+# log boot and kernel information
+kern=`{ls -ld `{kern}}
+echo $"boottime $sysname $terminal $"kern >>/sys/log/boot
+echo $terminal $"kern
+echo -n `{date} ' '; uptime
+
+echo collect kmesg...
+kmesg.boot &
+exit ''

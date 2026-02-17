@@ -1,0 +1,20 @@
+: p550; kprof /riscv64/9p550cpu /dev/kpdata | sed 20q
+total: 128620	in kernel text: 124870	outside kernel text: 3750
+warning: kbase ffffffc000000000 != tbase ffff800080200000
+KTZERO ffff800080200000 PGSIZE 4Kb
+ms	  %	sym
+82740	 66.2	idlehands
+17550	 14.0	ilock
+9080	  7.2	getmie
+8440	  6.7	rc4
+1710	  1.3	runproc
+660	  0.5	cachedwbinvse
+640	  0.5	ptclbsum
+410	  0.3	memcpy
+260	  0.2	unlock
+210	  0.1	lock
+210	  0.1	_md5block
+160	  0.1	mmuput
+130	  0.1	decode
+130	  0.1	trap
+130	  0.1	wakeup

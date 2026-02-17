@@ -1,0 +1,55 @@
+#!/bin/rc
+# addroutes [netdir] - add local (mainly ipv6) routes to network
+rfork e
+
+if (~ $#* 0)
+	cd /net
+if not
+	cd $1
+#if(! test -e iproute)	# 9vx potentially doesn't have /net/iproute
+#	exit ''
+
+# pfx=2603:3024:90c:9e		# old comcast
+# subnet=8
+pfx=2001:470:8277:00		# new he.net
+subnet=0
+v6prefix=$pfx$subnet^2::	# 2 is our public house network
+
+echo -n 'boot.env...'
+progress=yes awaitfile 10 /srv/boot.env
+
+test -e /srv/boot.env && mount /srv/boot.env /n/env &&
+    test -e /n/env/v6prefix && {	# from ipv6on
+	v6prefix=`{cat /n/env/v6prefix}			# a /64
+	pfx=`{echo $"v6prefix | sed 's/..::$//'}	# a /56
+	subnet=`{echo $"v6prefix | sed 's/^.*(.).::/\1/'} # sla digit
+	echo -n v6 sla: $subnet...
+}
+
+if(grep -s '^10\.0\.' ipselftab) {	# on private network 10 only
+	echo -n 'private net: '
+
+	# default v6 route towards internet via nat.
+	echo -n 'v6 default route...'
+	echo add :: /0 $pfx^$subnet^1::6 >iproute
+}
+if not {				# on public network
+	echo -n 'public net: '
+	# ipv4 default is fw, and should be ipv6 default from RA (from RS)
+
+	# route to private network from public via nat in fw.
+	# NB: subnet masks are v6, even for v4 addresses
+	echo -n 'v4 default route...'
+	echo add 10.0.0.0 /104 96.78.174.36 >iproute
+
+	# default v6 route to comcast-gw via fw & net 10
+	echo -n 'v6 default route...'
+	echo add :: /0 $pfx^$subnet^2::2 >iproute
+
+	# route to private network from public.
+	echo add $pfx^$subnet^1:: /64 $pfx^$subnet^2::2 >iproute
+
+	# remove bogus private v6 address until we find out where it comes from
+	echo remove $pfx^$subnet^1:: /64 >iproute
+}
+echo

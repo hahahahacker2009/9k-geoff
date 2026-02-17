@@ -1,0 +1,15 @@
+working:
+milk-v jupiter	works. seems like it should be faster.  no 2nd ethernet.
+polarfire icicle works well except no pxe autoboot.  fix: newer u-boot.
+premier p550	works. seems like it should be faster.
+tinyemu		works, single core, sv48 or sv39, M mode, no sbi, no u-boot.
+unmatched	works
+visionfive 2	works
+
+discontinued:
+beagle v	works, modulo hw bugs.
+
+hopeless:
+rvb-ice		wedges or ill. inst. after starting paging.  u-boot "go"
+		starts in M mode.  can't find how linux works.  buggy CPU.
+		mine has broken ethernet.

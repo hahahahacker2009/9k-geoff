@@ -1,0 +1,58 @@
+</$objtype/mkfile
+
+TARG=awk
+OFILES=re.$O\
+	lex.$O\
+	main.$O\
+	parse.$O\
+	proctab.$O\
+	tran.$O\
+	lib.$O\
+	env.$O\
+	run.$O\
+	awkgram.$O\
+	popen.$O\
+	system.$O\
+
+HFILES=awk.h\
+	y.tab.h\
+	proto.h\
+
+YFILES=awkgram.y
+
+BIN=/$objtype/bin
+
+UPDATE=\
+	mkfile\
+	awk.h proto.h\
+	$YFILES\
+	re.c lex.c main.c parse.c proctab.c tran.c lib.c run.c\
+	maketab.c\
+	${TARG:%=/386/bin/%}\
+
+</sys/src/cmd/mkone
+# CFLAGS=$CFLAGS -DUSE_BSTDIO
+YFLAGS=-d -v
+
+y.tab.h awkgram.c:	$YFILES
+	$YACC -o awkgram.c $YFLAGS $prereq
+
+clean:V:
+	rm -f *.[$OS] [$OS].out [$OS].maketab y.tab.? y.debug y.output $TARG
+
+nuke:V:
+	rm -f *.[$OS] [$OS].out [$OS].maketab y.tab.? y.debug y.output awkgram.c $TARG
+
+objtype=$cputype
+
+proctab.c:D:	$O.maketab
+	if (test -e   orig/proctab.c)
+		cp -x orig/proctab.c .
+	if not
+		./$O.maketab >proctab.c
+
+$O.maketab:	y.tab.h maketab.c
+	mk 'CFLAGS=-FTV' maketab.$cputype
+
+maketab.$cputype:V:	y.tab.h maketab.$O
+	$LD -o $O.maketab maketab.$O

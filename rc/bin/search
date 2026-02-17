@@ -1,0 +1,19 @@
+#!/bin/rc
+# search var file... - print $var if set, else first existing file
+# do not "rfork e"; result must be accessible in caller's environment
+name = $1
+tmp = $$1
+if (~ $#$1 0 || ! test -e $$1) {
+	tmp = ()
+	shift
+	for (tmpf)
+		if (~ $#tmp 0 && test -e $tmpf)
+			tmp = $tmpf
+	while (~ $#tmp 0 || ! test -e $tmp) {
+		echo -n $name^'? ' >/dev/cons
+		tmp = `{read; if (~ $status eof) echo /}
+	}
+}
+$name = $tmp
+echo $tmp >/env/$name
+echo $tmp

@@ -1,0 +1,289 @@
+Only in .: DIFF
+diff -n /n/dump/2013/0917/sys/src/cmd/pic/arcgen.c ./arcgen.c
+/n/dump/2013/0917/sys/src/cmd/pic/arcgen.c:0 a ./arcgen.c:1,2
+> #include <u.h>
+> #include <libc.h>
+/n/dump/2013/0917/sys/src/cmd/pic/arcgen.c:2 d ./arcgen.c:3
+< #include	<math.h>
+/n/dump/2013/0917/sys/src/cmd/pic/arcgen.c:24 a ./arcgen.c:26
+> 	tox = toy = 0;
+diff -n /n/dump/2013/0917/sys/src/cmd/pic/blockgen.c ./blockgen.c
+/n/dump/2013/0917/sys/src/cmd/pic/blockgen.c:0 a ./blockgen.c:1,2
+> #include <u.h>
+> #include <libc.h>
+/n/dump/2013/0917/sys/src/cmd/pic/blockgen.c:2 d ./blockgen.c:3
+< #include <stdlib.h>
+diff -n /n/dump/2013/0917/sys/src/cmd/pic/boxgen.c ./boxgen.c
+/n/dump/2013/0917/sys/src/cmd/pic/boxgen.c:0 a ./boxgen.c:1,2
+> #include <u.h>
+> #include <libc.h>
+diff -n /n/dump/2013/0917/sys/src/cmd/pic/circgen.c ./circgen.c
+/n/dump/2013/0917/sys/src/cmd/pic/circgen.c:0 a ./circgen.c:1,2
+> #include <u.h>
+> #include <libc.h>
+/n/dump/2013/0917/sys/src/cmd/pic/circgen.c:14 a ./circgen.c:17
+> 	r = r2 = 0;
+diff -n /n/dump/2013/0917/sys/src/cmd/pic/for.c ./for.c
+/n/dump/2013/0917/sys/src/cmd/pic/for.c:0 a ./for.c:1,2
+> #include <u.h>
+> #include <libc.h>
+/n/dump/2013/0917/sys/src/cmd/pic/for.c:2 d ./for.c:3
+< #include <stdlib.h>
+diff -n /n/dump/2013/0917/sys/src/cmd/pic/input.c ./input.c
+/n/dump/2013/0917/sys/src/cmd/pic/input.c:0 a ./input.c:1,2
+> #include <u.h>
+> #include <libc.h>
+/n/dump/2013/0917/sys/src/cmd/pic/input.c:2,5 d ./input.c:3
+< #include <stdlib.h>
+< #include <string.h>
+< #include <ctype.h>
+< #include <errno.h>
+/n/dump/2013/0917/sys/src/cmd/pic/input.c:6 a ./input.c:5
+> #include <ctype.h>
+/n/dump/2013/0917/sys/src/cmd/pic/input.c:21 a ./input.c:21,22
+> int	input(void);
+> 
+/n/dump/2013/0917/sys/src/cmd/pic/input.c:234 a ./input.c:236
+> int
+/n/dump/2013/0917/sys/src/cmd/pic/input.c:254 a ./input.c:257
+> 	c = 0;
+/n/dump/2013/0917/sys/src/cmd/pic/input.c:421,427 c ./input.c:424,426
+< 	extern int errno;
+< 
+< 	if (errno == EDOM) {
+< 		errno = 0;
+< 		ERROR "%s argument out of domain", s WARNING;
+< 	} else if (errno == ERANGE) {
+< 		errno = 0;
+---
+> 	if (isNaN(x)) {
+> 		ERROR "%s result is not a number", s WARNING;
+> 	} else if (isInf(x, +1) || isInf(x, -1)) {
+/n/dump/2013/0917/sys/src/cmd/pic/input.c:440 d ./input.c:438
+< 	int ern = errno;	/* cause some libraries clobber it */
+/n/dump/2013/0917/sys/src/cmd/pic/input.c:445,449 c ./input.c:443
+< 	fprintf(stderr, "%s: %s", cmdname, s);
+< 	if (ern > 0) {
+< 		errno = ern;
+< 		perror("???");
+< 	}
+---
+> 	fprintf(stderr, "%s: %s: %r", cmdname, s);
+/n/dump/2013/0917/sys/src/cmd/pic/input.c:454 d ./input.c:447
+< 	errno = 0;
+/n/dump/2013/0917/sys/src/cmd/pic/input.c:485 c ./input.c:478,482
+< void yywrap(void) {}
+---
+> int
+> yywrap(void)
+> {
+> 	return 1;		/* read eof; did not switch inputs */
+> }
+diff -n /n/dump/2013/0917/sys/src/cmd/pic/linegen.c ./linegen.c
+/n/dump/2013/0917/sys/src/cmd/pic/linegen.c:0 a ./linegen.c:1,2
+> #include <u.h>
+> #include <libc.h>
+/n/dump/2013/0917/sys/src/cmd/pic/linegen.c:2,4 d ./linegen.c:3
+< #include <string.h>
+< #include <stdlib.h>
+< #include <math.h>
+diff -n /n/dump/2013/0917/sys/src/cmd/pic/main.c ./main.c
+/n/dump/2013/0917/sys/src/cmd/pic/main.c:0 a ./main.c:1,2
+> #include <u.h>
+> #include <libc.h>
+/n/dump/2013/0917/sys/src/cmd/pic/main.c:2,4 c ./main.c:4
+< #include	<signal.h>
+< #include	<stdlib.h>
+< #include	<string.h>
+---
+> #include <ctype.h>
+/n/dump/2013/0917/sys/src/cmd/pic/main.c:54 c ./main.c:54,57
+< 	signal(SIGFPE, fpecatch);
+---
+> //	signal(SIGFPE, fpecatch);	// TODO: add note catcher?
+> 	/* let us pass NaNs and Infs around without blowing a gasket. */
+> 	setfcr(getfcr() & ~FPINVAL);
+> 
+/n/dump/2013/0917/sys/src/cmd/pic/main.c:66 c ./main.c:69
+< 			return 0;
+---
+> 			exit(0);
+/n/dump/2013/0917/sys/src/cmd/pic/main.c:96 a ./main.c:100
+> 	exit(anyerr);
+/n/dump/2013/0917/sys/src/cmd/pic/main.c:109,111 d ./main.c:112
+< 	if (ptr == NULL)
+< 		p = malloc(num * size);
+< 	else
+/n/dump/2013/0917/sys/src/cmd/pic/main.c:190 c ./main.c:191
+< 	char *p, buf[1000], buf1[100];
+---
+> 	char *p, *fname, *prev, *next, buf[1000];
+/n/dump/2013/0917/sys/src/cmd/pic/main.c:192 c ./main.c:193,194
+< 	void reset(void), openpl(char *), closepl(char *), print(void);
+---
+> 	double d;
+> 	void reset(void), openpl(char *), closepl(char *), tblprint(void);
+/n/dump/2013/0917/sys/src/cmd/pic/main.c:203 a ./main.c:206
+> 
+/n/dump/2013/0917/sys/src/cmd/pic/main.c:205,208 c ./main.c:208,216
+< 				sscanf(p, "%s", buf1);
+< 				if ((curfile->fin=fopen(buf1, "r")) == NULL)
+< 					ERROR "can't open %s", buf1 FATAL;
+< 				curfile->fname = tostring(buf1);
+---
+> 				while (isspace(*p))
+> 					p++;
+> 				fname = p;
+> 				while (*p != '\0' && !isspace(*p))
+> 					p++;
+> 				*p = '\0';
+> 				if ((curfile->fin=fopen(fname, "r")) == NULL)
+> 					ERROR "can't open %s", fname FATAL;
+> 				curfile->fname = tostring(fname);
+/n/dump/2013/0917/sys/src/cmd/pic/main.c:222,223 c ./main.c:230,239
+< 				if (sscanf(&buf[4],"%lf %lf", &deltx, &delty) < 2)
+< 					delty = deltx * (ymax-ymin) / (xmax-xmin);
+---
+> 				prev = buf+4;
+> 				d = strtod(prev, &next);
+> 				if (next != prev) {	/* delta x present? */
+> 					deltx = d;
+> 					prev = next;
+> 					delty = strtod(prev, &next);
+> 					if (next == prev) /* no delta y? */
+> 						delty = deltx * (ymax-ymin) /
+> 							(xmax-xmin);
+> 				}
+/n/dump/2013/0917/sys/src/cmd/pic/main.c:239 c ./main.c:255
+< 				print();	/* assumes \n at end */
+---
+> 				tblprint();		/* assumes \n at end */
+/n/dump/2013/0917/sys/src/cmd/pic/main.c:246 c ./main.c:262,265
+< 			if (sscanf(buf+3, "%d %s", &ln, buf1) == 2) {
+---
+> 			curfile->lineno = ln = strtoul(buf+3, &fname, 0);
+> 			while (isspace(*fname))
+> 				fname++;
+> 			if (fname != buf+3 && *fname != '\0') {
+/n/dump/2013/0917/sys/src/cmd/pic/main.c:248 c ./main.c:267
+< 				printlf(curfile->lineno = ln, curfile->fname = tostring(buf1));
+---
+> 				printlf(ln, curfile->fname = tostring(fname));
+/n/dump/2013/0917/sys/src/cmd/pic/main.c:250 c ./main.c:269
+< 				printlf(curfile->lineno = ln, NULL);
+---
+> 				printlf(ln, NULL);
+diff -n /n/dump/2013/0917/sys/src/cmd/pic/misc.c ./misc.c
+/n/dump/2013/0917/sys/src/cmd/pic/misc.c:0 a ./misc.c:1,2
+> #include <u.h>
+> #include <libc.h>
+/n/dump/2013/0917/sys/src/cmd/pic/misc.c:2,4 d ./misc.c:3
+< #include <string.h>
+< #include <stdlib.h>
+< #include <math.h>
+/n/dump/2013/0917/sys/src/cmd/pic/misc.c:214 a ./misc.c:214
+> 	x1 = y1 = 0;
+diff -n /n/dump/2013/0917/sys/src/cmd/pic/mkfile ./mkfile
+/n/dump/2013/0917/sys/src/cmd/pic/mkfile:19 a ./mkfile:20
+> 	system.$O\
+/n/dump/2013/0917/sys/src/cmd/pic/mkfile:28,31 c ./mkfile:29,30
+< CC=pcc
+< LD=pcc
+< CFLAGS=-c
+< YFLAGS=-S -d
+---
+> CFLAGS=-FTVw
+> YFLAGS=-d
+/n/dump/2013/0917/sys/src/cmd/pic/mkfile:33 c ./mkfile:32
+< picy.c:	y.tab.c
+---
+> picy.c:D:	y.tab.c
+/n/dump/2013/0917/sys/src/cmd/pic/mkfile:36,37 c ./mkfile:35,36
+< picl.c:	picl.lx
+< 	$LEX -t $prereq > $target
+---
+> picl.c:D:	picl.lx
+> 	{ echo '#include <u.h>'; echo '#include <libc.h>'; $LEX -t $prereq } >$target
+diff -n /n/dump/2013/0917/sys/src/cmd/pic/movegen.c ./movegen.c
+/n/dump/2013/0917/sys/src/cmd/pic/movegen.c:0 a ./movegen.c:1,2
+> #include <u.h>
+> #include <libc.h>
+diff -n /n/dump/2013/0917/sys/src/cmd/pic/pic.h ./pic.h
+/n/dump/2013/0917/sys/src/cmd/pic/pic.h:219 a ./pic.h:220,224
+> 
+> /* import from unix */
+> #define exit(n) exits((n) == 0? 0: "error")
+> 
+> int	system(char *);
+diff -n /n/dump/2013/0917/sys/src/cmd/pic/picl.lx ./picl.lx
+/n/dump/2013/0917/sys/src/cmd/pic/picl.lx:12 c ./picl.lx:12,13
+< /* #include <stdio.h> lex puts one out for us */
+---
+> 
+> /* we insert includes for u.h and libc.h, and lex inserts include for stdio.h at the top */
+/n/dump/2013/0917/sys/src/cmd/pic/picl.lx:14 d ./picl.lx:14
+< #include <stdlib.h>
+diff -n /n/dump/2013/0917/sys/src/cmd/pic/picy.y ./picy.y
+/n/dump/2013/0917/sys/src/cmd/pic/picy.y:1 a ./picy.y:2,3
+> #include <u.h>
+> #include <libc.h>
+/n/dump/2013/0917/sys/src/cmd/pic/picy.y:4,6 d ./picy.y:5
+< #include <math.h>
+< #include <stdlib.h>
+< #include <string.h>
+diff -n /n/dump/2013/0917/sys/src/cmd/pic/pltroff.c ./pltroff.c
+/n/dump/2013/0917/sys/src/cmd/pic/pltroff.c:0 a ./pltroff.c:1,2
+> #include <u.h>
+> #include <libc.h>
+/n/dump/2013/0917/sys/src/cmd/pic/pltroff.c:2,3 d ./pltroff.c:3
+< #include <math.h>
+< #include <string.h>
+/n/dump/2013/0917/sys/src/cmd/pic/pltroff.c:4 a ./pltroff.c:5
+> 
+/n/dump/2013/0917/sys/src/cmd/pic/pltroff.c:263 a ./pltroff.c:265
+> 	USED(fill);
+/n/dump/2013/0917/sys/src/cmd/pic/pltroff.c:311 a ./pltroff.c:314
+> 	USED(ddval, dashed);
+Only in .: posix-to-9-diffs
+Only in .: prevy.tab.h
+diff -n /n/dump/2013/0917/sys/src/cmd/pic/print.c ./print.c
+/n/dump/2013/0917/sys/src/cmd/pic/print.c:0 a ./print.c:1,2
+> #include <u.h>
+> #include <libc.h>
+/n/dump/2013/0917/sys/src/cmd/pic/print.c:2 d ./print.c:3
+< #include <math.h>
+/n/dump/2013/0917/sys/src/cmd/pic/print.c:21 c ./print.c:22
+< void print(void)
+---
+> void tblprint(void)
+/n/dump/2013/0917/sys/src/cmd/pic/print.c:27 a ./print.c:29
+> 	x1 = y1 = 0;
+/n/dump/2013/0917/sys/src/cmd/pic/print.c:54 c ./print.c:56
+< 			if (p->o_type == BLOCK)
+---
+> 			if (p->o_type == BLOCK){
+/n/dump/2013/0917/sys/src/cmd/pic/print.c:56 c ./print.c:58
+< 			else if (invis && !fill)
+---
+> 			}else if (invis && !fill){
+/n/dump/2013/0917/sys/src/cmd/pic/print.c:58 c ./print.c:60
+< 			else if (p->o_attr & (DOTBIT|DASHBIT))
+---
+> 			}else if (p->o_attr & (DOTBIT|DASHBIT))
+/n/dump/2013/0917/sys/src/cmd/pic/print.c:206 a ./print.c:209
+> 		b = 0;
+diff -n /n/dump/2013/0917/sys/src/cmd/pic/symtab.c ./symtab.c
+/n/dump/2013/0917/sys/src/cmd/pic/symtab.c:0 a ./symtab.c:1,2
+> #include <u.h>
+> #include <libc.h>
+/n/dump/2013/0917/sys/src/cmd/pic/symtab.c:2,4 d ./symtab.c:3
+< #include <stdlib.h>
+< #include <ctype.h>
+< #include <string.h>
+/n/dump/2013/0917/sys/src/cmd/pic/symtab.c:5 a ./symtab.c:5
+> #include <ctype.h>
+Only in .: system.c
+diff -n /n/dump/2013/0917/sys/src/cmd/pic/textgen.c ./textgen.c
+/n/dump/2013/0917/sys/src/cmd/pic/textgen.c:0 a ./textgen.c:1,2
+> #include <u.h>
+> #include <libc.h>

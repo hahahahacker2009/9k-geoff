@@ -1,0 +1,10 @@
+# milk-v jupiter
+PAClint=0xe4000000LL
+PAUart0=0xd4017000LL
+CONFDEF= '-DBLOCKALIGN=CACHELINESZ' # '-DHZ=200'
+SFX=uim
+
+PHYSMEM=0x200000		# can't be zero
+BANK0SIZE='(GB-PHYSMEM)'
+KTZERO=0xffffffc000200000	# sv39 but skip first 2MB of RAM @ 0
+RBKTZERO=0x3ff05000

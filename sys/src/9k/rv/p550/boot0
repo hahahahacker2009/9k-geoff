@@ -1,0 +1,248 @@
+: mac#; cu -s 115200 -l /dev/tty.usbserial-1102
+Connected.
+pll config ok
+Firmware version:1.2;disable ECC
+PHY0 training process:100%
+PHY1 training process:100%
+DDR type:LPDDR5;Size:16GB,Data Rate:6400MT/s
+DDR self test OK
+m
+OpenSBI v1.4
+   ____                    _____ ____ _____
+  / __ \                  / ____|  _ \_   _|
+ | |  | |_ __   ___ _ __ | (___ | |_) || |
+ | |  | | '_ \ / _ \ '_ \ \___ \|  _ < | |
+ | |__| | |_) |  __/ | | |____) | |_) || |_
+  \____/| .__/ \___|_| |_|_____/|____/_____|
+        | |
+        |_|
+
+Platform Name             : ESWIN EIC770X
+Platform Features         : none
+Platform HART Count       : 4
+Platform IPI Device       : aclint-mswi
+Platform Timer Device     : aclint-mtimer @ 1000000Hz
+Platform Console Device   : uart8250
+Platform HSM Device       : ---
+Platform PMU Device       : ---
+Platform Reboot Device    : eswin_eic770x_reset
+Platform Shutdown Device  : eswin_eic770x_reset
+Platform Suspend Device   : ---
+Platform CPPC Device      : ---
+Firmware Base             : 0x80000000
+Firmware Size             : 344 KB
+Firmware RW Offset        : 0x40000
+Firmware RW Size          : 88 KB
+Firmware Heap Offset      : 0x4c000
+Firmware Heap Size        : 40 KB (total), 2 KB (reserved), 9 KB (used), 28 KB (free)
+Firmware Scratch Size     : 4096 B (total), 296 B (used), 3800 B (free)
+Runtime SBI Version       : 2.0
+
+Domain0 Name              : root
+Domain0 Boot HART         : 3
+Domain0 HARTs             : 0*,1*,2*,3*
+Domain0 Region00          : 0x0000000002008000-0x000000000200bfff M: (I,R,W) S/U: ()
+Domain0 Region01          : 0x0000000002000000-0x0000000002007fff M: (I,R,W) S/U: ()
+Domain0 Region02          : 0x0000000080040000-0x000000008005ffff M: (R,W) S/U: ()
+Domain0 Region03          : 0x0000000080000000-0x000000008003ffff M: (R,X) S/U: ()
+Domain0 Region04          : 0x0000001000000000-0x0000007fffffffff M: () S/U: ()
+Domain0 Region05          : 0x0000000020000000-0x000000003fffffff M: () S/U: ()
+Domain0 Region06          : 0x0000000000000000-0xffffffffffffffff M: () S/U: (R,W,X)
+Domain0 Next Address      : 0x0000000080200000
+Domain0 Next Arg1         : 0x00000000f8000000
+Domain0 Next Mode         : S-mode
+Domain0 SysReset          : yes
+Domain0 SysSuspend        : yes
+
+Boot HART ID              : 3
+Boot HART Domain          : root
+Boot HART Priv Version    : v1.11
+Boot HART Base ISA        : rv64imafdchx
+Boot HART ISA Extensions  : sscofpmf,zihpm
+Boot HART PMP Count       : 8
+Boot HART PMP Granularity : 12 bits
+Boot HART PMP Address Bits: 39
+Boot HART MHPM Info       : 4 (0x00000078)
+Boot HART MIDELEG         : 0x0000000000002666
+Boot HART MEDELEG         : 0x0000000000f00509
+ll
+
+U-Boot 2024.01 (Nov 06 2024 - 05:26:46 +0000)
+
+CPU:   rv64imafdc_zba_zbb
+Model: SiFive HiFive Premier P550
+DRAM:  16 GiB
+llCore:  113 devices, 30 uclasses, devicetree: separate
+Warning: Device tree includes old 'u-boot,dm-' tags: please fix by 2023.07!
+MMC:   sdhci@50450000: 0, sd@50460000: 1
+Loading Environment from SPIFlash... SF: Detected w25q128fw with page size 256 Bytes, erase size 4 KiB, total 16 MiB
+*** Warning - bad CRC, using default environment
+
+eswin_pcie_wait_link_up: error: wait linkup timeout
+PCIE-0: Link up (Gen1-x1, Bus0)
+[display_init]Eswin UBOOT DRM driver version: v1.0.1
+In:    serial,usbkbd
+Out:   vidconsole,serial
+Err:   vidconsole,serial
+Bootspi flash write protection enabled
+Get som info from flash
+Cpu volatge need boost above 1.6 Ghz!
+Could not find "root" partition
+Low power features will not be supported!
+Net:   eth0: ethernet@50400000
+Working FDT set to ed51c710
+starting USB...
+Bus usb1@50490000: Register 2000140 NbrPorts 2
+Starting the controller
+USB XHCI 1.10
+scanning bus usb1@50490000 for devices... 3 USB Device(s) found
+       scanning usb for storage devices... 0 Storage Device(s) found
+No SATA device found!
+Hit any key to stop autoboot:  0 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> setenv bootdelay 5
+=> help dhcp
+dhcp - boot image via network using DHCP/TFTP protocol
+
+Usage:
+dhcp [loadAddress] [[hostIPaddr:]bootfilename]
+=> dhcp 0x80200000 /riscv64/9p550cpu.bin 
+ethernet@50400000 Waiting for PHY auto negotiation to complete...... done
+BOOTP broadcast 1
+BOOTP broadcast 2
+BOOTP broadcast 3
+BOOTP broadcast 4
+BOOTP broadcast 5
+BOOTP broadcast 6
+
+Abort
+=> bdinfo
+boot_params = 0x0000000000000000
+DRAM bank   = 0x0000000000000000
+-> start    = 0x0000000080000000
+-> size     = 0x0000000400000000
+flashstart  = 0x0000000000000000
+flashsize   = 0x0000000000000000
+flashoffset = 0x0000000000000000
+baudrate    = 115200 bps
+relocaddr   = 0x00000000fd5a5000
+reloc off   = 0x000000007d3a5000
+Build       = 64-bit
+current eth = ethernet@50400000
+ethaddr     = 8c:1f:64:13:cd:51
+IP addr     = <NULL>
+fdt_blob    = 0x00000000ed51c710
+new_fdt     = 0x00000000ed51c710
+fdt_size    = 0x00000000000086c0
+Video       = display-subsystem active
+FB base     = 0x00000000fd800000
+FB size     = 1920x1080x32
+lmb_dump_all:
+ memory.cnt = 0x1 / max = 0x10
+ memory[0]	[0x80000000-0x47fffffff], 0x400000000 bytes flags: 0
+ reserved.cnt = 0x6 / max = 0x10
+ reserved[0]	[0x20000000-0x3fffffff], 0x20000000 bytes flags: 4
+ reserved[1]	[0x80000000-0x8005ffff], 0x00060000 bytes flags: 4
+ reserved[2]	[0xdfff0000-0xe0ffffff], 0x01010000 bytes flags: 4
+ reserved[3]	[0xe851b000-0xffffffff], 0x17ae5000 bytes flags: 0
+ reserved[4]	[0x47fff4000-0x47fffffff], 0x0000c000 bytes flags: 0
+ reserved[5]	[0x1000000000-0x10003fffff], 0x00400000 bytes flags: 4
+devicetree  = separate
+=> dhcp 0x80200000 /riscv64/9p550cpu.bin 
+BOOTP broadcast 1
+DHCP client bound to address 96.78.174.39 (51 ms)
+Using ethernet@50400000 device
+TFTP from server 96.78.174.45; our IP address is 96.78.174.39
+Filename '/riscv64/9p550cpu.bin'.
+Load address: 0x80200000
+Loading: #################################################################
+	 #################
+	 4.3 MiB/s
+done
+Bytes transferred = 1104118 (10d8f6 hex)
+=> go 0x80200000
+## Starting application at 0x80200000 ...
+--
+
+start of bank 0 (after 0x80000000) missing
+1 of 8 l2 cache ways enabled at entry; setting to 7
+panic: mmuinit: asmalloc for gap 1097728 after kernel failed
+panic: mmuinit: asmalloc for gap 1097728 after kernel failed
+panic: mmuinit: asmalloc for gap 1097728 after kernel failed
+max Proc stack use 0 Mach stack use 0
+cpu0: registers for kernel
+r1	0xffff80008020986c	r2	0xffff8000bff02dd0
+r3	0x0000000000000000	r4	0x0000000000000000
+r5	0x0000000000000000	r6	0x0000000000000000
+r7	0x0000000000000000	r8	0x0000000000000000
+r9	0x0000000000000000	r10	0x0000000000000000
+r11	0x0000000000000000	r12	0x0000000000000000
+r13	0x0000000000000000	r14	0x0000000000000000
+r15	0x0000000000000000	r16	0x0000000000000000
+r17	0x0000000000000000	r18	0x0000000000000000
+r19	0x0000000000000000	r20	0x0000000000000000
+r21	0x0000000000000000	r22	0x0000000000000000
+r23	0x0000000000000000	r24	0x0000000000000000
+r25	0x0000000000000000	r26	0x0000000000000000
+r27	0x0000000000000000	r28	0x0000000000000000
+r29	0x0000000000000000	r30	0x0000000000000000
+r31	0x0000000000000000
+pc	0xffff80008020986c	type	0x0	m	0xffff8000bff04000
+up	0x0000000000000000
+satp	0x90000000000bff03
+dumpstack
+ktrace /kernel/path 0xffff80008020986c 0xffff8000bff02dd0 0xffff80008020986c
+estackx 0xffff8000bff03000
+0xffff8000bff02c80=0xffff80008020986c 0xffff8000bff02c88=0xffff8000bff02ca0 
+0xffff8000bff02ca0=0xffff80008020986c 0xffff8000bff02ca8=0xffff80008020986c 
+0xffff8000bff02cb0=0xffff8000bff02dd0 0xffff8000bff02dc8=0xffff80008024a584 
+0xffff8000bff02dd0=0xffff8000802096cc 0xffff8000bff02dd8=0xffff80008020704e 
+0xffff8000bff02de8=0xffff8000bff02e08 0xffff8000bff02df8=0xffff8000bff02f30 
+0xffff8000bff02e00=0xffff8000bff02e0f 0xffff8000bff02e48=0xffff8000bff02f88 
+0xffff8000bff02e90=0xffff800080204d6c 0xffff8000bff02e98=0xffff800080204d3c 
+0xffff8000bff02ea0=0xffff800080241986 0xffff8000bff02eb0=0xffff800080226dc8 
+0xffff8000bff02ec8=0xffff8000802423a4 0xffff8000bff02ed8=0xffff800080207022 
+0xffff8000bff02ef0=0xffff800080203c26 0xffff8000bff02ef8=0xffff800080205a2e 
+0xffff8000bff02f00=0xffff800080205a86 0xffff8000bff02f08=0xffff8000bff02f30 
+0xffff8000bff02f10=0x0000000000000000 0xffff8000bff02f18=0x0000003c00000000 
+0xffff8000bff02f20=0xffff800080207164 0xffff8000bff02f28=0xffff800080290d19 
+0xffff8000bff02f30=0x000000000010c000 0xffff8000bff02f38=0xffffff0000000001 
+0xffff8000bff02f40=0x0000000000000000 0xffff8000bff02f48=0xffff8000bff03ff8 
+0xffff8000bff02f50=0xffff8000802d52e0 0xffff8000bff02f58=0x00000000002f4000 
+0xffff8000bff02f60=0x000000000010c000 0xffff8000bff02f68=0x0000008000000000 
+0xffff8000bff02f70=0x00000000802f4000 0xffff8000bff02f78=0xffff8000802019bc 
+0xffff8000bff02f80=0xffff800080202d0c 0xffff8000bff02f88=0x0000000800000001 
+0xffff8000bff02f90=0xffff800000000007 0xffff8000bff02f98=0xffff8000802019b8 
+0xffff8000bff02fa0=0x00000000152881f7 0xffff8000bff02fa8=0xffff8000802d52e0 
+0xffff8000bff02fb0=0x000000001526fb57 0xffff8000bff02fb8=0x00000073ad2e7f31 
+0xffff8000bff02fc0=0xffff800080201dfa 0xffff8000bff02fc8=0xffff8000802de814 
+0xffff8000bff02fd0=0xffff800080200fb8 0xffff8000bff02fd8=0x0000000000000000 
+0xffff8000bff02fe0=0x0000000080200fa2 0xffff8000bff02fe8=0x0000000000000000 
+0xffff8000bff02ff0=0x0000000000000000 0xffff8000bff02ff8=0x0000000000000000 
+panic: mmuinit: asmalloc for gap 1097728 after kernel failed
+cpu0: exiting...mpshutdown: 0 active cpus
+max Proc stack use 0 Mach stack use 0
+reset failed; trying sbi shutdown.
+eic770x_core_shutdown

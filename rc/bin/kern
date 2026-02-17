@@ -1,0 +1,17 @@
+#!/bin/rc
+# kern - print path name of running kernel
+rfork e
+
+cpu= `{echo $terminal | sed 's; .*;;' | tr A-Z a-z}
+if (~ $cpu generic _MP_ _mp_)
+	cpu=386
+if (! ~ $cpu $cputype) {
+	echo $0: implausible cpu $cpu for cputype $cputype >[1=2]
+	cpu=$cputype
+}
+tbase=`{echo $terminal | sed 's/.* //'}
+base=`{basename $tbase}
+if (test -e  /$cpu/s9^$base)
+	echo /$cpu/s9^$base
+if not
+	echo /$cpu/9^$base

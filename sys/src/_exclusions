@@ -1,0 +1,13 @@
+_*
+9*/*/_*
+cmd/_*
+cmd/*/_*
+cmd/bc-dc.v10
+cmd/bc-dc.v7
+cmd/dup
+cmd/exportfs.kern
+cmd/ip/ike
+cmd/unix/drawterm/bin/*
+games/pac*
+
+/lib/audio

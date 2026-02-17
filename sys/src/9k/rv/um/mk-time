@@ -1,0 +1,5 @@
+: um; mk time
+{ mk clean; time mk } >/dev/null
+bootumcpu.c:
+../boot/printstub.c:
+6.47u 3.29s 8.93r 	 mk

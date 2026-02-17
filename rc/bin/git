@@ -1,0 +1,551 @@
+#!/bin/rc
+
+# This script was written by David du Colombier in November 2014.
+# History: https://blog.gopheracademy.com/advent-2014/wrapping-git/
+#
+# This script is regularly updated. The latest version is available on:
+# http://9legacy.org/9legacy/tools/git
+#
+# Version 2022-11-28
+
+rfork en
+
+tmp=/tmp/git.$pid
+
+fn usage{
+	echo 'usage: git <command> [<args>]' >[1=2]
+	exit usage
+}
+
+# supported commands:
+# git init [options]
+# git checkout [options] [<commit>]
+# git clone [options] <repository> [<directory>]
+# git pull [options] [<repository>
+# git reset [options] [<commit>]
+
+verbose=1
+commonhost = (github.com codeberg.org git.sr.ht gitlab.com)
+
+fn dprint{
+	if(~ $verbose '1')
+		echo $* >> $tmp/log
+}
+
+fn dircp{
+	switch($#*){
+	case 2
+		@{cd $1 && tar cif $tmp/dircp.tar .}
+		@{cd $2 && tar xf $tmp/dircp.tar}
+	case *
+		echo usage: dircp from to >[1=2]
+		exit usage
+	}
+}
+
+fn get{
+	timeout=1800
+	elapsed=0
+	delay=0
+	stride=10
+	done=''
+
+	while(test -z $done){
+		hget $* >[2]/dev/null
+		s=$status
+		if(~ $s *'Not found on server'){
+			if(test $elapsed -gt $timeout)
+				done=1
+			delay=`{echo $delay+$stride | bc}
+			sleep $delay
+			elapsed=`{echo $elapsed+$delay | bc}
+		}
+		if not
+			done=1
+	}
+
+	status=$s
+}
+	
+
+fn parse_local{
+	src=$1
+
+	dprint parse_src $src
+
+	if(~ $src '')
+		exit args
+
+	src=`{echo $src | sed 's,/+$,,'}
+	repo=`{basename $src}
+
+	fetch_fn=fetch_local
+}
+
+fn parse_uri{
+	src=$1
+
+	dprint parse_src $src
+
+	if(~ $src '')
+		exit args
+
+	website=`{echo $src | sed 's,https?://([^/]+).*,\1,'}
+	if(~ $website ''){
+		echo 'fatal: repository '''$src''' doesn''t exist' >[1=2]
+		exit fatal
+	}
+
+	switch($website){
+	case *.googlesource.com
+		repo=`{echo $src | sed 's,https?://([^/]+)/([^/]+)/?,\2,'}
+		if(~ $repo ''){
+			echo 'fatal: repository '''$src''' doesn''t exist' >[1=2]
+			exit fatal
+		}
+	case $commonhost
+		src=`{echo $src | sed 's/\.git$//'}
+		user=`{echo $src | sed 's,https?://([^/]+)/([^/]+)/([^/]+)/?,\2,'}
+		repo=`{echo $src | sed 's,https?://([^/]+)/([^/]+)/([^/]+)/?,\3,'}
+		if(~ $user '' || ~ $repo ''){
+			echo 'fatal: repository '''$src''' doesn''t exist' >[1=2]
+			exit fatal
+		}
+	case repo.or.cz
+		repo=`{echo $src | sed 's,https?://(.+)/([^/]+)/?,\2,' | sed 's/\.git$//'}
+		if(~ $repo ''){
+			echo 'fatal: repository '''$src''' doesn''t exist' >[1=2]
+			exit fatal
+		}
+	case gopkg.in
+		repo=`{echo $src | sed 's,https?://([^/]+)/([^/]+)/?,\2,' | sed 's/\.v[0-9]+$//'}
+		switch($repo){
+		case inf
+			user=go-inf
+		case *
+			echo 'fatal: repository '''$src''' isn''t supported' >[1=2]
+			exit fatal
+		}
+		if(~ $user '' || ~ $repo ''){
+			echo 'fatal: repository '''$src''' doesn''t exist' >[1=2]
+			exit fatal
+		}
+	case *
+		echo 'fatal: website '''$website''' isn''t supported' >[1=2]
+		exit fatal
+	}
+
+	src=`{echo $src | sed 's,/+$,,'}
+
+	fetch_fn=fetch_uri
+}
+
+fn parse_repository{
+	repository=$1
+
+	if(~ $repository '')
+		exit args
+
+	switch($repository){
+	case http*://*
+		parse_uri $1
+	case /*
+		parse_local $1
+	case
+		echo 'fatal: Unable to find remote helper for '''$repository'''' >[1=2]
+		exit fatal
+	}
+}
+
+fn gitconfig{
+	uri=$1
+	dst=$2
+
+	if(~ $uri '' || ~ $dst '')
+		exit args
+
+	# if it wasn't copied from a local directory (alongside with the .git)
+	if(! test -d $dst/.git){
+		mkdir $dst/.git
+		echo 'url = '^$uri >$dst/.git/config
+	}
+}
+
+fn clone{
+	target=master
+
+	while(~ $1 -*){
+		opt=$1
+		shift
+		switch($opt){
+		case -b
+			target = $1
+			shift
+		case *
+			dprint option $opt
+		}
+	}
+
+	parse_repository $1
+
+	if(test $#* -eq 1)
+		dst=$repo
+	if not
+		dst=$2
+
+	if(test -d $dst){
+		n=`{ls $dst | wc -l | awk '{print $1}'}
+		if(! ~ $n 0){
+			echo 'fatal: destination path '''$dst''' already exists and is not an empty directory.' >[1=2]
+			exit fatal
+		}
+	}
+
+	$fetch_fn $src $dst $target
+	gitconfig $src $dst
+}
+
+fn cleanup{
+	# paranoia
+	if(! test -d .git || ! test -f .git/config){
+		echo 'fatal: Not a git repository.' >[1=2]
+		exit fatal
+	}
+
+	for(i in *){
+		if(! ~ $i '.git'){
+			if(test -f $i)
+				rm $i
+			if not if(test -d $i)
+				rm -rf $i
+		}
+	}
+}
+
+fn fetch_local_master{
+	src=$1
+	dst=$2
+
+	dprint fetch_local_master $src $dst
+
+	if(~ $src '' || ~ $dst '')
+		exit args
+
+	if(! test -d $src){
+		echo 'abort: repository '$src' not found!' >[1=2]
+		exit fatal
+	}
+
+	if(! test -d $dst)
+		mkdir -p $dst
+
+	dircp $src $dst || exit
+}
+
+# This function is only called on a checkout when the
+# .git/config contains an url= to another directory.
+# This is not really useful in practice, because the .git/config
+# is always copied from the original remote url on a clone.
+fn fetch_local_object{
+	src=$1
+	dst=$2
+	object=$3
+
+	dprint fetch_local_object $src $dst $object
+
+	if(~ $src '' || ~ $dst '' || ~ $object '')
+		exit args
+
+	if(! test -d $src || ! test -d $src/.git || ! test -f $src/.git/config){
+		echo 'abort: repository '$src' not found!' >[1=2]
+		exit fatal
+	}
+
+	uri=`{cat $src/.git/config | grep 'url ?= ?' | awk -F'=' '{print $2}'}
+
+	fetch_uri $uri $dst $object
+}
+
+fn fetch_local{
+	src=$1
+	dst=$2
+	object=$3
+
+	if(~ $object '' || ~ $object master)
+		fetch_local_master $src $dst
+	if not
+		fetch_local_object $src $dst $object
+}
+
+fn fetch_uri{
+	uri=$1
+	dst=$2
+	object=$3
+
+	if(~ $object '')
+		object=master
+
+	dprint fetch_uri $uri $dst $object
+
+	if(~ $uri '' || ~ $dst '' || ~ $object '')
+		exit args
+
+	tar=$object.tar.gz
+	switch($website){
+	case go.googlesource.com
+		# use github since googlesource go archive uses extended attribute to handle long names
+		repo=`{basename $uri}
+		archive=https://github.com/golang/$repo/archive/$tar
+	case *.googlesource.com
+		archive=$uri^/+archive/$tar
+	case $commonhost
+		archive=$uri^/archive/$tar
+		if(~ $website gitlab.com)
+			archive=$uri^/-/archive/$tar
+	case repo.or.cz
+			archive=$uri^/snapshot/$tar
+	case gopkg.in
+		archive=https://github.com/$user/$repo/archive/$tar
+	case *
+		echo 'fatal: website '''$website''' isn''t supported' >[1=2]
+		exit fatal
+	}
+	file=$tmp/$tar
+
+	rm -f $file
+	get -o $file $archive || exit
+
+	if(! test -d $dst)
+		mkdir -p $dst
+
+	cd $tmp || exit
+	gunzip $file || exit
+	rm $file || exit
+	tar=`{echo $file | sed 's/\.gz$//'}
+
+	switch($website){
+	case $commonhost repo.or.cz go.googlesource.com gopkg.in
+		cd $tmp || exit
+		tar xf $tar || exit
+		cd $pwd || exit
+
+		tmpdst=$tmp/$repo^*
+
+		dircp $tmpdst $dst || exit
+		rm -rf $tmpdst
+	case *.googlesource.com
+		cd $pwd || exit
+		cd $dst || exit
+		tar xf $tar || exit
+		cd $pwd || exit
+	case *
+		echo 'fatal: website '''$website''' isn''t supported' >[1=2]
+		exit fatal
+	}
+}
+
+fn pull{
+	while(~ $1 -*){
+		opt=$1
+		shift
+		switch($opt){
+		case *
+			dprint option $opt
+		}
+	}
+
+	if(! test -d .git || ! test -f .git/config){
+		echo 'fatal: Not a git repository.' >[1=2]
+		exit fatal
+	}
+
+	if(test $#* -eq 0)
+		uri=`{cat .git/config | grep 'url ?= ?' | awk -F'=' '{print $2}'}
+	if not
+		uri=$1
+
+	parse_repository $uri
+	cleanup
+	dst=`{pwd}
+	$fetch_fn $uri $dst master
+}
+
+fn checkout{
+	while(~ $1 -*){
+		opt=$1
+		shift
+		switch($opt){
+		case *
+			dprint option $opt
+		}
+	}
+
+	object=$1
+
+	if(~ $object '')
+		object=master
+
+	if(! test -d .git || ! test -f .git/config){
+		echo 'fatal: Not a git repository.' >[1=2]
+		exit fatal
+	}
+
+	uri=`{cat .git/config | grep 'url ?= ?' | awk -F'=' '{print $2}'}
+	parse_repository $uri
+	cleanup $dir
+	dst=`{pwd}
+
+	$fetch_fn $uri $dst $object
+}
+
+fn version{
+	echo git version 2.2.0
+}
+
+# cmd/dist generates the VERSION.cache file this way:
+# % git rev-parse --git-dir
+# .git
+# % git rev-parse --abbrev-ref HEAD
+# master
+# % git log -n 1 --format='format: +%h %cd' HEAD
+#  +c69e686 Tue Mar 8 19:30:38 2016 +0000
+# % cat VERSION.cache
+# devel +c69e686 Tue Mar 8 19:30:38 2016 +0000
+
+fn log {
+	while(~ $1 -*){
+		opt=$1
+		shift
+		switch($opt){
+		case -n
+			shift
+		case --format*
+			echo ' '+master `{date}
+			shift
+		case *
+			dprint option $opt
+		}
+	}
+}
+
+fn rev-parse{
+	while(~ $1 -*){
+		opt=$1
+		shift
+		switch($opt){
+		case --git-dir
+			echo .git
+			shift
+		case --abbrev-ref
+			echo master
+			shift
+		case *
+			dprint option $opt
+		}
+	}
+}
+
+fn show-ref{
+}
+
+fn submodule{
+}
+
+fn status{
+	echo On branch master
+	echo Your branch is up to date with '''origin/master'''.
+	echo nothing to commit, working tree clean
+}
+
+fn config{
+	while(~ $1 -*){
+		opt=$1
+		shift
+		switch($opt){
+		case *
+			dprint option $opt
+		}
+	}
+
+	if(~ $1 remote.origin.url){
+		if(test -f .git/config){
+			uri=`{cat .git/config | grep 'url ?= ?' | awk -F'=' '{print $2}'}
+			echo $uri
+		}
+	}
+}
+
+# /bin/git init --bare
+fn init{
+	base='.'
+	while(~ $1 -*){
+		shift
+	}
+	if(~ $#* 1)
+		base=$1
+	if(! test -f $base/.git)
+		mkdir $base/.git
+}
+
+# /bin/git remote add origin -- https://domain.com/repository/package.git
+fn remote{
+	if(! ~ $#* 4 || ! ~ $1 add || ! ~ $2 origin  || ! ~ $3 --){
+		echo 'fatal: ' $* ' isn''t supported' >[1=2]
+		exit 'not supported'
+	}
+	gitconfig $4 ./
+}
+
+fn main{
+	mkdir $tmp
+
+	dprint $0 $*
+
+	if(~ $#* 0){
+		usage
+	}
+
+	pwd=`{pwd}
+
+	cmd=$1
+	shift
+
+	switch($cmd){
+		case init
+			init $*
+		case clone
+			clone $*
+		case pull
+			pull $*
+		case checkout
+			checkout $*
+		case reset
+			checkout $*
+		case fetch
+			checkout $*
+		case version
+			version $*
+		case log
+			log $*
+		case rev-parse
+			rev-parse $*
+		case show-ref
+			show-ref $*
+		case remote
+			remote $*
+		case status
+			status $*
+		case submodule
+			submodule $*
+		case config
+			config $*
+		case --*
+			shift
+		case *
+			usage
+	}
+
+	rm -r $tmp
+}
+
+main $*

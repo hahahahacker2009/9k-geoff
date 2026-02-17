@@ -1,0 +1,5 @@
+#!/bin/rc
+rm -f /srv/fs
+srv -m fs
+bind -c /n/fs/mail/faxqueue /mail/faxqueue
+exec /bin/aux/faxreceive

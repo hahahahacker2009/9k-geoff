@@ -1,0 +1,346 @@
+U-Boot SPL 2021.01 (Apr 07 2021 - 17:59:15 +0000)
+Trying to boot from MMC1
+
+
+U-Boot 2021.01 (Apr 07 2021 - 17:59:15 +0000)
+
+CPU:   rv64imafdc
+Model: SiFive HiFive Unmatched A00
+DRAM:  16 GiB
+MMC:   spi@10050000:mmc@0: 0
+EEPROM: SiFive PCB EEPROM format v1
+Serial number: SF105SZ212200440
+PCB revision: 3
+Ethernet MAC address: 70:b3:d5:92:f8:c0
+CRC: b23f24f1
+EEPROM dump: (0x25 bytes)
+00: F1 5E 50 45 01 02 00 03 42 00 53 46 31 30 35 53 
+10: 5A 32 31 32 32 30 30 34 34 30 01 70 B3 D5 92 F8 
+20: C0 F1 24 3F B2 
+found SiFive v1
+In:    serial@10010000
+Out:   serial@10010000
+Err:   serial@10010000
+Model: SiFive HiFive Unmatched A00
+Net:   eth0: ethernet@10090000
+Hit any key to stop autoboot:  0 
+=> 
+=> 
+=> 
+=> 
+=> dhcp
+ethernet@10090000: PHY present at 0
+ethernet@10090000: Starting autonegotiation...
+ethernet@10090000: Autonegotiation complete
+ethernet@10090000: link up, 1000Mbps full-duplex (lpa: 0x3800)
+BOOTP broadcast 1
+ethernet@10090000: TX timeout
+BOOTP broadcast 2
+ethernet@10090000: TX timeout
+BOOTP broadcast 3
+ethernet@10090000: TX timeout
+BOOTP broadcast 4
+ethernet@10090000: TX timeout
+BOOTP broadcast 5
+ethernet@10090000: TX timeout
+BOOTP broadcast 6
+ethernet@10090000: TX timeout
+BOOTP broadcast 7
+ethernet@10090000: TX timeout
+BOOTP broadcast 8
+ethernet@10090000: TX timeout
+
+U-Boot SPL 2025.01-dirty (Jan 07 2025 - 00:54:44 +0000)
+Trying to boot from MMC1
+
+
+U-Boot 2025.01-dirty (Jan 07 2025 - 00:54:44 +0000)
+
+CPU:   sifive,bullet0
+Model: SiFive HiFive Unmatched A00
+DRAM:  16 GiB
+Core:  36 devices, 21 uclasses, devicetree: separate
+MMC:   spi@10050000:mmc@0: 0
+Loading Environment from SPIFlash... SF: Detected is25wp256 with page size 256 Bytes, erase size 4 KiB, total 32 MiB
+*** Warning - bad CRC, using default environment
+
+EEPROM: SiFive PCB EEPROM format v1
+Product ID: 0002 (HiFive Unmatched)
+PCB revision: 3
+BOM revision: B
+BOM variant: 0
+Serial number: SF105SZ212200440
+Ethernet MAC address: 70:b3:d5:92:f8:c0
+CRC: b23f24f1
+PCIE-0: Link up (Gen1-x8, Bus0)
+In:    serial@10010000
+Out:   serial@10010000
+Err:   serial@10010000
+Model: SiFive HiFive Unmatched A00
+Net:   eth0: ethernet@10090000
+Working FDT set to ff72f660
+Hit any key to stop autoboot:  0 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+U-Boot SPL 2025.01-dirty (Jan 07 2025 - 00:54:44 +0000)
+Trying to boot from MMC1
+
+
+U-Boot 2025.01-dirty (Jan 07 2025 - 00:54:44 +0000)
+
+CPU:   sifive,bullet0
+Model: SiFive HiFive Unmatched A00
+DRAM:  16 GiB
+Core:  36 devices, 21 uclasses, devicetree: separate
+MMC:   spi@10050000:mmc@0: 0
+Loading Environment from SPIFlash... SF: Detected is25wp256 with page size 256 Bytes, erase size 4 KiB, total 32 MiB
+*** Warning - bad CRC, using default environment
+
+EEPROM: SiFive PCB EEPROM format v1
+Product ID: 0002 (HiFive Unmatched)
+PCB revision: 3
+BOM revision: B
+BOM variant: 0
+Serial number: SF105SZ212200440
+Ethernet MAC address: 70:b3:d5:92:f8:c0
+CRC: b23f24f1
+PCIE-0: Link up (Gen1-x8, Bus0)
+In:    serial@10010000
+Out:   serial@10010000
+Err:   serial@10010000
+Model: SiFive HiFive Unmatched A00
+Net:   eth0: ethernet@10090000
+Working FDT set to ff72f660
+Hit any key to stop autoboot:  0 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> saveenv
+Saving Environment to SPIFlash... Erasing SPI flash...Writing to SPI flash...done
+OK
+=> set bootdelay 2
+Unknown command 'set' - try 'help'
+=> setenv bootdelay  2
+=> saveenv
+Saving Environment to SPIFlash... Erasing SPI flash...Writing to SPI flash...done
+OK
+=> dhcp
+ethernet@10090000: PHY present at 0
+ethernet@10090000: Starting autonegotiation...
+ethernet@10090000: Autonegotiation complete
+ethernet@10090000: link up, 1000Mbps full-duplex (lpa: 0x3800)
+BOOTP broadcast 1
+DHCP client bound to address 96.78.174.39 (32 ms)
+Using ethernet@10090000 device
+TFTP from server 96.78.174.33; our IP address is 96.78.174.39
+Filename '/riscv64/9umcpu.uim'.
+Load address: 0x80200000
+Loading: ########################################
+	 8.5 MiB/s
+done
+Bytes transferred = 532580 (82064 hex)
+=> bootm dhcp 0x90000000
+bootm - boot application image from memory
+
+Usage:
+bootm [addr [arg ...]]
+    - boot application image stored in memory
+	passing arguments 'arg ...'; when booting a Linux kernel,
+	'arg' can be the address of an initrd image
+	When booting a Linux kernel which requires a flat device-tree
+	a third argument is required which is the address of the
+	device-tree blob. To boot that kernel without an initrd image,
+	use a '-' for the second argument. If you do not pass a third
+	a bd_info struct will be passed instead
+	
+For the new multi component uImage format (FIT) addresses
+	must be extended to include component or configuration unit name:
+	addr:<subimg_uname> - direct component image specification
+	addr#<conf_uname>   - configuration specification
+	Use iminfo command to get the list of existing component
+	images and configurations.
+
+Sub-commands to do part of the bootm sequence.  The sub-commands must be
+issued in the order below (it's ok to not issue all sub-commands):
+	start [addr [arg ...]]
+	loados  - load OS image
+	ramdisk - relocate initrd, set env initrd_start/initrd_end
+	fdt     - relocate flat device tree
+	cmdline - OS specific command line processing/setup
+	bdt     - OS specific bd_info processing
+	prep    - OS specific prep before relocation or go
+	go      - start OS
+=> dhcp 0x90000000
+ethernet@10090000: PHY present at 0
+ethernet@10090000: Starting autonegotiation...
+ethernet@10090000: Autonegotiation complete
+ethernet@10090000: link up, 1000Mbps full-duplex (lpa: 0x3800)
+BOOTP broadcast 1
+DHCP client bound to address 96.78.174.39 (30 ms)
+Using ethernet@10090000 device
+TFTP from server 96.78.174.33; our IP address is 96.78.174.39
+Filename '/riscv64/9umcpu.uim'.
+Load address: 0x90000000
+Loading: ########################################
+	 9.2 MiB/s
+done
+Bytes transferred = 532580 (82064 hex)
+=> bootm 0x90000000 - ${fdtcontroladdr}
+## Booting kernel from Legacy Image at 90000000 ...
+   Image Name:   9umcpu.bin.gz
+   Image Type:   RISC-V Linux Kernel Image (gzip compressed)
+   Data Size:    532516 Bytes = 520 KiB
+   Load Address: 80200000
+   Entry Point:  80200000
+   Verifying Checksum ... OK
+## Flattened Device Tree blob at ff72f660
+   Booting using the fdt blob at 0xff72f660
+Working FDT set to ff72f660
+   Uncompressing Kernel Image to 80200000
+   Loading Device Tree to 00000000fe721000, end 00000000fe72b7df ... OK
+Working FDT set to fe721000
+
+Starting kernel ...
+
+--
+
+start of bank 0 (after 0x80000000) missing
+panic: mmuinit: asmalloc for gap 1101824 after kernel failed
+panic: mmuinit: asmalloc for gap 1101824 after kernel failed
+panic: mmuinit: asmalloc for gap 1101824 after kernel failed
+max Proc stack use 0 Mach stack use 0
+cpu0: registers for kernel
+r1	0xffffffc080209810	r2	0xffffffc0bff02dd0
+r3	0x0000000000000000	r4	0x0000000000000000
+r5	0x0000000000000000	r6	0x0000000000000000
+r7	0x0000000000000000	r8	0x0000000000000000
+r9	0x0000000000000000	r10	0x0000000000000000
+r11	0x0000000000000000	r12	0x0000000000000000
+r13	0x0000000000000000	r14	0x0000000000000000
+r15	0x0000000000000000	r16	0x0000000000000000
+r17	0x0000000000000000	r18	0x0000000000000000
+r19	0x0000000000000000	r20	0x0000000000000000
+r21	0x0000000000000000	r22	0x0000000000000000
+r23	0x0000000000000000	r24	0x0000000000000000
+r25	0x0000000000000000	r26	0x0000000000000000
+r27	0x0000000000000000	r28	0x0000000000000000
+r29	0x0000000000000000	r30	0x0000000000000000
+r31	0x0000000000000000
+pc	0xffffffc080209810	type	0x0	m	0xffffffc0bff04000
+up	0x0000000000000000
+satp	0x80000000000bff03
+dumpstack
+ktrace /kernel/path 0xffffffc080209810 0xffffffc0bff02dd0 0xffffffc080209810
+estackx 0xffffffc0bff03000
+0xffffffc0bff02c80=0xffffffc080209810 0xffffffc0bff02c88=0xffffffc0bff02ca0 
+0xffffffc0bff02ca0=0xffffffc080209810 0xffffffc0bff02ca8=0xffffffc080209810 
+0xffffffc0bff02cb0=0xffffffc0bff02dd0 0xffffffc0bff02dc8=0xffffffc080249c68 
+0xffffffc0bff02dd0=0xffffffc080209670 0xffffffc0bff02dd8=0xffffffc080206ff2 
+0xffffffc0bff02de8=0xffffffc0bff02e08 0xffffffc0bff02df8=0xffffffc0bff02f30 
+0xffffffc0bff02e00=0xffffffc0bff02e0f 0xffffffc0bff02e60=0xffffffc08024f652 
+0xffffffc0bff02e68=0xffffffc08024557a 0xffffffc0bff02e70=0xffffffc0802455c0 
+0xffffffc0bff02e80=0xffffffc08024f7e0 0xffffffc0bff02e88=0xffffffc08024f7b6 
+0xffffffc0bff02e90=0xffffffc080204d40 0xffffffc0bff02e98=0xffffffc080204d10 
+0xffffffc0bff02eb0=0xffffffc080226cf0 0xffffffc0bff02ec8=0xffffffc080245d8e 
+0xffffffc0bff02ed8=0xffffffc080206fc6 0xffffffc0bff02ef0=0xffffffc080203bf6 
+0xffffffc0bff02ef8=0xffffffc080205a00 0xffffffc0bff02f00=0xffffffc080205a54 
+0xffffffc0bff02f08=0xffffffc0bff02f30 0xffffffc0bff02f10=0x0000000000000000 
+0xffffffc0bff02f18=0x0000003c00000000 0xffffffc0bff02f20=0xffffffc080207108 
+0xffffffc0bff02f28=0xffffffc0802916e9 0xffffffc0bff02f30=0x000000000010d000 
+0xffffffc0bff02f38=0xffffffff00000001 0xffffffc0bff02f40=0x0000000000000000 
+0xffffffc0bff02f48=0xffffffc0bff03ff8 0xffffffc0bff02f50=0xffffffc0802d4900 
+0xffffffc0bff02f58=0x00000000002f3000 0xffffffc0bff02f60=0x000000000010d000 
+0xffffffc0bff02f68=0x0000000040000000 0xffffffc0bff02f70=0x00000000802f3000 
+0xffffffc0bff02f78=0xffffffc0802019a4 0xffffffc0bff02f80=0xffffffc080202cf0 
+0xffffffc0bff02f88=0x000000008021bcaa 0xffffffc0bff02f90=0xffffffc08021bcae 
+0xffffffc0bff02f98=0xffffffc0802019a0 0xffffffc0bff02fa0=0x00000000089bce5e 
+0xffffffc0bff02fa8=0xffffffc0802d4900 0xffffffc0bff02fb0=0x00000000089a4669 
+0xffffffc0bff02fb8=0x0000002244d66631 0xffffffc0bff02fc0=0xffffffc080201de2 
+0xffffffc0bff02fc8=0xffffffc0802dddb4 0xffffffc0bff02fd0=0xffffffc080200fac 
+0xffffffc0bff02fd8=0x0000000000000000 0xffffffc0bff02fe0=0x0000000080200f96 
+0xffffffc0bff02fe8=0x0000000000000000 0xffffffc0bff02ff0=0x0000000000000000 
+0xffffffc0bff02ff8=0x0000000000000000 
+panic: mmuinit: asmalloc for gap 1101824 after kernel failed
+cpu0: exiting...mpshutdown: 0 active cpus
+max Proc stack use 0 Mach stack use 0
+reset failed; trying sbi shutdown.
+
+U-Boot SPL 2025.01-dirty (Jan 07 2025 - 00:54:44 +0000)
+Trying to boot from MMC1
+
+
+U-Boot 2025.01-dirty (Jan 07 2025 - 00:54:44 +0000)
+
+CPU:   sifive,bullet0
+Model: SiFive HiFive Unmatched A00
+DRAM:  16 GiB
+Core:  36 devices, 21 uclasses, devicetree: separate
+MMC:   spi@10050000:mmc@0: 0
+Loading Environment from SPIFlash... SF: Detected is25wp256 with page size 256 Bytes, erase size 4 KiB, total 32 MiB
+OK
+EEPROM: SiFive PCB EEPROM format v1
+Product ID: 0002 (HiFive Unmatched)
+PCB revision: 3
+BOM revision: B
+BOM variant: 0
+Serial number: SF105SZ212200440
+Ethernet MAC address: 70:b3:d5:92:f8:c0
+CRC: b23f24f1
+PCIE-0: Link up (Gen1-x8, Bus0)
+In:    serial@10010000
+Out:   serial@10010000
+Err:   serial@10010000
+Model: SiFive HiFive Unmatched A00
+Net:   eth0: ethernet@10090000
+Working FDT set to ff72f660
+Hit any key to stop autoboot:  0 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> 
+=> setenv bootdelay 10
+=> saveenv
+Saving Environment to SPIFlash... Erasing SPI flash...Writing to SPI flash...done
+OK
+=> 
+=> bdinfo
+boot_params = 0x0000000000000000
+DRAM bank   = 0x0000000000000000
+-> start    = 0x0000000080000000
+-> size     = 0x0000000400000000
+flashstart  = 0x0000000000000000
+flashsize   = 0x0000000000000000
+flashoffset = 0x0000000000000000
+baudrate    = 115200 bps
+relocaddr   = 0x00000000fff57000
+reloc off   = 0x000000007fd57000
+Build       = 64-bit
+current eth = ethernet@10090000
+ethaddr     = 70:b3:d5:92:f8:c0
+IP addr     = <NULL>
+fdt_blob    = 0x00000000ff72f660
+lmb_dump_all:
+ memory.count = 0x1
+ memory[0]	[0x80000000-0x47fffffff], 0x400000000 bytes, flags: none
+ reserved.count = 0x3
+ reserved[0]	[0x80000000-0x8005ffff], 0x60000 bytes, flags: no-map
+ reserved[1]	[0xfe72c000-0xfe72efff], 0x3000 bytes, flags: no-notify, no-overwrite
+ reserved[2]	[0xfe72f650-0x47fffffff], 0x3818d09b0 bytes, flags: no-overwrite
+devicetree  = separate
+boot hart   = 0x0000000000000001
+firmware fdt= 0x00000000802a0c40
+=> 

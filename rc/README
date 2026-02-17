@@ -1,0 +1,115 @@
+Tue Jan 27 22:59:08 ICT 2026
+
+This is /rc of Geoff Collyer, with most of his personal,
+unentertaining stuffs removed. Mainly for a new iso.
+
+I made $path (/bin .) as suggested by him, turned off most services
+(except Plan 9 services), added some files for smtp.
+Added udiffy, which is the same to diffy but call ape/diff -u instead.
+Added djc's git wrapper.
+
+git: added support for codeberg.org and sr.ht, might require newer libsec
+
+What's new (to /n/sources/plan9/rc/bin)
+/rc/bin/service/tcp17014: service cpu-tls
+diff <{ls -p /n/sources/plan9/rc/bin} <{ls -p /rc/bin}
+3a4
+> 411
+12a14,15
+> addroutes
+> addroutes.60f
+14a18,20
+> arp
+> audio
+> await
+15a22,24
+> badguy
+> bdr
+> bootme
+18a28,31
+> chem
+> chop
+> column
+> cparena
+25a39
+> dircpmk
+33a48,51
+> dumpvacroots
+> dumpvacroots.old
+> dvips
+> editfactotumkeys
+35a54
+> fc
+37a57,58
+> g
+> git
+39a61,62
+> importsrv
+> include
+40a64
+> ipon
+42a67
+> ipv6on.v4v6
+44a70,71
+> kern
+> kickventiindex
+45a73,74
+> killnetalt
+> killtcpport
+46a76
+> kmesg.boot
+47a78,79
+> lastdumpvac
+> latex
+49a82
+> loadcfgpxe
+52a86
+> lunzip
+53a88
+> mailcmd
+57a93,97
+> mf
+> minboot
+> mkdep
+> mkdist
+> mkfossilconf
+59a100,104
+> movehome
+> movemail
+> mp
+> newdisk
+> noweave
+60a106,107
+> outside-reboot
+> pac2mp3
+64a112
+> plumbman
+70a119,120
+> pxeof
+> qrun
+73a124
+> runqs
+74a126
+> saveold
+86a139,143
+> startabaco
+> startfossil
+> starthttpd
+> startpxe
+> starttimesync
+89a147,149
+> straddledns
+> strzip
+> sync
+92a153
+> tex
+98a160
+> udiffy
+100a163,165
+> uniquery
+> update
+> updiff
+113a179
+> words
+115a182
+> y

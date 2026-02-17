@@ -1,0 +1,63 @@
+# trimslice dual-core cortex-a9 with fp
+dev
+	root
+	cons
+	env
+	pipe
+	proc
+	mnt
+	srv
+	dup
+	arch
+	ssl
+	tls
+	bridge		log
+	cap
+	kprof
+	fs
+
+	ether		netif
+	ip		arp chandial ip ipv6 ipaux iproute netlog nullmedium pktmedium
+
+	uart
+
+link
+	archtegra
+	ethermedium
+	loopbackmedium
+	netdevmedium
+
+	ether8169	pci ethermii
+
+ip
+	tcp
+	udp
+	ipifc
+	icmp
+	icmp6
+	ipmux
+# only used by mobile ip code
+#	gre
+	esp
+
+misc
+	rdb
+	uarti8250
+	vfp3
+# emulated arm7500 fp for old binaries
+	fpi
+	fpiarm
+	fpimem
+
+port
+	int cpuserver = 1;
+	int i8250freq = 3686000;
+
+boot cpu
+	tcp
+
+bootdir
+	boot$CONF.out boot
+	/arm/bin/ip/ipconfig ipconfig
+	/arm/bin/auth/factotum factotum
+	/cfg/example/nvram
