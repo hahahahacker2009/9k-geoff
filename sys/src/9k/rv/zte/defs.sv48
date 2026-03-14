@@ -1,5 +1,7 @@
 # tinyemu in Sv48
 # must match KTZERO in mem.h
 KTZERO=0xffff800080000000	# sv48 at 2GB
-CONFDEF= -DSV48
-LDFLAGS=-c			# uncompressed is much faster on tinyemu
+# increasing HZ increases interrupt polling frequency, which reduces real time
+CONFDEF= -DHZ=250 -DSV48
+RBKTZERO=0xbff05000
+SFX=

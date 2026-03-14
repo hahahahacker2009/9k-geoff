@@ -67,7 +67,7 @@ ushort	ins(int);
 void	inss(int, void*, int);
 #endif
 int	intrdisable(void*);
-void*	intrenable(int, void (*)(Ureg*, void*), void*, int, char*);
+void*	intrenable(int, Intrsvcret (*)(Ureg*, void*), void*, int, char*);
 void	invlpg(uintptr);
 int	ioalloc(int, int, int, char*);
 void	iofree(int);
@@ -160,7 +160,7 @@ void*	sigsearch(char* signature);
 void*	sysexecregs(uintptr, ulong, ulong);
 uintptr	sysexecstack(uintptr, int);
 void	sysprocsetup(Proc*);
-void	trapenable(int, void (*)(Ureg*, void*), void*, char*);
+void	trapenable(int, Intrsvcret (*)(Ureg*, void*), void*, char*);
 void	trapinit(void);
 void	trapreturn(Ureg*);
 void	tssrsp0(u64int);
@@ -190,19 +190,17 @@ extern void wrmsr(u32int, u64int);
 
 extern int islo(void);
 extern void spldone(void);
-extern Mreg splhi(void);
-extern Mreg spllo(void);
+extern Mpl splhi(void);
+extern Mpl spllo(void);
 extern void splx(Mreg);
-
-/* little-endian reassembly of integers */
-#define L16GET(p)	((((uchar *)(p))[1]<<8) | ((uchar *)(p))[0])
-#define L32GET(p)	(((uint)  L16GET((uchar *)(p)+2)<<16) | L16GET(p))
-// #define l64get(p)	(((u64int)L32GET((uchar *)(p)+4)<<32) | L32GET(p))
-uvlong	l64get(uchar *p);
 
 /* libc atomics */
 int	_tas(int*);
 int	cas(uint*, int, int);
+int	casv(uvlong*, uvlong, uvlong);
+int	casp(void**, void*, void*);
+ulong	loadlinked(ulong *addr);
+int	storecond(ulong *addr, ulong val);
 
 #define CASW		cas
 #define TAS		_tas
@@ -233,7 +231,7 @@ extern void apicresetothers(void);
 extern void apicsipi(int, uintptr);
 extern void apictimerdisable(void);
 extern void apictimerenable(void);
-extern void apictimerintr(Ureg*, void*);
+extern Intrsvcret apictimerintr(Ureg*, void*);
 extern void apictprput(int);
 
 extern void ioapicinit(int, uintmem);

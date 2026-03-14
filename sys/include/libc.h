@@ -428,11 +428,14 @@ extern	void	prof(void (*fn)(void*), void *arg, int entries, int what);
  * atomic
  */
 
+int	_tas(int*);
 long	ainc(long*);
 long	adec(long*);
 int	cas(uint*, int, int);
 int	casv(uvlong*, uvlong, uvlong);
 int	casp(void**, void*, void*);
+ulong	loadlinked(ulong *addr);
+int	storecond(ulong *addr, ulong val);
 
 /*
  *  synchronization
@@ -443,8 +446,6 @@ struct Lock {
 			/* on semaphore + 1 */
 	long	sem;	/* used when there is contention on key (key > 1) */
 } Lock;
-
-extern int	_tas(int*);
 
 extern	void	lock(Lock*);
 extern	void	unlock(Lock*);

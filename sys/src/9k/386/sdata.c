@@ -1760,14 +1760,14 @@ ichirqack(Ctlr *ctlr)
 		outb(bmiba+Bmisx, inb(bmiba+Bmisx));
 }
 
-static void
+static Intrsvcret
 atainterrupt(Ureg*, void* arg)
 {
 	Ctlr *ctlr;
 	Drive *drive;
-	int cmdport, len, status;	// , forme;
+	int cmdport, len, status, forme;
 
-//	forme = Intrnotforme;
+	forme = Intrnotforme;
 	ctlr = arg;
 	ilock(ctlr);
 	if(inb(ctlr->ctlport+As) & Bsy){
@@ -1775,7 +1775,7 @@ atainterrupt(Ureg*, void* arg)
 		iunlock(ctlr);
 		if(DEBUG & DbgBsy)
 			print("IBsy+");
-		return;			// forme;
+		return forme;
 	}
 	cmdport = ctlr->cmdport;
 	status = inb(cmdport+Status);
@@ -1786,11 +1786,11 @@ atainterrupt(Ureg*, void* arg)
 		iunlock(ctlr);
 		if((DEBUG & DbgINL) && ctlr->command != Cedd)
 			print("Inil%2.2uX+", ctlr->command);
-		return;			// forme;
+		return forme;
 	}
 
 	ctlr->intok++;
-//	forme = Intrforme;
+	forme = Intrforme;
 
 	if(status & Err)
 		drive->error = inb(cmdport+Error);
@@ -1867,7 +1867,7 @@ atainterrupt(Ureg*, void* arg)
 		drive->status = status;
 		wakeup(ctlr);
 	}
-//	return forme;
+	return forme;
 }
 
 static SDev*

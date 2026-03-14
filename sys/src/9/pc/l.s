@@ -730,7 +730,8 @@ TEXT xchgw(SB), $0
 	XCHGW	AX, (BX)
 	RET
 
-TEXT cmpswap486(SB), $0
+/* compare and maybe swap */
+TEXT cmpswap486(SB), $0				/* cmpswap486(addr, old, new) */
 	MOVL	addr+0(FP), BX
 	MOVL	old+4(FP), AX
 	MOVL	new+8(FP), CX

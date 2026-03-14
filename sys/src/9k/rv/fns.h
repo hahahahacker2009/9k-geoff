@@ -68,7 +68,9 @@ void	dumpstk(void *stk);
 PTE	*earlypagealloc(void);
 void	ecall(...);
 void	enablezerotrapcnts(void);
+/* make addr a kernel virtual address if not already one.  mainly for low.c. */
 #define	ensurehigh(addr) (void *)((uintptr)(addr) | KZERO)
+/* make addr a physical address if not already one.  mainly for low.c. */
 #define	ensurelow(addr)  (void *)((uintptr)(addr) & ~KZERO)
 void	etherenableirqs(Ether *);
 int	etherfmt(Fmt* fmt);
@@ -101,6 +103,7 @@ uintptr	getmie(void);
 uintptr	getmip(void);
 uintptr	getmsts(void);
 void*	getmtvec(void);
+uintptr	getpc(void);
 uintptr	getsatp(void);
 uintptr getsb(void);
 uintptr	getsie(void);
@@ -125,7 +128,7 @@ int	intrclknotrap(Ureg *);
 void	intrcpu0(void);
 int	intrdisable(void*);
 void	intrenableall(void);
-void*	intrenable(int, void (*)(Ureg*, void*), void*, int, char*);
+void*	intrenable(int, Intrsvcret (*)(Ureg*, void*), void*, int, char*);
 int	intrnotrap(void);
 void	invlpg(uintptr);
 Ioconf*	ioconf(char *, int);
@@ -144,6 +147,7 @@ void	kbdinit(void);
 void	kexit(Ureg*);
 #define	kmapinval()
 void	kmesginit(void);
+void	l2init(void);
 void	links(void);
 uint	mach2context(Mach *);
 void	main(int);
@@ -286,7 +290,7 @@ uintptr	sysexecstack(uintptr, int);
 void	sysprocsetup(Proc*);
 void	sysrforkret(void);
 void	touser(uintptr);
-void	trapenable(int, void (*)(Ureg*, void*), void*, char*);
+void	trapenable(int, Intrsvcret (*)(Ureg*, void*), void*, char*);
 void	trapinit(void);
 void	trapsclear(void);
 void	trapvecs(void);
@@ -313,8 +317,8 @@ void	wrcltimecmp(uvlong);
 void	wrcltime(uvlong);
 void	writeconf(void);
 void	writelmprv(ulong *, ulong);
-void	wrsnto(uintptr);
-void	wrssto(uintptr);
+void	wrsnto(int *);
+void	wrssto(int *);
 void	wrtsc(uvlong);
 void	zerotrapcnts(void);
 void*	zero(void *, uintptr);
@@ -333,6 +337,10 @@ ulong	amoswapw(ulong *addr, ulong nv);
 /* libc atomics */
 int	_tas(int*);
 int	cas(uint*, int, int);
+int	casv(uvlong*, uvlong, uvlong);
+int	casp(void**, void*, void*);
+ulong	loadlinked(ulong *addr);
+int	storecond(ulong *addr, ulong val);
 
 #define CASW		cas
 #define TAS		_tas

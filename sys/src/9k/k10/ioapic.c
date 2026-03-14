@@ -332,7 +332,7 @@ struct Buggymsi {
 	ushort	did;		/* " device " */
 };
 
-static Buggymsi buggymsi[] = {
+static Buggymsi buggymsi[] = {	/* also update 9/pc/mp.c */
 			/* 951 msi generates lapic errors & spurious intrs */
 	Vsamsung, 0xa802, /* Samsung NVMe SSD SM951/PM951 (m.2 via pcie adapter) */
 	Vintel, 0x10a4,	/* intel 82571s, from intel erratum 63 */
@@ -472,7 +472,7 @@ isrbusdev(Vctl *v, int *busnop, int *devnop)
 }
 
 /*
- * Make a devno from BUSDNO(tbdf) and pcidev->intp.
+ * Make busno & devno from BUSDNO(tbdf) and pcidev->intp.
  */
 static Pcidev *
 pcibusdev(Vctl *v, int *busnop, int *devnop)
@@ -590,11 +590,11 @@ msiorrdt(Vctl *v, Pcidev *pcidev, Rdt *rdt, int vecno)
 	return vecno;
 }
 
+/* may set v->irq */
 int
 ioapicintrenable(Vctl* v)
 {
 	Rdt *rdt;
-	u32int hi, lo;
 	int busno, devno, vecno;
 	Pcidev *pcidev = nil;
 
@@ -653,9 +653,8 @@ ioapicintrenable(Vctl* v)
 	}
 	vecno = msiorrdt(v, pcidev, rdt, vecno);
 	unlock(rdt->apic);
-	DBG("busno %d devno %d hi %#8.8ux lo %#8.8ux vecno %d\n",
-		busno, devno, hi, lo, vecno);
 Finish:
+	DBG("busno %d devno %d vecno %d\n", busno, devno, vecno);
 	if (vecno >= 0) {
 		v->isr = apicisr;
 		v->eoi = apiceoi;

@@ -77,6 +77,7 @@ conf
 		.ether[0] = (char *)0x40011000,
 
 		.hobbled = 0,		/* only 1 hart */
+		.lowdebug = 0,
 	};
 	Ioconf socconf[] = { /* devices without drivers that vmap their regs */
 		{ "clint", 64*KB, &soc.clint, },

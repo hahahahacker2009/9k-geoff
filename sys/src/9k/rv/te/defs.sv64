@@ -1,0 +1,6 @@
+# tinyemu in Sv64
+# must match KTZERO in mem.h
+KTZERO=0x8000000080000000	# sv64 at 2GB
+# increasing HZ increases interrupt polling frequency, which reduces real time
+CONFDEF= -DHZ=250 -DSV64
+SFX=

@@ -86,7 +86,7 @@ enum {						/* PML4E/PDPE/PDE/PTE */
 	PtePCD		= 0x10ull,		/* Page Level Cache Disable */
 	PteA		= 0x20ull,		/* Accessed */
 	PteD		= 0x40ull,		/* Dirty */
-	/* Page Size: 2MB page in PDE; 1GB page in PDPTE (optional) */
+	/* Page Size: 2MB page in PDE; 1GB page in PDPT (optional) */
 	PtePS		= 0x80ull,
 	Pte4KPAT	= PtePS,		/* PTE PAT */
 	PteG		= 0x00000100ull,	/* Global */

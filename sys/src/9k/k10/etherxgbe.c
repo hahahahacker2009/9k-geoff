@@ -579,6 +579,8 @@ transmit(Ether *edev)
 			ienable(ctlr, Itx0);
 			break;
 		}
+		if (ctlr->tb[tdt] != nil)
+			break;
 		if((bp = qget(edev->oq)) == nil)
 			break;
 

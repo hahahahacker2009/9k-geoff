@@ -143,7 +143,7 @@ mach2context(Mach *mach)
 	((uint)vno) < Ngintr + Nlintr + Nexc? Exception: Unknownflt)
 
 Vctl *
-newvec(void (*f)(Ureg*, void*), void* a, int tbdf, char *name)
+newvec(Intrsvcret (*f)(Ureg*, void*), void* a, int tbdf, char *name)
 {
 	Vctl *v;
 
@@ -489,7 +489,7 @@ intrenableall(void)
 
 /* old 9k interface */
 void*
-intrenable(int irq, void (*f)(Ureg*, void*), void* a, int tbdf, char *name)
+intrenable(int irq, Intrsvcret (*f)(Ureg*, void*), void* a, int tbdf, char *name)
 {
 	int vno;
 	Vctl *v;
@@ -638,7 +638,7 @@ irqallocread(Chan*, void *vbuf, long n, vlong offset)
 }
 
 void
-trapenable(int vno, void (*f)(Ureg*, void*), void* a, char *name)
+trapenable(int vno, Intrsvcret (*f)(Ureg*, void*), void* a, char *name)
 {
 	Vctl *v;
 
@@ -674,11 +674,12 @@ vecacct(Vctl *v)
 		ainc(&v->count);
 }
 
-void
+Intrsvcret
 trapclock(Ureg *ureg, void *)
 {
 	timerintr(ureg, 0);
 	iprint("trapclock called\n");
+	return Intrtrap;
 }
 
 /* clear any ipi to this cpu */
@@ -701,7 +702,7 @@ clearipi(void)
  * thus these ipis are probably due to races: we thought the target wanted
  * an ipi, but it then changed that signal.
  */
-void
+Intrsvcret
 trapipi(Ureg *, void *v)
 {
 	iprint("trapipi called\n");
@@ -709,9 +710,10 @@ trapipi(Ureg *, void *v)
 	clearipi();
 //	procipimsgs();
 	vecacct(v);
+	return Intrtrap;
 }
 
-void
+Intrsvcret
 trapfpu(Ureg *, void *)
 {
 	panic("trapfpu called");
@@ -930,6 +932,24 @@ advancepc(Ureg *ureg, ulong instlow)
 
 void poll(Ureg *, Cause *);
 
+static void
+clocksvc(Ureg *ureg)
+{
+	clockoff();
+	if (++m->clockintrdepth > 1 && m->clockintrsok) {
+		/* nested clock interrupt; probably shutting down */
+		m->clockintrsok = 0;
+		// iprint("cpu%d: nested clock interrupt\n", m->machno);
+	}
+	timerintr(ureg, 0);
+	--m->clockintrdepth;
+	clockenable();
+}
+
+/*
+ * intr is not reached here as Supextintr, we short-circuited the cause
+ * to Globalintr in whatcause.
+ */
 static int
 traplocalintr(Ureg *ureg, Cause *cp)
 {
@@ -941,20 +961,10 @@ traplocalintr(Ureg *ureg, Cause *cp)
 	cause = cp->cause;
 	if (cause < Local0intr)
 		cause &= ~Msdiff;	/* map mach to super codes */
-	switch (cause) {
-	case Suptmrintr:
-		clockoff();
-		if (++m->clockintrdepth > 1 && m->clockintrsok) {
-			/* nested clock interrupt; probably shutting down */
-			m->clockintrsok = 0;
-			// iprint("cpu%d: nested clock interrupt\n", m->machno);
-		}
-		timerintr(ureg, 0);
-		--m->clockintrdepth;
-		clockenable();
+	if (cause == Suptmrintr) {
+		clocksvc(ureg);
 		clockintr = 1;
-		break;
-	case Supswintr:
+	} else if (cause == Supswintr) {
 		/*
 		 * an ipi should normally pop out of wfi at splhi in idlehands,
 		 * and not end up here.  getting here means that we sent an ipi
@@ -966,15 +976,7 @@ traplocalintr(Ureg *ureg, Cause *cp)
 //		procipimsgs();
 		clearipi();
 		clockintr = 0;
-		break;
-	case Supextintr:
-		/*
-		 * NB: intr is not reached here, we short-circuited the cause
-		 * to Globalintr in whatcause.
-		 */
-		// clockintr = intr(ureg, cp);
-		panic("traplocalintr: handed an external interrupt");
-	case 0:					/* probably NMI */
+	} else if (cause == 0) {		/* probably NMI */
 		if(m->machno == 0)
 			panic("NMI @ %#p", ureg->pc);
 		else {
@@ -983,9 +985,8 @@ traplocalintr(Ureg *ureg, Cause *cp)
 			for(;;)
 				halt();
 		}
-	default:
+	} else
 		panic("trap: unknown local interrupt %d", cp->cause);
-	}
 	clrsipbit(1<<cp->cause);
 	vecacct(vctl[cp->vno]);
 	intrtime(m, cp->vno);
@@ -1240,6 +1241,7 @@ trapriscv64(Ureg *ureg, Cause *cp)
 	uint cause;
 	Exchandler handler;
 
+	assert(m != nil);
 	if (cp->user)
 		m->turnedfpoff = 0;
 	else if (m->probing) {
@@ -1258,7 +1260,7 @@ trapriscv64(Ureg *ureg, Cause *cp)
 	if (cause >= nelem(exchandlers))
 		panic("trapriscv64: cause %d out of range", cause);
 	handler = exchandlers[cause];
-	if (m == nil || m->machmode || !m->pagingon)
+	if (m->machmode || !m->pagingon)
 		handler = ensurelow(handler);
 	/* could be a local intr */
 	if (handler == nil)
@@ -1308,24 +1310,45 @@ pollkproc(void *)
 	}
 }
 
-static void
+static int
 callintrsvc(Ureg *ureg, Vctl *vec)
 {
-	void (*isr)(Ureg *, void *);
+	int forme;
+	Intrsvcret (*isr)(Ureg *, void *);
 	Vctl *v;
 
-	if (vec->irq)
-		m->lastintr = vec->irq;
+	if (vec == nil)
+		return 0;
+	forme = 0;
 	for(v = vec; v != nil; v = v->next) {
 		isr = v->f;
 		if (isr == nil) {
 			iprint("intr: no isr for vector %d\n", v->vno);
 			continue;
 		}
-		(*isr)(ureg, v->a);
+		forme |= (*isr)(ureg, v->a);
 		splhi();		/* in case isr dropped PL */
-		ainc(&v->count);
+		if (forme)
+			ainc(&v->count);
 	}
+	if (forme != Intrnotforme && vec->irq)
+		m->lastintr = vec->irq;
+	return forme;
+}
+
+static int
+clockchk(Ureg *ureg)
+{
+	if (getsip() & Stie) {
+		m->intr++;
+		m->perf.intrts = perfticks();
+		clocksvc(ureg);
+		clrsipbit(1<<Suptmrintr);
+		vecacct(vctl[vctlidx(Suptmrintr, Localintr)]);
+		intrtime(m,  vctlidx(Suptmrintr, Localintr));
+		return 1;
+	}
+	return 0;
 }
 
 /*
@@ -1339,19 +1362,13 @@ callintrsvc(Ureg *ureg, Vctl *vec)
 int
 intr(Ureg* ureg, Cause *cp)
 {
-	int id, ctxt, vno, trips;
-	Plic *plic;
+	int id, vno, trips, clockintr;
 	Plictxt *pctxt;
 	Vctl *vec;
 
-	m->intr++;
-	ctxt = m->plicctxt + Super;
-	plic = (Plic *)soc.plic;
-	pctxt = nil;
-	if (plic)
-		pctxt = &plic->context[ctxt];
+	clockintr = 0;
 	if (Intrdebug)
-		iprint("intr: checking plic for ctxt %d\n", ctxt);
+		iprint("intr: checking plic for ctxt %d\n", m->plicctxt+Super);
 	if (++m->intrdepth > 1)
 		iprint("cpu%d: nested intrs at depth %d\n", m->machno,
 			m->intrdepth);
@@ -1361,7 +1378,13 @@ intr(Ureg* ureg, Cause *cp)
 	 * context (priv. mode and hart), or 0 if none.  it also clears id's
 	 * interrupt pending bit.
 	 */
+	pctxt = soc.plic? &((Plic *)soc.plic)->context[m->plicctxt+Super]: nil;
 	while (pctxt && (id = pctxt->claimcompl) != 0) {
+		/* if timer & external interrupts are racing, serve clock 1st */
+		if (TODO)		/* optimise clock race */
+			clockintr += clockchk(ureg);
+
+		m->intr++;
 		m->perf.intrts = perfticks();
 		/* id is actual cause, global irq.  map id to a vector. */
 		/* cp->vno = */ vno = vctlidx(id, Globalintr);
@@ -1397,15 +1420,16 @@ intr(Ureg* ureg, Cause *cp)
 		iprint("intr: done\n");
 	m->intrdepth--;
 
-	/* in case the cpus all raced into wfi, always wake */
 	if(up)
 		preempted();
+	/* calling idlewake here reduces elapsed time */
 	/*
 	 * procs waiting for this interrupt could be on
 	 * any cpu, so wake any idling cpus.
+	 * in case the cpus all raced into wfi, always wake.
 	 */
 	idlewake();
-	return 0;
+	return clockintr;
 }
 
 int
@@ -1522,7 +1546,7 @@ whatcause(Cause *cp, Ureg *ureg)
 	if (!(ureg->cause & Rv64intr))
 		type = Exception;
 	else if ((cause & ~Msdiff) == Supextintr) {
-		type = Globalintr;
+		type = Globalintr;	/* traplocalintr won't see this */
 		cause = 0;	/* actual causes will come from the plic */
 	} else
 		type = Localintr;	/* these are very frequent */
@@ -1542,8 +1566,8 @@ whatcause(Cause *cp, Ureg *ureg)
 
 static Traphandler traphandlers[Nfaulttypes] = {
 [Unknownflt]	nil,
-[Exception]	trapriscv64,			/* may enable fpu */
-[Localintr]	traplocalintr,
+[Exception]	trapriscv64,		/* may enable fpu */
+[Localintr]	traplocalintr,		/* clock or ipi */
 [Globalintr]	intr,
 };
 
@@ -1582,39 +1606,45 @@ trap(Ureg* ureg)
 	TRAPDBG(ureg, &why, 1);
 
 	/* short-cut for syscalls */
-	if (ureg->cause == Envcalluser)	/* Rv64intr is off for exceptions */
+	if (ureg->cause == Envcalluser) {  /* Rv64intr is off for exceptions */
 		trapsyscall(ureg, nil);
 		/* syscall() did the whole job; we're done */
-	else {
-		/* dispatch based on cause fault type */
-		if (type >= nelem(traphandlers))
-			panic("trap: trap type %d too large", type);
-		handler = traphandlers[type];
-		if (m == nil || m->machmode || !m->pagingon)
-			handler = ensurelow(handler);
-		if (handler == nil)
-			panic("trap: trap type %d has no handler", type);
-		clockintr = (*handler)(ureg, &why);
+		TRAPDBG(ureg, &why, 0);
+		return;
+	}
 
-		splhi();		/* minimise harm if handler went low */
-		fpsts2ureg(ureg); /* propagate Fsst changes back to user mode */
+	/* dispatch based on cause fault type */
+	if (type >= nelem(traphandlers))
+		panic("trap: trap type %d too large", type);
+	handler = traphandlers[type];
+	assert(m != nil);
+	if (m->machmode || !m->pagingon)
+		handler = ensurelow(handler);
+	if (handler == nil)
+		panic("trap: trap type %d has no handler", type);
+	clockintr = (*handler)(ureg, &why);
 
+	splhi();		/* minimise harm if handler went low */
+	fpsts2ureg(ureg);	/* propagate Fsst changes back to user mode */
+
+	/*
+	 * delaysched set (because we held a lock or because our quantum ended)?
+	 */
+	if(up && up->delaysched && clockintr && m->clockintrsok) {
+		sched();
+		splhi();
+	}
+	/*
+	 * calling idlewake here increases elapsed and decreases system
+	 * time, so we don't.
+	 */
+	if(why.user) {
+		if(up->procctl || up->nnote)
+			notify(ureg);
 		/*
-		 * delaysched set (because we held a lock or because our
-		 * quantum ended)?
+		 * kexit() bills time to whatever process was running,
+		 * so don't call it here.
 		 */
-		if(up && up->delaysched && clockintr && m->clockintrsok) {
-			sched();
-			splhi();
-		}
-		if(why.user) {
-			if(up->procctl || up->nnote)
-				notify(ureg);
-			/*
-			 * kexit() bills time to whatever process was running,
-			 * so don't call it here.
-			 */
-		}
 	}
 	TRAPDBG(ureg, &why, 0);
 }

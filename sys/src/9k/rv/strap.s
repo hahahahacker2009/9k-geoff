@@ -85,7 +85,7 @@ TEXT strap(SB), 1, $-4
 	MOV	$recktrap(SB), R9
 	MOV	R9, CSR(STVEC)		/* if we fault here, report it */
 
-	/* if we fault here, it's probably due to a bad SP or SB */
+	/* if we fault here, it's probably due to a bad SP */
 	MOV	SAVESR4(R(MACH)), R4	/* restore to save old values */
 	MOV	SAVESR9(R(MACH)), R9
 	PUSHALLS			/* patches R2 from regsave into Ureg */

@@ -12,36 +12,6 @@ struct Inmodels {
 	char	*name;
 };
 
-/*
- * wait for *vp to change from val, or for an interrupt, on machines
- * that lack monitor & mwait instructions.
- * shouldn't be needed on hardware; VMs might need it.
- */
-static int
-portwaitfor(int *vp, int val)
-{
-	int i;
-	Proc *restpl;
-	Mpl s;
-
-	if (sys->nonline <= 1)
-		halt();
-	else {
-		s = 0;
-		restpl = up;
-		if (up)	/* this cpu is scheduling, thus done initialising? */
-			s = spllo();
-		/*
-		 * How many times round this loop?
-		 */
-		for(i = 10000; *vp == val && i > 0; i--)
-			pause();
-		if (restpl)
-			splx(s);
-	}
-	return *vp;
-}
-
 int (*waitfor)(int*, int) = portwaitfor;
 
 static int
@@ -74,12 +44,13 @@ cpuidinit(void)
 	/*
 	 * Is MONITOR/MWAIT supported?
 	 * All actual k10 and later hardware has them.
+	 * AMD added them in 2007, Intel in 2004.
 	 */
 	if(m->cpuinfo[Procsig][Cx] & Monitor) {
 		waitfor = k10waitfor;
 		if(cpuidinfo(Procmon, 0, info) && info[Cx] & Alwaysbreak)
 			sys->haveintrbreaks = 1;
-	} else				/* pre-2014 pc or emulation */
+	} else				/* pre-2007 pc or emulation */
 		vmbotch(0, "monitor & mwait instructions disabled; "
 			"adjust your bios settings");
 	return 1;
@@ -91,17 +62,15 @@ cpuidcaps(void)
 	int vabits, cores, turbo;
 	u32int info[4];
 
-	if (m->isintelcpu) {
-		if(cpuidinfo(Proctype, 0, info))
-			m->intelcputype = info[Ax] >> 24;
-	}
+	if (m->isintelcpu && cpuidinfo(Proctype, 0, info))
+		m->intelcputype = info[Ax] >> 24;
 
 	if (m->machno != 0)
 		return;
 
 	cores = (m->cpuinfo[Procsig][Bx]>>16) & MASK(8);
 	if (m->cpuinfo[Procsig][Dx] & Htt && cores > 1)
-		print("hyperthreading supported, %d cores/processor claimed\n",
+		print("hyperthreading supported, %d cores/processor max\n",
 			cores);
 
 	if(cpuidinfo(Extfeature, 0, info) && (info[Dx] & Nx) == 0)
@@ -109,15 +78,18 @@ cpuidcaps(void)
 
 	if (m->isintelcpu) {
 		turbo = (rdmsr(Msrperfctl) & Turbooff) == 0;
+		/* real amd64 and intel64 systems have had this since 2008 */
 		if (cpuidinfo(Extmiscfeat, 0, info) && info[Dx] & Invartsc) {
-			/* true since 2008 */
 			if (!turbo)
 				print("invariant time-stamp counter; "
 					"OK to enable Turbo Boost in BIOS\n");
 		} else
-			if (turbo)
-				print("time-stamp counter NOT invariant; "
+			if (turbo) {
+				print("* Broken hardware or BIOS settings!  "
+					"time-stamp counter NOT invariant; "
 					"disable Turbo Boost in BIOS\n");
+				delay(10000);
+			}
 	}
 
 	if(cpuidinfo(Extcap, 0, info)) {
@@ -125,10 +97,8 @@ cpuidcaps(void)
 		if (vabits != 48)		/* 48 is standard */
 			print("%d-bit virtual addresses supported\n", vabits);
 	}
-	if(cpuidinfo(Procid7, 0, info)) {
-		if(info[Cx] & L5pt)
-			print("cpu supports 5-level page tables; not used\n");
-	}
+	if(cpuidinfo(Procid7, 0, info) && info[Cx] & L5pt)
+		print("cpu supports 5-level page tables; not used\n");
 }
 
 int
@@ -184,6 +154,22 @@ mwdalign(void)
 	mwdaligned = 1;
 	if (max > Monitorsz && up && islo())
 		mwaitwd = mallocalign(max, min, 0, 0);
+}
+
+ulong
+watchforchange(int *lp)
+{
+	if (waitfor == k10waitfor)
+		monitor(lp, 0, 0);
+	return 0;
+}
+
+/* watchforchange(lp) must have been previously called. */
+void
+waitchange(int *)
+{
+	if (waitfor == k10waitfor)
+		mwait(0, 0);
 }
 
 /*

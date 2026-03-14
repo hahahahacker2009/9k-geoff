@@ -526,6 +526,9 @@ transmit(Ether *edev)
 		cachedwbinvse(td, sizeof *td);	/* invalidate td->status */
 		if (td->status & Tdown)		/* tail still being xmitted? */
 			break;
+		if (ctlr->tb[tdt] != nil)
+			break;
+
 		if((bp = qget(edev->oq)) == nil)
 			break;
 		bp = uncachedview(bp);
@@ -536,8 +539,6 @@ transmit(Ether *edev)
 		cachedwbse(bp->rp, len);	/* force packet to ram */
 		if (len > ETHERMAXTU)
 			iprint("%Æ: tx len %d too big\n", ctlr, len);
-		if (ctlr->tb[tdt])
-			panic("%Æ: xmit q full", ctlr);
 		ctlr->tb[tdt] = uncachedview(bp);
 
 		td->buf1 = (uintptr)cachedview((void *)PADDR(bp->rp));

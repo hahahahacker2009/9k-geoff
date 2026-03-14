@@ -32,20 +32,23 @@ enum {
 	Pageexcs = 1<<Instpage | 1<<Loadpage | 1<<Storepage,
 };
 
-extern char kerndatestr[];
-
 /* init with anything to force into data seg. to avoid bss zeroing */
 int	asids = 0;
+int	bootingcpu;
 /* flag: booted in machine mode; assume super; init to avoid bss */
 int	bootmachmode = 0;
-int	early = 1;			/* use prf & trap.c debugging */
+Mach	dummymach = { 0 };
+ulong	dummysc;
+int	early = 1;		/* use prf & trap.c debugging */
 ushort	hartids[MACHMAX] = { 0 };
 Rvarch*	initarchp;
-char	initstks[MACHMAX][INITSTKSIZE] = { 0 };
-Sys*	lowsys;			/* visible to earlypagealloc in mmu.c */
+int	initstall;
+/* uvlong assures alignment */
+uvlong	initstks[MACHMAX][INITSTKSIZE / sizeof(vlong)] = { 0 };
+Sys*	lowsys = 0;		/* visible to earlypagealloc in mmu.c */
 uintptr	mainpc = 0;
 uintptr satptval, satpepc;
-void	(*tlbinvall)(void);
+void	(*tlbinvall)(void) = 0;
 
 /*
  * machine mode setup and switch to supervisor mode.
@@ -172,7 +175,7 @@ mach_to_super(Sys *lowsys)
 	if (soc.c910 && origmtvec)
 		putmtvec(origmtvec);	/* in case sbi is present */
 	else
-		putmtvec(ensurelow(mtrap));
+		putmtvec(mtrap);
 	putstvec(rectrapalign);
 
 	/* switch to super mode & enable mach intrs. */
@@ -188,6 +191,8 @@ mach_to_super(Sys *lowsys)
  * the rest is supervisor mode setup.
  */
 
+#define PADDRINCRFORPTE(pa)		(((((pa)) >> PGSHFT) << PTESHFT))
+
 /*
  * populate n page table entries at ptep with attributes from ptebits
  * and physical addresses starting from the one in ptebits.
@@ -196,12 +201,18 @@ mach_to_super(Sys *lowsys)
 void
 setptes(PTE *ptep, PTE ptebits, int n, int lvl)
 {
-	PTE pteincr;
+	PTE pteincr, attrs, addr;
 
-	pteincr = PADDRFORPTE(PGLSZ(lvl));
+	addr  = PTEADDRBITS(ptebits);
+	attrs = PTEATTRBITS(ptebits);
+	pteincr = PADDRINCRFORPTE(PGLSZ(lvl));
 	for (; n > 0; n--) {
-		*ptep++ = ptebits;
-		ptebits += pteincr;
+		if(addr & ~(PTEADDRMASK|VMASK(PTESHFT)))
+			/* addr too big for pte field, don't map */
+			*ptep++ = 0;
+		else
+			*ptep++ = addr | attrs;
+		addr += pteincr;
 	}
 }
 
@@ -236,7 +247,7 @@ dualmap(PTE *ptp, uintptr phys, uint nptes, int lvl)
 }
 
 static void
-dumpptes(PTE *ptp)
+dumpptes(PTE *ptp, int lvl)
 {
 	int i, st;
 
@@ -244,7 +255,9 @@ dumpptes(PTE *ptp)
 	for (i = 0; i < Nptes; i++)
 		if (ptp[i])
 			dbprf("ptp[%d] %#p\n", i, ptp[i]);
-	st = PTLX(KZERO, Toplvl);
+	st = PTLX(KZERO, lvl);
+	if (st == 0)			/* for Sv64 */
+		st = Ptpgptes/2;
 	for (i = st; i < st + Nptes; i++)
 		if (ptp[i])
 			dbprf("ptp[%d] %#p\n", i, ptp[i]);
@@ -254,13 +267,11 @@ dumpptes(PTE *ptp)
  * construct minimal initial top-level page table with id & upper->lower maps.
  */
 static void
-mkinitpgtbl(Sys *lowsys)
+mkinitpgtbl(Sys *lowsys, int lvl, uintptr sv)
 {
 	uint nptes;
 	PTE *ptp;
 
-	if (lowsys->satp)			/* already made? */
-		return;
 	/*
 	 * allocate temporary top-level page table.
 	 * in top-level pt for 4 levels, each PTE covers 512GB.
@@ -273,20 +284,27 @@ mkinitpgtbl(Sys *lowsys)
 	/*
 	 * leave last pte of upper and lower ranges free
 	 * (for VMAP in upper->lower map at least).
+	 * can't do this in Sv64.
 	 */
 	nptes = Ptpgptes/2 - 1;		/* for each range */
-	if (VMBITS < 39)
+	if (VMBITS == 64)
+		nptes = Ptpgptes/2;
+	else if (VMBITS < 39)
 		nptes /= 2;	/* upper and lower ranges fit into low addr.s */
 
-	/* populate id map in lower range & upper->lower, from 0 up. */
-	dualmap(ptp, 0, nptes, Toplvl);
+	/*
+	 * populate id map in lower range & upper->lower, from 0 up.
+	 */
+	dbprf("populating normal root page table for lvl %d...", lvl);
+	dualmap(ptp, 0, nptes, lvl);	/* default to sv39 */	
 	if (soc.c910) {
 		/* don't map first 4K or 2MB page to avoid hang */
 		/* for PHYSMEM, use PPN((uvlong)KTZERO & VMASK(30)) */
 	}
 	if (Ptedebug)
-		dumpptes(ptp);
-	lowsys->satp = normalsatp = pagingmode | ((uintptr)ptp / PGSZ);
+		dumpptes(ptp, lvl);
+	lowsys->satp = normalsatp = sv | ((uintptr)ptp / PGSZ);
+	dbprf("setting normal satp %#p...\n", normalsatp);
 }
 
 /*
@@ -321,15 +339,15 @@ newmach(uint cpu)
 	m->machmode = bootmachmode;
 	fakecpuhz();
 	usephysdevaddrs();		/* device vmaps not yet in effect */
-	m->machno = cpu;
+	m->machno = cpu;		/* override preset from newcpupages */
 	m->hartid = hartids[cpu];
 	m->mtimecmp = nil;			/* pessimism */
 
 	if (bootmachmode) {
-		putmtvec(ensurelow(mtrap));
+		putmtvec(mtrap);
 		csrswap(MSCRATCH, (uintptr)m);	/* ready for mtraps now */
 	}
-	putstvec(ensurelow(strap));
+	putstvec(strap);
 	putsscratch((uintptr)m);		/* ready for straps now */
 
 	if(cpu == 0)
@@ -346,33 +364,13 @@ ckwdog(void)				/* try to detect a watchdog */
 
 	if (soc.newmach && Diagnose && soc.lowdebug) {
 		dbprf("watchdog hanging over our heads? ");
-		for (i = 0; i < 20; i++) {
+		for (i = 0; i < 10; i++) {
 			delay(500);
 			dbprf(".");
 		}
 		dbprf("apparently not.\n");
 	}
 }
-
-static void
-addrsanity(void)		/* check load addresses for sanity */
-{
-	ulong ktzerophys, physmem;
-	uintptr lowktzero;
-
-	lowktzero = PADDR((void *)KTZERO);
-	if (PPN(mainpc) != lowktzero)
-		prf("_main pc %#p too far from PADDR(KTZERO) %#p, "
-			"kernel loaded at wrong address!\n", mainpc, lowktzero);
-	ktzerophys = ROUNDDN((ulong)lowktzero, GB);
-	physmem = ROUNDDN(PHYSMEM, GB);
-	if (physmem != ktzerophys) {
-		prf("physmem %#lux != base of ktzero phys %#lux!\n",
-			physmem, ktzerophys);
-		prf("kernel loaded at address it was not linked for!\n");
-	}
-}
-
 
 static void
 alignchk(void)
@@ -401,8 +399,10 @@ setstkmach0(void)
 		(membanks[0].addr + membanks[0].size - Syssize);
 	sys = KADDR((uintptr)rlowsys);
 	coherence();
-	m = ensurelow(&rlowsys->mach);
+	m = &rlowsys->mach;
+	usephysdevaddrs();		/* device vmaps not yet in effect */
 
+	/* now safe to lock */
 	soc.clintlongs = 1;		/* pessimism, works on all */
 	alignchk();
 
@@ -435,9 +435,7 @@ setstkmach0(void)
 	 */
 	newmach(0);
 
-	prf("\nPlan 9 startup\n\n");	/* won't be logged in kmesg */
-	addrsanity();
-	prf("kernel built %s\n", ensurelow(kerndatestr));
+	// prf("\n9\n");		/* won't be logged in kmesg */
 
 	if (initarchp) {
 		initarchp = ensurelow(initarchp);
@@ -446,14 +444,6 @@ setstkmach0(void)
 	loadsbiids(rlowsys);
 	ckwdog();
 	return (uintptr)&rlowsys->machstk[MACHSTKSZ];
-}
-
-static void
-consputc(ulong *addr, uchar c)
-{
-	delay(1);
-	*addr = c;
-	coherence();
 }
 
 vlong
@@ -491,18 +481,12 @@ normalmap(void)
 	return putsatp(normalsatp);
 }
 
-static void
-stagger(int cpu)
-{
-	if (soc.lowdebug)
-		delay(50 * cpu);
-}
-
 /*
- * on a secondary cpu, secstall waits until lowsys->secstall is released, sets
+ * on a secondary cpu, start.s will have waited for initstall to clear,
+ * which is done after sys, lowsys and lowsys->secstall are set, then
+ * secstall waits until lowsys->secstall is released, sets
  * m, waits for go-ahead from m->online, returns stack top.  another cpu must
- * have allocated a Mach for us previously and set sys->machptr[cpu] to a low m
- * address.
+ * have allocated a Mach for us previously and set sys->machptr[cpu] to it.
  *
  * the MMU may be configured, but we're still in low addresses, and
  * could be in machine mode.
@@ -512,44 +496,49 @@ secstall(int cpu)
 {
 	Mach *m0;
 
-	/* in case we get here before cpu0 sets lowsys and sys */
-	while (lowsys == nil || sys == nil)
-		coherence();
-
-	if (cpu >= MACHMAX) {
-		prf("low: cpu%d out of range, >= %d; ignoring\n", cpu, MACHMAX);
-		wfi();
-	}
-	if (cpu == 0)
-		prf("low: cpu is 0 in secstall!\n");
-
 	/*
-	 * wait for cpu0 to allocate secondaries' data structures and clear
+	 * in case we get here before cpu0 sets lowsys and sys.
+	 * then wait for cpu0 to allocate secondaries' data structures and clear
 	 * lowsys->secstall in main.c by schedcpus or settrampargs from reboot.
 	 */
-	while (lowsys->secstall)
+	if (cpu != bootingcpu)
+		prf("cpu%d has bootingcpu %d\n", cpu, bootingcpu);
+	while (lowsys == nil || sys == nil || lowsys->secstall) {
+		pause();
 		coherence();
-	/* sys->machptr[cpu] is now valid */
+	}
 
-	/* Set m and work out new stack top. */
+	/*
+	 * cpu & hartid were validated in start.s, so sys->machptr[cpu] is now
+	 * valid.
+	 */
 	m = lowsys->machptr[cpu]; /* machptr[cpu] must be a high address */
 	if (m == nil)
 		panic("setmach: nil sys->machptr[%d] before mallocinit", cpu);
 	m = ensurelow(m);
+	usephysdevaddrs();		/* device vmaps not yet in effect */
+
+	/* now safe to lock */
 	newmach(cpu);
 	m0 = ensurelow(lowsys->machptr[0]);
 	m->cpuhz  = m0->cpuhz;
 	m->cpumhz = m0->cpumhz;
 	/* our m->ptroot was set by cpu0 when it allocated our Mach */
+	if (cpu == 0)
+		prf("low: cpu is 0 in secstall!\n");
 
-	stagger(cpu);			/* stagger prints */
-	dbprf("cpu%d waiting for online...", cpu);
+	/* start cpus in sequence, in case of near-simultaneous start ups. */
+	delay(50*cpu);
+
 	m->waiting = 1;			/* notify schedcpus that we are up */
 	coherence();
-	while (!m->online)
+	dbprf("cpu%d waiting for online...", cpu);
+	while (!m->online) {
+		pause();
 		coherence();
+	}
 
-	return m->stack + MACHSTKSZ;
+	return m->stack + MACHSTKSZ;	/* permanent stack top for this hart */
 }
 
 uintptr satpread;
@@ -573,19 +562,22 @@ gotsatp(uintptr nsatp)
 	return r;
 }
 
+#define MAXSV Sv64	/* Sv64 under temu doesn't work yet */
+
 /*
  * probe satp modes and determine max. AS ids.  informational only, restore the
  * normal map upon exit.  only safe to use under the dual id map (0->0,
  * KZERO->0), because a failure to write satp may revert to Bare mode (no
- * paging).  writing an unimplemented paging mode is supposed to have no
- * effect, either on paging or the contents of satp (priv 1.12), but
- * tinyemu at least seems to revert the mmu to Bare mode.
+ * paging).  since KZERO depends on paging mode, this is only safe to execute
+ * from low memory.  writing an unimplemented paging mode is supposed to have no
+ * effect, either on paging or the contents of satp (priv 1.12), but tinyemu at
+ * least seems to revert the mmu to Bare mode.
  */
 void
 probesatp(Sys *sys)
 {
 	int lvl;
-	uintptr mode, bestmode, readmode, satp;
+	uintptr mode, readmode, satp;
 	void *pt;
 	Mpl pl;
 
@@ -594,21 +586,23 @@ probesatp(Sys *sys)
 	asids = 0;
 
 	pl = splhi();
-	dbprf("usual map...");
+	dbprf("usual map to set csrs...");
 	putstvec(ensurehigh(strap));
 	putsscratch((uintptr)ensurehigh(m));
 
 	pt = sys->ncpt[0];
 	satp = (uintptr)ensurelow(pt) / PGSZ;
-	for (lvl = 2, mode = Sv39; mode <= Sv64; lvl++, mode += 1LL<<Svshft) {
-		dbprf("usual map...");
+	for (lvl = 2, mode = Sv39; mode <= MAXSV; lvl++, mode += 1LL<<Svshft) {
+		dbprf("usual map before probe...");
 		normalmap();		/* revert before changing test pt */
 
+		dbprf("populating lvl %d root page table...", lvl);
 		zero(pt, PTSZ);
-		dualmap(pt, 0, Ptpgptes/2 - 1, lvl);
+		dualmap(pt, 0, Ptpgptes/2 - (VMBITS == 64? 0: 1), lvl);
 		// mmudump((uintptr)pt, lvl);
 
 		/* try test pt */
+		dbprf("probing with %#p\n...", mode | satp | Satpasidmask);
 		if (haveinstr(gotsatp, mode | satp | Satpasidmask) < 0)
 			break;
 		normalmap();		/* in case gotsatp faulted */
@@ -618,10 +612,20 @@ probesatp(Sys *sys)
 			bestmode = readmode;
 	}
 	asids = ((bestmode & Satpasidmask) >> Satpasidshft) + 1;
-	prf("mmu: best available satp mode is %d with %d asids\n",
-		(int)(bestmode>>Svshft), asids);
+	/* results will be printed in main */
 
-	/* set up mmu with pagingmode, verify operation */
+	normalmap();
+
+	/*
+	 * force test page to Sv39 before setting root page table for normal use
+	 */
+	zero(pt, PTSZ);
+	dualmap(pt, 0, Ptpgptes/2 - (VMBITS == 64? 0: 1), 2);
+	putsatp(Sv39 | satp);
+
+	/* set up mmu with requesated pagingmode, verify operation */
+	mkinitpgtbl(lowsys, Toplvl, pagingmode);
+
 	dbprf("\nprobe initial page table (satp %#p)...", sys->satp);
 	normalmap();			/* done testing */
 	splx(pl);
@@ -656,11 +660,10 @@ pagingon(Sys *lowsys)
 		(*(Pvfns)ensurelow(initarchp->supermppaging))(lowsys);
 	}
 
-	dbprf("set stvec for kernel %#p...", ensurelow(strap));
 	putstvec(strap);
 	archmmu();
 	if (m->machno == 0) {
-		mkinitpgtbl(lowsys);
+		mkinitpgtbl(lowsys, 2, Sv39);	/* universal */
 		/* i'd prefer to defer this until main, but can't; see main */
 		probesatp(lowsys);	/* find best mode & max. AS id */
 	}
@@ -683,15 +686,14 @@ pagingon(Sys *lowsys)
 static void
 prstackuse(void)
 {
-	char *stkbase;
-	uvlong *stkbot;
+	uvlong *stkbot, *stkbase;
 
 	if (Measurestkuse) {
-		stkbase = initstks[m->machno];
-		stkbot = (uvlong *)stkbase;
+		stkbot = stkbase = initstks[m->machno];
 		prf("\ncpu%d: initstk %#p: %#p %#p %#p %#p use %lld bytes\n\n",
 			m->machno, stkbase, stkbot[0], stkbot[1], stkbot[2],
-			stkbot[3], stackuse(stkbase, stkbase + INITSTKSIZE));
+			stkbot[3], stackuse((char *)stkbase,
+			  (char *)stkbase + INITSTKSIZE));
 	}
 }
 
@@ -722,9 +724,12 @@ void
 low(uint cpu)
 {
 	uintptr stktop;
+	Page *ptroot;
 
-	setsts();
 	up = nil;
+	setsts();
+	if (cpu >= MACHMAX)
+		panic("low: cpu %d out of range", cpu);
 	/* Set bits of Mach and Sys, m, and works out new stack top. */
 	if (cpu == 0)
 		stktop = setstkmach0();		/* also sets sys and lowsys */
@@ -742,8 +747,8 @@ low(uint cpu)
 
 	dbprf("\n * supervisor mode.  sbi %s\n", nosbi? "not used": "assumed");
 	m->machmode = 0;
-	putstvec(ensurelow(strap));		/* make probes work */
-	putsscratch((uintptr)m);		/* ready for straps now */
+	putstvec(strap);		/* make probes work w/ low addr */
+	putsscratch((uintptr)m);	/* ready for straps now */
 	pagingon(lowsys);	/* install low id map & upper->low map */
 
 	/*
@@ -757,17 +762,21 @@ low(uint cpu)
 	 */
 	putstvec(rectrapalign);
 	prstackuse();
-	dbprf("new stack...");
-	setsp((uintptr)ensurehigh(stktop - SBIALIGN));
+
+	dbprf("new stack %#p...", (uintptr)ensurelow(stktop - SBIALIGN));
+	setsp((uintptr)ensurelow(stktop - SBIALIGN));
 
 	dbprf("jump to kernel space...");
 	jumphigh();			/* adjust registers (m, sp, sb) */
 
-	/* now executing in upper space with high static base. */
+	/*
+	 * now executing in upper space with high static base
+	 * and invalid automatic variables.
+	 */
 	if (m->ptroot) {
-		m->ptroot = ensurehigh(m->ptroot);
+		ptroot = m->ptroot = ensurehigh(m->ptroot);
 		/* newcpupages has set ptroot->va low on secondary cpus */
-		m->ptroot->va = (uintptr)ensurehigh(m->ptroot->va);
+		ptroot->va = (uintptr)ensurehigh(ptroot->va);
 	}
 	m->stack = (uintptr)ensurehigh(m->stack);
 

@@ -14,11 +14,11 @@
 #include "fns.h"
 #include "io.h"
 
-#include "../port/dbgprint.h"
+// #include "../port/dbgprint.h"
 
 #define PCICONSSIZE (8*1024)
 
-// #undef DBG
+// #undef  DBG
 // #define DBG	pcilog
 
 typedef struct Pci Pci;
@@ -267,7 +267,7 @@ pcilscan(int bno, Pcidev** list)
 	maxubn = bno;
 	head = nil;
 	tail = nil;
-iprint("pcilscan bus %d...", bno);
+	DBG("pcilscan bus %d...", bno);
 	for(dno = 0; dno <= pcimaxdno; dno++){
 		maxfno = 0;
 		for(fno = 0; fno <= maxfno; fno++){
@@ -330,7 +330,7 @@ iprint("pcilscan bus %d...", bno);
 			case Pcibcdock:		/* docking stations */
 			case Pcibcproc:		/* processors */
 			case Pcibcserial:	/* serial bus controllers */
-iprint("normal...");
+				DBG("normal...");
 				if((hdt & 0x7F) != 0)
 					break;
 				rno = PciBAR0 - 4;
@@ -345,7 +345,7 @@ iprint("normal...");
 			case Pcibcmem:		/* memory controller */
 			case Pcibcbridge:	/* bridge device */
 			default:
-iprint("bridge/mem ctlr...");
+				DBG("bridge/mem ctlr...");
 				break;
 			}
 
@@ -357,7 +357,7 @@ iprint("bridge/mem ctlr...");
 		}
 	}
 
-iprint("bridges...");
+	DBG("bridges...");
 	*list = head;
 	for(p = head; p != nil; p = p->link){
 		/*
@@ -402,7 +402,7 @@ iprint("bridges...");
 			pcilscan(sbn, &p->bridge);
 		}
 	}
-iprint("\n");
+	DBG("\n");
 
 	return maxubn;
 }
@@ -448,20 +448,19 @@ pcicfginit(void)
 	lp = pcicfgaddr(MKBUS(BusPCI, 0, 0, 0), 0);  /* set aperture, if any */
 	pcicfg = (Pci *)lp;
 	n = pcicfg->id >> 16;
-	DBG("pci: ctl %#p ecam %#p: rev %#ux class %#6.6lux\n",
+	iprint("pci: ctl %#p ecam %#p: rev %#ux class %#6.6lux\n",
 		pci, pcicfg, (uchar)pcicfg->revclass, pcicfg->revclass >> 8);
-	DBG("\tvid %#lux did %#ux\n", pcicfg->id & MASK(16), n);
+	iprint("\tvid %#lux did %#ux\n", pcicfg->id & MASK(16), n);
 	USED(n);
 
 	/* scan config space for plausibility */
 	ones = 1;
-	if (TODO && lp >= (ulong *)soc.pci && lp < (ulong *)(soc.pci+8*MB))
-		if (1 || *lp != ~0) {
+	if (lp >= (ulong *)soc.pci && lp < (ulong *)(soc.pci+8*MB))
+		if (*lp != ~0) {
 			dump(lp, 100);
 			ones = 0;
 		}
-	iprint("\n");
-	if (TODO && ones && pcicfg->revclass == ~0) {
+	if (ones && pcicfg->revclass == ~0) {
 		iprint("pcicfginit: reading all one bits in cfg space\n");
 		goto err;
 	}

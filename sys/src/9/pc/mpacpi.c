@@ -1,8 +1,8 @@
 /*
  * minimal acpi support for multiprocessors.
  *
- * avoids AML but that's only enough to discover
- * the processors, not the interrupt routing details.
+ * avoids AML.  currently it only discovers the processors, not the interrupt
+ * routing details.
  */
 #include "u.h"
 #include "../port/lib.h"
@@ -13,8 +13,8 @@
 #include "mp.h"
 #include "mpacpi.h"
 
-/* if we use this outside l64get, 8c says: out of fixed registers */
-#define L64GET(p)	((uvlong)L32GET((p)+4) << 32 | L32GET(p))
+#define L16GET(p)	legeth(p)
+#define L32GET(p)	legetl(p)
 
 enum {
 	/* apic types */
@@ -41,12 +41,6 @@ int	mpnewproc(Apic *apic, int apicno, int flags);
 Apic	*bootapic;
 
 static int nprocid;
-
-static uvlong
-l64get(uchar *p)
-{
-	return L64GET(p);
-}
 
 static int
 mpacpiproc(uchar *p, ulong laddr, ulong **vladdrp)
@@ -139,6 +133,7 @@ mpacpiscan(void (*func)(uchar *))
 	Rsd *rsd;
 
 	dprint("ACPI...");
+	/* start with RSD PTR */
 	if((rsd = sigsearch("RSD PTR ")) == nil) {
 		dprint("none\n");
 		return;
@@ -146,13 +141,13 @@ mpacpiscan(void (*func)(uchar *))
 
 	dprint("rsd %#p physaddr %#ux length %ud %#llux rev %d oem %.6s\n",
 		rsd, L32GET(rsd->raddr), L32GET(rsd->length),
-		l64get(rsd->xaddr), rsd->revision, (char*)rsd->oemid);
+		legetvl(rsd->xaddr), rsd->revision, (char*)rsd->oemid);
 
 	if(rsd->revision >= 2){			/* 2000 */
 		if(mpacpirsdchecksum(rsd, 36) == nil)
 			return;
 		asize = 8;
-		sdtpa = l64get(rsd->xaddr);
+		sdtpa = legetvl(rsd->xaddr);
 	} else {				/* pre-2000 antique: 32-bit */
 		if(mpacpirsdchecksum(rsd, 20) == nil)
 			return;
@@ -160,6 +155,7 @@ mpacpiscan(void (*func)(uchar *))
 		sdtpa = L32GET(rsd->raddr);
 	}
 
+	/* only process RSDT and XSDT tables */
 	if((sdt = vmap(sdtpa, 8)) == nil)
 		return;
 	if((sdt[0] != 'R' && sdt[0] != 'X') || memcmp(sdt+1, "SDT", 3) != 0){
@@ -174,7 +170,7 @@ mpacpiscan(void (*func)(uchar *))
 	if(mpacpirsdchecksum(sdt, sdtlen) != nil)
 		for(i = 36; i < sdtlen; i += asize){
 			if(asize == 8)
-				dhpa = l64get(sdt+i);
+				dhpa = legetvl(sdt+i);
 			else
 				dhpa = L32GET(sdt+i);
 	
@@ -195,7 +191,7 @@ mpacpiscan(void (*func)(uchar *))
 static void
 mpacpitbl(uchar *p)
 {
-	/* for now, just activate any idle cpus */
+	/* for now, just activate any idle cpus from APIC table's Madt */
 	if (memcmp(p, "APIC", 4) == 0)
 		mpacpicpus((Madt *)p);
 }

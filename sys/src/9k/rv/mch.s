@@ -14,8 +14,6 @@ TMP=26
 TMP2=27
 UART0=29
 
-	GLOBL	dummysc(SB), $4
-
 TEXT pushr2_31(SB), 1, $-4
 	S(2); S(3); S(4); S(5); S(6); S(7)
 	S(8); S(9); S(10); S(11); S(12); S(13); S(14); S(15); S(16); S(17)
@@ -80,15 +78,21 @@ TEXT badsinst(SB), 1, $-4
 
 /*
  * the cycle counters are per core (not per hart) and may stop during WFI;
- * avoid them when measuring elapsed time.
+ * avoid them when measuring elapsed time.  they run at cpu speed, typically
+ * 2 - 3 GHz, which should also be cpuhz.
  */
 TEXT rdtsc(SB), 1, $-4				/* Time Stamp Counter */
+	MOV	R0, R(ARG)			/* paranoia */
 	FENCE
 	MOV	CSR(CYCLO), R(ARG)
 	RET
 
-/* the clint timer (mtime) runs always and at a constant (slower) rate */
+/*
+ * the clint timer (mtime) runs always and at a constant (slower) rate,
+ * typically a few MHz.
+ */
 TEXT rdtime(SB), 1, $-4				/* Clint's time counter */
+	MOV	R0, R(ARG)			/* paranoia */
 	FENCE
 	MOV	CSR(TIMELO), R(ARG)
 	RET
@@ -143,6 +147,10 @@ TEXT _putsatp(SB), 1, $-4
 
 TEXT getsb(SB), 1, $-4
 	MOV	R3, R(ARG)
+	RET
+
+TEXT getpc(SB), 1, $0
+	JAL	R(ARG), 1(PC)
 	RET
 
 TEXT getsie(SB), 1, $-4
@@ -309,7 +317,7 @@ TEXT invlpg(SB), 1, $-4
  * Serialisation.
  */
 TEXT pause(SB), 0, $-4
-	PAUSE			/* can be a no-op */
+	PAUSE			/* a hint, so can be a no-op */
 	RET
 TEXT coherence(SB), 0, $-4
 	FENCE			/* the lot; caller might need anything fenced */
@@ -497,15 +505,15 @@ TEXT cbozero(SB), 1, $-4			/* void cbozero(uintptr) */
 /* Zawrs extension */
 
 /* wait with no timeout for a pending interrupt or change to *p */
-TEXT wrsnto(SB), 1, $-4			/* void wrsnto(ulong *p) */
-	LRW(ARG, 14)		/* (R(ARG)) -> R14 */
-	WORD $(SYSTEM | 0xd<<20)
+TEXT wrsnto(SB), 1, $-4			/* void wrsnto(int *p) */
+	LRW(ARG, 14)			/* (R(ARG)) -> R14 */
+	SYS	$0xd
 	RET
 
 /* wait with a short timeout for a pending interrupt or change to *p */
-TEXT wrssto(SB), 1, $-4			/* void wrssto(ulong *p) */
-	LRW(ARG, 14)		/* (R(ARG)) -> R14 */
-	WORD $(SYSTEM | 0x1d<<20)
+TEXT wrssto(SB), 1, $-4			/* void wrssto(int *p) */
+	LRW(ARG, 14)			/* (R(ARG)) -> R14 */
+	SYS	$0x1d
 	RET
 
 /* Xuantie C910 instruction */

@@ -1,0 +1,9 @@
+#!/bin/rc
+# cpdiffers new old - copy new to old only if they differ; always remove new
+rfork e
+new=$1
+old=$2
+if (cmp -s $new $old)
+	rm -f $new
+if not
+	mv $new $old

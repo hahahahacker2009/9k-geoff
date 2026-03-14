@@ -40,24 +40,24 @@ enum {
 	Qpart,
 
 	TypeLOG		= 4,
-	NType		= (1<<TypeLOG),
-	TypeMASK	= (NType-1),
+	NType		= 1<<TypeLOG,
+	TypeMASK	= NType-1,
 	TypeSHIFT	= 0,
 
 	PartLOG		= 8,
-	NPart		= (1<<PartLOG),
-	PartMASK	= (NPart-1),
+	NPart		= 1<<PartLOG,
+	PartMASK	= NPart-1,
 	PartSHIFT	= TypeLOG,
 
 	UnitLOG		= 8,
-	NUnit		= (1<<UnitLOG),
-	UnitMASK	= (NUnit-1),
-	UnitSHIFT	= (PartLOG+TypeLOG),
+	NUnit		= 1<<UnitLOG,
+	UnitMASK	= NUnit-1,
+	UnitSHIFT	= PartLOG+TypeLOG,
 
 	DevLOG		= 8,
-	NDev		= (1 << DevLOG),
-	DevMASK		= (NDev-1),
-	DevSHIFT	 = (UnitLOG+PartLOG+TypeLOG),
+	NDev		= 1 << DevLOG,
+	DevMASK		= NDev-1,
+	DevSHIFT	 = UnitLOG+PartLOG+TypeLOG,
 
 	Ncmd = 20,
 };
@@ -950,13 +950,16 @@ sdmodesense(SDreq *r, uchar *cmd, void *info, int ilen)
 	 * return the drive info.
 	 */
 	if((cmd[2] & 0x3F) != 0 && (cmd[2] & 0x3F) != 0x3F)
+		/* bad cdb field */
 		return sdsetsense(r, SDcheck, 0x05, 0x24, 0);
 	len = (cmd[7]<<8)|cmd[8];
 	if(len == 0)
 		return SDok;
 	if(len < 8+ilen)
+		/* parameter list length error */
 		return sdsetsense(r, SDcheck, 0x05, 0x1A, 0);
 	if(r->data == nil || r->dlen < len)
+		/* bad op code: access denied */
 		return sdsetsense(r, SDcheck, 0x05, 0x20, 1);
 	data = r->data;
 	memset(data, 0, 8);
@@ -1004,10 +1007,12 @@ sdfakescsi(SDreq *r, void *info, int ilen)
 	 * will return 'logical unit not supported'.
 	 */
 	if((cmd[1]>>5) && cmd[0] != ScmdInq)
+		/* logical unit not supported */
 		return sdsetsense(r, SDcheck, 0x05, 0x25, 0);
 
 	switch(cmd[0]){
 	default:
+		/* bad op code: access denied */
 		return sdsetsense(r, SDcheck, 0x05, 0x20, 0);
 
 	case ScmdTur:	/* test unit ready */
@@ -1043,8 +1048,10 @@ sdfakescsi(SDreq *r, void *info, int ilen)
 
 	case ScmdRcapacity:	/* read capacity */
 		if((cmd[1] & 0x01) || cmd[2] || cmd[3])
+			/* bad cdb field */
 			return sdsetsense(r, SDcheck, 0x05, 0x24, 0);
 		if(r->data == nil || r->dlen < 8)
+			/* bad op code: access denied */
 			return sdsetsense(r, SDcheck, 0x05, 0x20, 1);
 
 		/*

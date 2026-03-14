@@ -5,7 +5,7 @@
 
 ventihttp=`{
 	echo $venti | sed 's/^[a-z]+!([0-9\.]+)![a-z0-9]+$/\1/
-		s/^[a-z]+!([0-9\.]+)/\1/'
+		s/^[a-z]+!([0-9\.]+)/\1/; s/$/:8000/'
 }
 
 hget http://$ventihttp/index |

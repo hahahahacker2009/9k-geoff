@@ -593,6 +593,7 @@ cleanuser(void)
 	mmuflush();
 	qlock(&up->debug);
 	up->nnote = up->notified = 0;
+	up->notepending = 0;
 	up->notify = 0;
 	up->privatemem = 0;
 	sysprocsetup(up);
@@ -705,7 +706,6 @@ sysexec(Ar0* ar0, va_list list)
 	argv = copystack(ed, args, &list);
 	poperror();				/* args */
 
-	closeonexec();
 	freeoldmem();
 	adjnewsegs(chan, ed);	/* unlocks seglock & pops error for it */
 	setpris(chan);
@@ -720,6 +720,7 @@ sysexec(Ar0* ar0, va_list list)
 	 *  space and needs to be flushed
 	 */
 	cleanuser();
+	closeonexec();		/* after up->nnote was cleared by cleanuser */
 
 	/*
 	 * this return value (base of Tos on user stack) becomes the

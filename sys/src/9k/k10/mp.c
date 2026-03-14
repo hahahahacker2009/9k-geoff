@@ -7,6 +7,9 @@
 #include "apic.h"
 #include "mp.h"
 
+#define L16GET(p)	legeth(p)
+#define L32GET(p)	legetl(p)
+
 /*
  * MultiProcessor Specification Version 1.[14].
  */
@@ -338,7 +341,7 @@ mpparse(PCMP *pcmp)
 		case PcmpSASM:
 			DBG("address space mapping\n");
 			DBG(" bus %d type %d base %#llux length %#llux\n",
-				p[2], p[3], l64get(p + 4), l64get(p + 12));
+				p[2], p[3], legetvl(p + 4), legetvl(p + 12));
 			p += p[1];
 			break;
 		case PcmpHIERARCHY:

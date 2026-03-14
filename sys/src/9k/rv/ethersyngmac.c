@@ -43,7 +43,7 @@ enum {
 	 */
 	Ntd	= 64,
 	Nrd	= 64,
-	Nrb	= 2*Nrd,	/* private receive buffers, > Nrd */
+	Nrb	= 2*Nrd,	/* private receive buffers, ≫ Nrd */
 };
 
 enum {				/* interesting dev registers, by ulong* index */

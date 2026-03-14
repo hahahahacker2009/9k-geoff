@@ -202,7 +202,6 @@ enum {				/* cause exception codes for interrupts */
 	Debugintr	= 14,
 	Local0intr	= 16,
 	Xtperfovflintr	= 17,
-//	Luartintr	= Local0intr + 11,	/* this hart's uart */
 	Nlintr		= 64,		/* # of local interrupts */
 	Msdiff		= 2,		/* "M* - S*" bit */
 };
@@ -216,7 +215,6 @@ enum {			/* [ms]i[ep] bits for RV64.  only S* bits in si[ep] */
 	Seie	= (1<<Supextintr),	/* super ext (sie); global (mie) */
 	Meie	= (1<<Mchextintr),	/* machine external */
 	Li0ie	= (1<<Local0intr),	/* local intr 0 enable */
-//	Luie	= (1<<Luartintr),	/* this hart's uart */
 
 	Superie	= (Seie|Stie|Ssie),
 	Machie	= (Meie|Mtie|Msie),

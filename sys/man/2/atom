@@ -1,6 +1,6 @@
 .TH ATOM 2
 .SH NAME
-ainc, adec, cas, casv, casp, loadlink, storecond, _tas \- atomic read-modify-write operations
+ainc, adec, cas, casv, casp, loadlinked, storecond, _tas \- atomic read-modify-write operations
 .SH SYNOPSIS
 .B #include <u.h>
 .br
@@ -25,10 +25,10 @@ int casp(void **addr, void *ov, void *nv);
 int _tas(ulong *addr);
 .PP
 .B
-ulong loadlink(ulong*);
+ulong loadlinked(ulong *addr);
 .PP
 .B
-int storecond(ulong*, ulong);
+int storecond(ulong *addr, ulong val);
 .SH DESCRIPTION
 These functions provide access to atomic operations, useful for synchronization.
 When viewed from other processes including those on other cores, the
@@ -90,7 +90,7 @@ of kernel locks
 and
 .IR thread (2)).
 .PP
-.I Loadlink
+.I Loadlinked
 and
 .I storecond
 access the
@@ -106,6 +106,19 @@ and
 .IR store-conditional ,
 these may be used to implement
 .IR compare-and-swap .
+.I Loadlinked
+creates a per-cpu reservation including
+.I addr
+for use by at least
+.IR storecond .
+.I Storecond
+stores
+.I val
+into
+.I *addr
+if the memory in the reservation hasn't changed since
+it was set with
+.IR loadlinked .
 .SH SOURCE
 .B /sys/src/libc/*/atom.s
 .br

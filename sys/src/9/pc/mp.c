@@ -53,7 +53,7 @@ static Lock mpphysidlock;
 static int mpphysid;
 static char *msiconf;
 
-static Buggymsi buggymsi[] = {
+static Buggymsi buggymsi[] = {	/* also update 9k/k10/ioapic.c */
 			/* 951 msi generates lapic errors & spurious intrs */
 	Vsamsung, 0xa802, /* Samsung NVMe SSD SM951/PM951 (m.2 via pcie adapter) */
 	Vintel, 0x10a4,	/* intel 82571s, from intel erratum 63 */

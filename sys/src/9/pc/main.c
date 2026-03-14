@@ -86,8 +86,8 @@ prbda(void)
 	if (!Prbda)
 		return;
 	/* gathering addresses for bios tables & pxe payload size */
-	ebda = L16GET((uchar *)EBDAADDR) << 4;
-	fbm = L16GET((uchar *)FBMADDR);		/* misaligned short */
+	ebda = legeth((uchar *)EBDAADDR) << 4;
+	fbm = legeth((uchar *)FBMADDR);		/* misaligned short */
 	print("ebda %#x = %d, free base mem %dK\n", ebda, ebda, fbm);
 }
 

@@ -624,11 +624,41 @@ clocksanity(void)
 static int mwords[1];
 static int *mwaitwd = mwords;		/* make safe from the start */
 
+ulong
+watchforchange(int *lp)
+{
+	if (soc.havewrsnto)
+		return loadlinked((ulong *)lp);
+	else
+		return 0;
+}
+
+/* watchforchange(lp) must have been previously called. */
+void
+waitchange(int *lp)
+{
+	if (soc.havewrsnto)
+		wrsnto(lp);		/* wfi until *lp is written */
+	else
+		pause();
+}
+
+int
+waitfor(int *lp, int val)
+{
+	if (soc.havewrsnto) {
+		watchforchange(lp);
+		waitchange(lp);
+		return *lp;
+	} else
+		return portwaitfor(lp, val);
+}
+
 /*
  * wait for an interrupt, which conserves power, thus heat.
- * an interrupt will resume after WFI.  assume
- * individual interrupt bits of interest are set in SIE.
- * currently on risc-v, we can only wait for an interrupt.
+ * an interrupt will resume after WFI.  assume individual interrupt bits of
+ * interest are set in SIE.  currently on risc-v, we can only wait for an
+ * interrupt, but Zawrs may change that.
  * see the privileged ISA spec for WFI; it's a bit subtle.
  * in particular, WFI may pause the core's cycle counter,
  * and it can be implemented as a NOP.
@@ -642,9 +672,9 @@ idlenowakehands(void)
 	ulong ip;
 
 	coherence();		/* make our changes visible to other harts */
-	if ((getsie() & Superie) == 0)
-		panic("sie csr has no S intrs enabled: %#p\n", getsie());
-	while (((ip = getsip()) & Superie) == 0)
+//	if ((getsie() & Superie) == 0)
+//		panic("sie csr has no S intrs enabled: %#p\n", getsie());
+	while (((ip = getsip()) & Superie) == 0 && m->ipiwait)
 		halt();
 	coherence();		/* make other harts' changes visible to us */
 	/* can't call intrclknotrap: needs non-nil Ureg* */
@@ -735,8 +765,7 @@ idlewake(void)
 	static int waking;	/* flag: some cpu is waking. lock with _tas */
 	static uvlong lastwakecl;
 
-	if (FUTURE)		/* we don't currently emulate x86 mwait */
-		++*mwaitwd;	/* need not be atomic increment even on x86 */
+//	++*mwaitwd;		/* need not be atomic increment even on x86 */
 	nonline = sys->nonline;
 	if (soc.idlewakens == 0 || nonline <= 1 || (left = nrdy) == 0 ||
 	    lastwakecl > (now = rdcltime()) - sys->clthresh ||
@@ -981,7 +1010,6 @@ prifexts(ulong isa, ulong exts, char *name)
 vlong
 archhz(void)
 {
-	l2init();		/* may be private l2 caches per hart */
 	if(m->machno != 0)
 		return sys->machptr[0]->cpuhz; /* cpus have to be ~identical */
 	/* meanwhile, other cpus are spinning */
@@ -1029,11 +1057,35 @@ gotvec(int)
 	return 0;
 }
 
-void
-cpuidprint(void)
+static void
+machidprint(void)
 {
 	int bit;
 	ulong isa, misa;	/* misa extension bits fit in low long */
+
+	if ((sys->extensions >> 62) != Mxlen64)
+		print("	misa mxl %lld is not 64-bits\n",
+			sys->extensions>>62);
+	misa = sys->extensions;
+	isa = prifexts(misa, EXTIMA|EXTFD, "G");
+	isa = prifexts(isa, EXTIMA, "IMA");
+	isa = prifexts(isa, EXTFD, "FD");
+	isa = prifexts(isa, EXT('C'), "C");
+	isa &= MASK('z'+1-'a');		/* isolate extensions */
+	for (bit = 0; bit < 'z'+1-'a'; bit++)
+		if (isa & (1<<bit))
+			print("%c", 'A' + bit);
+	if ((misa & (EXTIMA|EXTFD)) != (EXTIMA|EXTFD))
+		panic("cpu is not RV64G: misa %#lux", misa);
+	if ((misa & EXTSU) != EXTSU)
+		panic("don't have super & user modes; hopeless.");
+	if ((misa & EXT('C')) == 0)
+		print(" no compression, many binaries won't run.\n");
+}
+
+void
+cpuidprint(void)
+{
 	Cpu *cpu;
 
 	if(m->machno != 0) {
@@ -1044,26 +1096,9 @@ cpuidprint(void)
 	print("cpu%d: risc-v RV%d", m->machno, BI2BY*(int)sizeof(uintptr));
 	if (haveinstr(gotvec, 0))
 		sys->cpucap |= Capvec;
-	if (bootmachmode) {
-		if ((sys->extensions >> 62) != Mxlen64)
-			print("	misa mxl %lld is not 64-bits\n",
-				sys->extensions>>62);
-		misa = sys->extensions;
-		isa = prifexts(misa, EXTIMA|EXTFD, "G");
-		isa = prifexts(isa, EXTIMA, "IMA");
-		isa = prifexts(isa, EXTFD, "FD");
-		isa = prifexts(isa, EXT('C'), "C");
-		isa &= MASK('z'+1-'a');		/* isolate extensions */
-		for (bit = 0; bit < 'z'+1-'a'; bit++)
-			if (isa & (1<<bit))
-				print("%c", 'A' + bit);
-		if ((misa & (EXTIMA|EXTFD)) != (EXTIMA|EXTFD))
-			panic("cpu is not RV64G: misa %#lux", misa);
-		if ((misa & EXTSU) != EXTSU)
-			panic("don't have super & user modes; hopeless.");
-		if ((misa & EXT('C')) == 0)
-			print(" no compression, many binaries won't run.\n");
-	} else {
+	if (bootmachmode)
+		machidprint();
+	else {
 		print("GCSU");			/* can't easily tell */
 		if (sys->cpucap & Capvec)
 			print("V");

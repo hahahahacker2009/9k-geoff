@@ -60,37 +60,37 @@ enum {
 
 struct Vdesc			/* QueueSize array */
 {
-	u64int	addr;
-	u32int	len;
-	u16int	flags;
-	u16int	next;
+	uvlong	addr;
+	uint	len;
+	ushort	flags;
+	ushort	next;
 };
 
 struct Vavail
 {
-	u16int	flags;
-	u16int	idx;
-	u16int	ring[1];	/* QueueSize elements */
+	ushort	flags;
+	ushort	idx;
+	ushort	ring[1];	/* QueueSize elements */
 };
 
 typedef struct Vuseddesc Vuseddesc;
 struct Vuseddesc {
-	u32int	id;
-	u32int	len;
+	uint	id;
+	uint	len;
 };
 
 /* must be 4096-byte aligned? */
 enum { Id = 0, Len = 1 };
 struct Vused
 {
-	u16int	flags;
-	u16int	idx;
-	u32int	ring[1][2];	/* QueueSize elements */
+	ushort	flags;
+	ushort	idx;		/* must match type of Vqueue->lastused */
+	uint	ring[1][2];	/* QueueSize elements */
 };
 
 struct Vqueue {
 	uint	mask;
-	uint	lastused;
+	ushort	lastused;	/* must match type of Vused->idx */
 	Block	*bfirst;
 	Block	*blast;
 	Vdesc	*desc;
@@ -100,7 +100,7 @@ struct Vqueue {
 
 struct Ctlr {
 	Ether	*edev;
-	u32int	*mmio;
+	uint	*mmio;
 	uchar	eaddr[Eaddrlen];
 	Vqueue	q[Nqueue];
 	QLock	alock;
@@ -114,7 +114,7 @@ struct Ctlr {
 };
 
 #define	RD(off)		(ctlr->mmio[(off)>>2])
-#define WR(off, v)	ctlr->mmio[(off)>>2] = v
+#define WR(off, v)	 ctlr->mmio[(off)>>2] = v
 
 static Ctlr virtnet;
 
@@ -209,7 +209,7 @@ dump(uchar *p, int len)
 	print("\n");
 }
 
-static void
+static Intrsvcret
 temuinterrupt(Ureg*, void *arg)
 {
 	Ctlr *ctlr;
@@ -221,6 +221,7 @@ temuinterrupt(Ureg*, void *arg)
 		panic("ethertemu: interrupt before init");
 	wakeup(&ctlr->rendez);
 	WR(IntAck, RD(IntStatus));
+	return Intrforme;
 }
 
 static int
@@ -250,7 +251,7 @@ ethertemuproc(void *arg)
 	Vused *qused;
 	Block *bp;
 	int i, n, found;
-	u32int *ringelem;
+	uint *ringelem;
 
 	edev = arg;
 	ctlr = edev->ctlr;
@@ -437,12 +438,12 @@ pnp(Ether *edev)
 
 	if(RD(MagicValue) != MagicVirt){
 		print("ethertemu: virtio device not found at %#p, magic word is %ux\n",
-			(u32int*)VIRTNETADDR, RD(MagicValue));
+			(uint*)VIRTNETADDR, RD(MagicValue));
 		return -1;
 	}
 	if(RD(DeviceId) != DeviceNet){
 		print("ethertemu: virtio net not found at %#p, device id is %ux\n",
-			(u32int*)VIRTNETADDR, RD(DeviceId));
+			(uint*)VIRTNETADDR, RD(DeviceId));
 		return -1;
 	}
 	for(i = 0; i < Eaddrlen; i++)

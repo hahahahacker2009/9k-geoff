@@ -1,0 +1,8 @@
+#!/bin/rc
+# cpnewer - copy newer files in $1 to $2.
+#	missing files in $2 will be copied from $1
+if (! ~ $#* 2) {
+	echo usage: cpnewer src dest >[1=2]
+	exit usage
+}
+echo + | disk/mkfs -s $1 -d $2 /fd/0

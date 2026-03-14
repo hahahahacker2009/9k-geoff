@@ -65,7 +65,7 @@ conf
 
 	int cpuserver = 1;
 	/* may have to separate cpuhz from rdtsc freq */
-	uvlong cpuhz = 250*MHZ;		/* rdtsc tick freq */
+	uvlong cpuhz = 250*MHZ;		/* rdtsc (cycle) tick freq */
 	uvlong timebase = 10*MHZ;	/* clint tick freq */
 	Membank membanks[] = {		/* (address, size) pairs */
 		PHYSMEM, BANK0SIZE,

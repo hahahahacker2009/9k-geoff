@@ -57,37 +57,38 @@ if(grep -s loopback /dev/drivers) {
 usbstart
 if (~ $terminal 'ARM '*pi*)
 	mouseport=ps2
-if(~ $#mouseport 0){
-	echo -n 'mouseport is (ps2, ps2intellimouse, 0, 1, 2)[ps2]: '
-	mouseport=`{read}
-	if(~ $#mouseport 0)
-		mouseport=ps2
-}
-if(~ $#vgasize 0){
-	echo -n 'vgasize [640x480x8]: '
-	vgasize=`{read}
-	if(~ $#vgasize 0)
-		vgasize=640x480x8
-}
-if(~ $#monitor 0){
-	echo -n 'monitor is [xga]: '
-	monitor=`{read}
-	if(~ $#monitor 0)
-		monitor=xga
-}
-if(test -f /dev/mousectl){
-	switch($mouseport){
-	case ps2 ps2intellimouse 0 1 2
-		aux/mouse $mouseport
-		# parse vgasize into fields
-		vgasize=`{echo $vgasize}
-		if(! ~ $"monitor '' && ! ~ `{cat /dev/user} none)
-			aux/vga -l $vgasize
-		if(~ $accupoint 1)
-			pipefile -dr /bin/aux/accupoint /dev/mouse
+if not {
+	if(~ $#mouseport 0){
+		echo -n 'mouseport is (ps2, ps2intellimouse, 0, 1, 2)[ps2]: '
+		mouseport=`{read}
+		if(~ $#mouseport 0)
+			mouseport=ps2
+	}
+	if(~ $#vgasize 0){
+		echo -n 'vgasize [640x480x8]: '
+		vgasize=`{read}
+		if(~ $#vgasize 0)
+			vgasize=640x480x8
+	}
+	if(~ $#monitor 0){
+		echo -n 'monitor is [xga]: '
+		monitor=`{read}
+		if(~ $#monitor 0)
+			monitor=xga
+	}
+	if(test -f /dev/mousectl){
+		switch($mouseport){
+		case ps2 ps2intellimouse 0 1 2
+			aux/mouse $mouseport
+			# parse vgasize into fields
+			vgasize=`{echo $vgasize}
+			if(! ~ $"monitor '' && ! ~ `{cat /dev/user} none)
+				aux/vga -l $vgasize
+			if(~ $accupoint 1)
+				pipefile -dr /bin/aux/accupoint /dev/mouse
+		}
 	}
 }
-
 if (test -f /dev/apm)
 	aux/apm
 

@@ -184,7 +184,7 @@ hzclock(Ureg *ur)
 		hzsched();	/* in proc.c */
 }
 
-void
+Intrsvcret
 timerintr(Ureg *u, void *)
 {
 	Timer *t;
@@ -210,7 +210,7 @@ timerintr(Ureg *u, void *)
 			iunlock(tt);
 			if(callhzclock)
 				hzclock(u);
-			return;
+			return Intrforme;
 		}
 		tt->head = t->tnext;
 		assert(t->tt == tt);
@@ -226,6 +226,7 @@ timerintr(Ureg *u, void *)
 			tadd(tt, t);
 	}
 	iunlock(tt);
+	return Intrforme;
 }
 
 void

@@ -7,9 +7,7 @@
 #include "dat.h"
 #include "fns.h"
 #include "io.h"
-#include "ureg.h"
 #include "../port/error.h"
-
 #include "../port/sd.h"
 
 extern Dev sddevtab;
@@ -384,7 +382,7 @@ sdrmdevs(SDev *sdev)
 {
 	char buf[UTFmax+1];
 
-	snprint(buf, sizeof buf, "%c", sdev->idno);
+	snprint(buf, sizeof buf, "%C", sdev->idno);
 	unconfigure(buf);
 }
 

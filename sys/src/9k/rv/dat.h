@@ -43,8 +43,8 @@ typedef struct Vctl Vctl;
 #define SYSCALLTYPE 8	/* nominal syscall trap type (not used) */
 #define MAXSYSARG   5	/* for mount(fd, afd, mpt, flag, arg) */
 
-#define INTRSVCVOID
-#define Intrsvcret void
+#undef INTRSVCVOID
+#define Intrsvcret int
 
 typedef Intrsvcret (*Intrsvc)(Ureg*, void*);
 
@@ -56,11 +56,11 @@ typedef Intrsvcret (*Intrsvc)(Ureg*, void*);
 /*
  *  machine dependent definitions used by ../port/portdat.h
  */
-struct Lock
+struct Lock				/* surely Locks are portable? */
 {
 	int	key;
 	ulong	noninit;		/* must be zero */
-	Mreg	sr;
+	Mpl	sr;
 	uintptr	pc;
 	Proc*	p;
 	Mach*	m;
@@ -562,12 +562,16 @@ struct Soc {
 
 Soc soc;
 
+int	asids;
+uvlong	bestmode;
 int	bootmachmode; /* flag: machine mode at boot? same on all non-hobbled harts? */
 uvlong	clintsperµs;	/* needed in delay before m is set */
 uvlong	cpuhz;		/* from kernel config */
 uchar	ether0mac[];
 int	hartcnt;
 void	(*hartinit)(void);
+char	kerndatestr[];
+uintptr	mainpc;
 uintptr	memtotal;	/* sum of all banks */
 uintptr	mideleg, medeleg;
 uintptr	misa;

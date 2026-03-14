@@ -1319,6 +1319,8 @@ i82563transmit(Ether* edev)
 			ienable(ctlr, Txdw|Txqe|Txdlow|Parityeccrst);
 			break;
 		}
+		if (ctlr->tb[tdt] != nil)
+			break;
 		if((bp = qget(edev->oq)) == nil)
 			break;
 

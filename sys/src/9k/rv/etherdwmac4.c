@@ -46,9 +46,9 @@ enum {
 	 * systems can need more receive buffers
 	 * due to bursts of (non-9P) traffic.
 	 */
-	Ntd	= 1024,		/* <= 1024 desc.s in either ring */
-	Nrd	= 1024,
-	Nrb	= 2*Nrd,	/* private receive buffers, > Nrd */
+	Ntd	= 256,		/* <= 1024 desc.s in either ring */
+	Nrd	= 256,
+	Nrb	= 2*Nrd,	/* private receive buffers, ≫ Nrd */
 };
 
 enum {				/* interesting dev registers, by ulong* index */
@@ -292,6 +292,7 @@ struct Ctlr {
 	uint	tintr;
 	uint	tsleep;
 	Watermark wmtd;
+	Watermark wmtbqd;
 	QLock	tlock;
 	ulong	txtick;	/* tick at start of last tx start */
 
@@ -385,7 +386,8 @@ ifstat(Ether *edev, void *a, long n, ulong offset)
 	p = seprint(p, e, "ixcs %d\n", ctlr->ixcs);
 	p = seprintmark(p, e, &ctlr->wmrb);
 	p = seprintmark(p, e, &ctlr->wmrd);
-	seprintmark(p, e, &ctlr->wmtd);
+	p = seprintmark(p, e, &ctlr->wmtd);
+	seprintmark(p, e, &ctlr->wmtbqd);
 	n = readstr(offset, a, n, s);
 	free(s);
 
@@ -607,7 +609,7 @@ setupxmitdesc(Td *td, Block *bp)
 void
 xmit(Ether *edev)
 {
-	uint nqd, tdt, qlen;
+	uint nqd, tdt, qlen, iseswin, deqed;
 	Block *bp;
 	Ctlr *ctlr;
 	Mpl pl;
@@ -626,9 +628,11 @@ xmit(Ether *edev)
 		return;
 	}
 	coherence();
+	iseswin = ctlr->variant == Vareswin;
 	pl = splhi();
 	tdt = ctlr->tdt;
 	qlen = (tdt + Ntd - ctlr->tdh) % Ntd;
+	deqed = 0;
 	for(nqd = 0; NEXT(tdt, Ntd) != ctlr->tdh; nqd++){ /* ring not full? */
 		/* try to avoid cache line collisions: keep head & tail apart */
 		if (qlen >= Ntd - 2)
@@ -639,42 +643,47 @@ xmit(Ether *edev)
 		/* else tdba is uncached, thus td is uncached */
 		if (td->status & Own)		/* being transmitted? */
 			break;
+		if (ctlr->tb[tdt] != nil)
+			break;
+
 		bp = qget(edev->oq);
 		if (ISKERNNIL(bp))
 			break;
 
-		/* got available desc. & Block */
+		/* got available desc., committed to processing Block */
+		deqed++;
+		ctlr->tb[tdt] = bp;
+		coherence();
 		if (ISKERNNIL(bp->rp))
 			panic("xmit: nil bp->rp");
 		setupxmitdesc(td, bp);
 
-		if (ctlr->tb[tdt])
-			panic("%Æ: xmit ring full, tb[%d] not nil", ctlr, tdt);
-		ctlr->tb[tdt] = bp;
-		coherence();
-
+		if (Debug && (ctlr->regs[Dmatxctl] & Ctlrstart) == 0)
+			iprint("%Æ: xmitter stopped\n", ctlr);
+		/* kick wants Td *after* last valid to send at tail */
 		tdt = NEXT(tdt, Ntd);
 		qlen = (tdt + Ntd - ctlr->tdh) % Ntd;
-
-		if ((ctlr->regs[Dmatxctl] & Ctlrstart) == 0)
-			iprint("%Æ: xmitter stopped\n", ctlr);
-		if (qlen == Ntd/2 && ctlr->variant == Vareswin) {
-			if (Debug)
-				iprint("%Æ: xmitter not making progress. "
-					"tdt %d tdh %d\n",
-					ctlr, tdt, ctlr->tdh);
-			kick(ctlr, tdt, 1);
-		} else if(ctlr->variant == Vareswin)
-			kick(ctlr, tdt, 0);
+		notemark(&ctlr->wmtd, qlen);
+		if(iseswin)
+			if (qlen == Ntd/2) {
+				if (Debug)
+					iprint("%Æ: xmitter not making "
+						"progress. tdt %d tdh %d\n",
+						ctlr, tdt, ctlr->tdh);
+				/* updates ctlr->td[th] too */
+				kick(ctlr, tdt, 1); 
+			} else
+				kick(ctlr, tdt, 0);
 	}
-	notemark(&ctlr->wmtd, qlen);
+	if (deqed != 0)
+		notemark(&ctlr->wmtbqd, deqed);
 	/*
 	 * a full ring can be legitimate, but eic7700's xmitter sometimes
 	 * got stuck.  watch that it's still fixed.
 	 */
-	if (qlen > Ntd - 8 && ctlr->variant == Vareswin)
+	if (qlen > Ntd - 8 && iseswin)
 		restart(ctlr, tdt);
-	else if(nqd || ctlr->variant == Vareswin)
+	else if(nqd || iseswin)
 		kick(ctlr, tdt, 0);
 	splx(pl);
 	qunlock(&ctlr->tlock);
@@ -978,6 +987,19 @@ ckcksum(Ctlr *ctlr, uint sts, Block *bp)
 	}
 }
 
+static void
+diagin(Ctlr *ctlr, uint sts)
+{
+	if (sts & Errsum) {
+		iprint("mtl rxq0 op %#ux\n", ctlr->regs[Rxq0op]);
+		iprint("mtl rxq0 missed pkts %#ux\n",
+			ctlr->regs[Rxq0missedpkts]);
+		iprint("mtl rxq0 debug %#ux\n", ctlr->regs[Rxq0debug]);
+		iprint("%Æ: qinpkt: errsum in sts %#ux\n", ctlr, sts);
+	} else
+		iprint("%Æ: qinpkt: sts %#ux\n", ctlr, sts);
+}
+
 /* pass full packets at ring head upstream */
 static int
 qinpkt(Ctlr *ctlr)
@@ -1038,14 +1060,8 @@ qinpkt(Ctlr *ctlr)
 		} else
 			iprint("%Æ: bad crc, sts %#ux; ether type %#ux len %d\n",
 				ctlr, sts, pkt->type[0]<<8 | pkt->type[1], len);
-	} else if (sts & Errsum) {
-		iprint("mtl rxq0 op %#ux\n", ctlr->regs[Rxq0op]);
-		iprint("mtl rxq0 missed pkts %#ux\n",
-			ctlr->regs[Rxq0missedpkts]);
-		iprint("mtl rxq0 debug %#ux\n", ctlr->regs[Rxq0debug]);
-		iprint("%Æ: qinpkt: errsum in sts %#ux\n", ctlr, sts);
 	} else
-		iprint("%Æ: qinpkt: sts %#ux\n", ctlr, sts);
+		diagin( ctlr, sts);
 	if (!passed) {
 		ainc(&nrbfull);			/* cancel adec in rbfree */
 		freeb(bp);			/* toss bad pkt */
@@ -1515,6 +1531,7 @@ attach(Ether *edev)
 	initmark(&ctlr->wmrb, Nrb, "rcv Blocks not yet processed");
 	initmark(&ctlr->wmrd, Nrd-1, "rcv descrs processed at once");
 	initmark(&ctlr->wmtd, Ntd-1, "xmit descr queue len");
+	initmark(&ctlr->wmtbqd, Ntd-1, "xmit blocks dequeued at once");
 
 	ilock(&attlock);
 	rxinit(ctlr);
@@ -1603,16 +1620,10 @@ interrupt(Ureg*, void *ve)
 	flushregs(ctlr);
 
 	/* now that registers have been updated, wake sleepers */
-	if(rint) {
-		if (Debugdetail)
-			iprint("*Wr");
+	if(rint)
 		wakeup(&ctlr->rrendez);
-	}
-	if(tint) {
-		if (Debugdetail)
-			iprint("*Wt");
+	if(tint)
 		wakeup(&ctlr->trendez);
-	}
 	return Intrforme;
 }
 

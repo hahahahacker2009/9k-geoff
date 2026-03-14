@@ -1,10 +1,9 @@
 starfive visionfive 2 v1.3B
-
-data version: 0x2
-PCB revision: 0xb2
-BOM revision: A
-Ethernet MAC0 address: 6c:cf:39:00:30:25
-opensbi v1; sbi 0.3
+	data version: 0x2
+	PCB revision: 0xb2
+	BOM revision: A
+	Ethernet MAC0 address: 6c:cf:39:00:30:25
+	opensbi v1; sbi 0.3
 
 starfive jh7110 risc-v rv64gc cpu: quad-core sifive u74 @ 1-1.5GHz +
 	s7 mgmt hart + e24 real-time hart (hart0)

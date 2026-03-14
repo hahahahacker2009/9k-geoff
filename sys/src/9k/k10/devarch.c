@@ -64,7 +64,9 @@ extern Dev archdevtab;
 void
 vmbotch(ulong vmbit, char *cause)
 {
-	print("am i running in a VM, or is %s?\n", cause);
+	print("* Broken hardware or BIOS settings!  Am I running in a VM,\n");
+	print("\tor is %s?\n", cause);
+	delay(10000);			/* let user read it */
 	USED(vmbit);
 }
 

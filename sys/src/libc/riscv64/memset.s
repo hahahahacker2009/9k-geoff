@@ -1,4 +1,4 @@
-/* memset(void *p, int c, uintptr n) - clear vlongs */
+/* memset(void *p, int c, uintptr n) - set vlongs */
 	TEXT	memset(SB),$(3*XLEN)
 	MOV	R8, p+0(FP)
 	MOV	R8, R11			/* R11 is pointer */

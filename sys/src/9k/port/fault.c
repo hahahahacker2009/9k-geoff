@@ -257,6 +257,10 @@ pio(Segment *s, uintptr addr, uintptr soff, Page **p)
 		faulterror(Eioload, c, 0);
 	}
 
+	/*
+	 * we assume that this reads all `ask' bytes, which depends on the
+	 * underlying file server.
+	 */
 	n = c->dev->read(c, kaddr, ask, daddr);
 	if(n != ask)
 		faulterror(Eioload, c, 0);

@@ -32,7 +32,7 @@ enum {
 	 */
 	Ntd	= 64,		/* power of 2, >= 64 */
 	Nrd	= 64,		/* power of 2, >= 64 */
-	Nrb	= 2*Nrd,	/* private receive buffers, could be >> Nrd */
+	Nrb	= 2*Nrd,	/* private receive buffers, could be ≫ Nrd */
 };
 
 enum {				/* registers, by ulong* index */

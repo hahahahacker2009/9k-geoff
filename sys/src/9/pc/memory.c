@@ -301,7 +301,7 @@ sigscan(uchar* addr, int len, char* signature)
 uintptr
 freebasemem(void)
 {
-	return L16GET((uchar *)FBMADDR) * KB;
+	return legeth((uchar *)FBMADDR) * KB;
 }
 
 void*
@@ -318,7 +318,7 @@ sigsearch(char* signature)
 	 * 3) within the BIOS ROM address space between 0xf0000 and 0xfffff
 	 *    (but will actually check 0xe0000 to 0xfffff).
 	 */
-	if((p = (uintptr)BIOSSEG(L16GET((uchar *)EBDAADDR))) != 0)
+	if((p = (uintptr)BIOSSEG(legeth((uchar *)EBDAADDR))) != 0)
 		if((r = sigscan((void *)p, LOWMEMEND - p, signature)) != nil)
 			return r;
 

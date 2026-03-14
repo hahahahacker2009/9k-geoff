@@ -11,8 +11,6 @@
 #define ALIGNPAT 0x01020304
 
 	/* data segment, not bss, variables, due to initialisation */
-	GLOBL	initstall(SB), $4
-	DATA	initstall(SB)/4, $1
 	GLOBL	datalign(SB), $4
 	DATA	datalign(SB)/4, $ALIGNPAT
 
@@ -39,14 +37,7 @@ TEXT _main(SB), 1, $-4			/* _main avoids libc's main9.s */
 	 * systems intended to run unix.  otherwise, traps to machine mode
 	 * (with no virtual memory) could fault endlessly.
 	 */
-	FENCE
-	FENCE_I
-
-	SFENCE_VMA(0, 0)
-	MOV	R0, CSR(SATP)
-	SFENCE_VMA(0, 0)
-	FENCE_I
-	FENCE
+	LOADSATP(R0)			/* many fences here */
 
 	/*
 	 * Prepare the static base before use.
@@ -60,15 +51,14 @@ TEXT _main(SB), 1, $-4			/* _main avoids libc's main9.s */
 	MOV	$Defssts, R(TMP)	/* prev S mode is user */
 	MOV	R(TMP), CSR(SSTATUS)
 
-	MOV	$panicstk+(INITSTKSIZE)(SB), R2
+	MOV	$panicstk+(INITSTKSIZE)(SB), R2	/* very temporary stack */
 // TEXT pstkalign(SB), 1, $-4		/* reset SP, FP for new R2 */
 
 	MOV	$PAUart0, R(UART0)	/* now safe to print on PAUart0 */
 
-	/* if this hart is in 32-bit mode, park it */
 	MOV	$4, R9
-	SLL	$31, R9
-	BEQ	R9, rv32		/* shifted off the left end? */
+	SLL	$31, R9			/* must be valid rv32 shift */
+	BEQ	R9, rv32 /* shifted off left end? hart in 32-bit mode, park */
 
 	/*
 	 * a misaligned data segment can behave quite strangely,
@@ -78,7 +68,9 @@ TEXT _main(SB), 1, $-4			/* _main avoids libc's main9.s */
 	MOV	$ALIGNPAT, R9
 	BNE	R9, R12, unaligned
 
-	MOV	R0, CSR(SSCRATCH)	/* m for early strap */
+	/* assume super mode by default */
+	MOV	$'S', R12
+	MOV	R0, R(MACHMODE)
 
 	/*
 	 * try to catch a trap if we access M mode CSRs in S mode.
@@ -86,21 +78,39 @@ TEXT _main(SB), 1, $-4			/* _main avoids libc's main9.s */
 	 * type of exception (illegal instruction?) to S mode.
 	 * if SBI throws a fit, we're out of luck.
 	 */
+	MOV	$dummymach(SB), R9
+	MOV	R9, CSR(SSCRATCH)	/* m for early strap */
 	MOV	$supertrap(SB), R9
 	MOV	R9, CSR(STVEC)
 	MOV	R9, CSR(MTVEC)
 	FENCE
-	/* we didn't fault on MTVEC, so we're in M mode */
+
+	/*
+	 * we didn't fault on MTVEC, so we're in M mode.  set it up minimally.
+	 */
 	MOV	$'M', R12
 	MOV	$1, R(MACHMODE)
+	MOV	CSR(MHARTID), R(HARTID)
+	/* device tree pointer somewhere? */
+
+	MOV	$Defmsts, R(TMP)
+	MOV	R(TMP), CSR(MSTATUS)
+	CSRRC	CSR(MSTATUS), $(Sie|Mie), R0
+	MOV	R0, CSR(MIE)
+	MOV	R0, CSR(MIP)
 	MOV	R0, CSR(MEDELEG)
 	MOV	R0, CSR(MIDELEG)
-	JMP	bothmodes
+
+	MOV	$recktrap(SB), R9	/* catch early stray M faults */
+	CSRRW	CSR(MTVEC), R9, R9
+	MOV	R9, origmtvec(SB)	/* stash initial mtvec for later */
+
+	MOV	$dummymach(SB), R9
+	MOV	R9, CSR(MSCRATCH)	/* m for early mtrap */
+
 TEXT supertrap(SB), 1, $-4
-	/* we faulted, so we're in S mode */
-	MOV	$'S', R12
-	MOV	R0, R(MACHMODE)
-bothmodes:
+	/* if we faulted, we're in S mode */
+	/* interrupts are now definitely off, in M or S mode */
 	MOVW	R(MACHMODE), bootmachmode(SB)
 	CONSPUT(R12)
 	CONSPUT($' ')
@@ -108,26 +118,11 @@ bothmodes:
 	MOV	$recktrap(SB), R9	/* catch early stray S faults */
 	MOV	R9, CSR(STVEC)
 
-	BEQ	R(MACHMODE), super
+	MOV	$dummysc(SB), R12
+	SCW(0, 12, 0)	/* discharge any lingering reservation we hold */
 
-	/* M mode set up */
-	CSRRC	CSR(MSTATUS), $(Sie|Mie), R0
-	MOV	R0, CSR(MIE)
-	MOV	R0, CSR(MIP)
-	MOV	CSR(MHARTID), R(HARTID)
-	/* device tree pointer somewhere? */
-
-	MOV	$setSB(SB), R3	/* again, in case M traps happened above */
-	MOV	R0, CSR(MSCRATCH)	/* m for early mtrap */
-
-	MOV	$recktrap(SB), R9	/* catch early stray M faults */
-	CSRRW	CSR(MTVEC), R9, R9
-	MOV	R9, origmtvec(SB)	/* stash initial mtvec for later */
-
-	MOV	$Defmsts, R(TMP)
-	MOV	R(TMP), CSR(MSTATUS)
-super:
-	/* interrupts are now definitely off, in M or S mode */
+	MOV	$HARTMAX, R(TMP)
+	BGEU	R(TMP), R(HARTID), nostack	/* more harts than expected? */
 
 	/*
 	 * zero most registers to avoid possible non-determinacy.
@@ -138,34 +133,47 @@ super:
 	Z(14); Z(15); Z(16); Z(17); Z(18); Z(19); Z(20); Z(21); Z(22); Z(23)
 	Z(24); Z(25); Z(26); Z(27); Z(28)
 
-	/* save PC as approx. PADDR(KTZERO) for mainpc below */
+	/*
+	 * in case i(un)lock are called before m is set to its real Mach*,
+	 * perhaps called via panic very early on this hart.
+	 */
+	MOV	$dummymach(SB), R(MACH)
+	MOV	R0, R(USER)
+
+	/* save PC as approx. PADDR(KTZERO) for mainpc */
 	JAL	R12, 1(PC)
 	MOV	R12, mainpc(SB)
-
-	MOV	$dummysc(SB), R12
-	SCW(0, 12, 0)	/* discharge any lingering reservation we hold */
-
-	/* repeat, now that interrupts are off */
-	MOV	$Defssts, R(TMP)	/* prev S mode is user */
-	MOV	R(TMP), CSR(SSTATUS)
-	CONSPUT($'C')
 
 	/*
 	 * assign machnos sequentially from zero.
 	 * after Amoadd: old hartcnt in MACHNO, updated hartcnt in memory.
 	 */
+	CONSPUT($'C')
 	MOV	$hartcnt(SB), R9
 	MOV	$1, R10
 	AMOW(Amoadd, AQ|RL, 10, 9, MACHNO)
+
+	MOV	$MACHMAX, R(TMP)
+	BGEU	R(TMP), R(MACHNO), nostack	/* more cpus than expected? */
+
+	/*
+	 * set up a temporary stack for C for this cpu, based on machno.
+	 * initstks is in the data segment, so won't be zeroed when zeroing bss.
+	 */
+	CONSPUT($'T')
 	MOV	$'0', R15
 	ADD	R(MACHNO), R15
 	CONSPUT(R15)
+
+	/* put sp within stack with SBIALIGN */
+	MOV	$initstks+(INITSTKSIZE-SBIALIGN)(SB), R(TMP)
+	MOV	$INITSTKSIZE, R11
+	MUL	R(MACHNO), R11
+	ADD	R11, R(TMP), R2		/* just past my init stack */
+
 	BNE	R(MACHNO), notzero
 
-	/*
-	 * we are cpu0, so zero bss while secondaries wait.
-	 * other system-wide set up could be done here too.
-	 */
+	/* we are cpu0, so zero bss */
 	CONSPUT($'Z')
 	MOV	$edata(SB), R(TMP)
 	MOV	$end(SB), R(TMP2)
@@ -174,30 +182,31 @@ zerobss:
 	ADD	$XLEN, R(TMP)
 	BLTU	R(TMP2), R(TMP), zerobss
 	FENCE
-	MOVW	R0, initstall(SB)	/* send all-clear for secondaries */
+ 	MOVW	R0, initstall(SB)	/* all-clear for secondary cpus */
 	JMP	allcpus
 
 	/*
-	 * we are a secondary, so wait here until cpu0 finishes zeroing bss.
+	 * we are a secondary, so wait here until cpu0 finishes zeroing bss
+	 * and other initialisation.
 	 */
 notzero:
+	PAUSE
 	FENCE
 	MOVW	initstall(SB), R(TMP)
 	BNE	R(TMP), notzero
-
 	/*
 	 * all is clear for secondaries; add a slight delay to give cpu0 a head
-	 * start, in case of near-simultaneous start up.
+	 * start and stagger cpu starts, in case of near-simultaneous start up.
 	 */
-	MOV	$1000000000, R(TMP)
+	MOV	$(100*MHZ), R(TMP)
+	MUL	R(MACHNO), R(TMP)
 delay:
 	SUB	$1, R(TMP)
 	BNE	R(TMP), delay
 
 allcpus:
+	/* BUG: shouldn't need this but can't pass arg to low() */
 	/* store hart id in hartids[machno] for Mach->hartid */
-	MOV	$HARTMAX, R(TMP)
-	BGEU	R(TMP), R(HARTID), nostack	/* more harts than expected? */
 	MOV	$hartids(SB), R12
 	MOV	$2, R13			/* sizeof(short) */
 	MUL	R(MACHNO), R13
@@ -205,25 +214,12 @@ allcpus:
 	MOVH	R(HARTID), (R12)	/* hartids[machno] = HARTID */
 	FENCE
 
-	/*
-	 * set up a temporary stack for this cpu, based on machno.
-	 */
-	CONSPUT($'T')
-	MOV	$'0', R15
-	ADD	R(HARTID), R15
-	CONSPUT(R15)
-	MOV	$MACHMAX, R(TMP)
-	BGEU	R(TMP), R(MACHNO), nostack	/* more cpus than expected? */
-	MOV	$initstks+(INITSTKSIZE)(SB), R(TMP)
-	MOV	$INITSTKSIZE, R10
-	MUL	R(MACHNO), R10, R11
-	ADD	R11, R(TMP), R2		/* just past my init stack */
-	SUB	$SBIALIGN, R2		/* put sp within stack */
-
 	CONSPUT($'\r')
 	CONSPUT($'\n')
+	SUB	$16, R2			/* room to push low's args */
+	MOVW	R(MACHNO), bootingcpu(SB)
 	MOV	R(MACHNO), R(ARG)
-	JAL	LINK, low(SB)		/* low(machno); no return */
+	JAL	LINK, low(SB)		/* low(machno, hartid); no return */
 
 	/*
 	 * failures of various sorts

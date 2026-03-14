@@ -479,7 +479,7 @@ i8042intr(Ureg*, void*)
 	if(s & Minready){
 		if(auxputc != nil)
 			auxputc(c, kbscans[Int].shift);
-		return;
+		return Intrforme;
 	}
 
 	/*
@@ -488,10 +488,10 @@ i8042intr(Ureg*, void*)
 	 */
 	if(c == 0xe0){
 		kbscan->esc1 = 1;
-		return;
+		return Intrforme;
 	} else if(c == 0xe1){
 		kbscan->esc2 = 2;
-		return;
+		return Intrforme;
 	}
 
 	keyup = c & 0x80;
@@ -502,7 +502,7 @@ i8042intr(Ureg*, void*)
 		kbscan->esc1 = 0;
 	} else if(kbscan->esc2){
 		kbscan->esc2--;
-		return;
+		return Intrforme;
 	} else if(kbscan->shift)
 		c = kbtabshift[c];
 	else if(kbscan->altgr)
@@ -542,7 +542,7 @@ i8042intr(Ureg*, void*)
 				kbdmouse(kbscan->buttons);
 			break;
 		}
-		return;
+		return Intrforme;
 	}
 
 	/*
@@ -553,31 +553,31 @@ i8042intr(Ureg*, void*)
 			exit(0);
 		if(!kbscan->collecting){
 			kbdputc(kbdq, c);
-			return;
+			return Intrforme;
 		}
 		if (kbscan->nk < nelem(kbscan->kc))
 			kbscan->kc[kbscan->nk++] = c;
 		c = latin1(kbscan->kc, kbscan->nk);
 		if(c < -1)			/* need more keystrokes */
-			return;
+			return Intrforme;
 		if(c != -1)			/* valid sequence */
 			kbdputc(kbdq, c);
 		else				/* dump characters */
 			for(i=0; i<kbscan->nk; i++)
 				kbdputc(kbdq, kbscan->kc[i]);
 		kbscan->nk = kbscan->collecting = 0;
-		return;
+		return Intrforme;
 	} else
 		switch(c){
 		case Caps:
 			kbscan->caps ^= 1;
-			return;
+			return Intrforme;
 		case Num:
 			kbscan->num ^= 1;
-			return;
+			return Intrforme;
 		case Shift:
 			kbscan->shift = mouseshifted = 1;
-			return;
+			return Intrforme;
 		case Latin:
 			kbscan->alt = 1;
 			/*
@@ -594,13 +594,13 @@ i8042intr(Ureg*, void*)
 				kbscan->collecting = 1;
 				kbscan->nk = 0;
 			}
-			return;
+			return Intrforme;
 		case Ctrl:
 			kbscan->ctl = 1;
-			return;
+			return Intrforme;
 		case Altgr:
 			kbscan->altgr = 1;
-			return;
+			return Intrforme;
 		case Kmouse|1:
 		case Kmouse|2:
 		case Kmouse|3:
@@ -609,9 +609,10 @@ i8042intr(Ureg*, void*)
 			kbscan->buttons |= 1<<(c-Kmouse-1);
 			if(kbdmouse)
 				kbdmouse(kbscan->buttons);
-			return;
+			return Intrforme;
 		}
 	kbdputc(kbdq, c);
+	return Intrforme;
 }
 
 /*

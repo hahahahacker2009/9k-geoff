@@ -227,6 +227,3 @@ int	xchgw(ushort*, int);
 #define	dcflush(a, b)
 
 #define BIOSSEG(a)	KADDR(((uint)(a))<<4)	/* 1st mb address as segment */
-
-#define L16GET(p)	(((p)[1]<<8)|(p)[0])
-#define L32GET(p)	(((uint)L16GET((p)+2)<<16)|L16GET(p))

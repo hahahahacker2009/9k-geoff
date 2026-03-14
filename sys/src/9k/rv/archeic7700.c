@@ -59,9 +59,9 @@ enum {
 #define Pcideviceid	2
 #define Pcicmd		4
 #define Pcirevision	8
-#define Pciprimarybus	0x18
 #define Pcibaseaddr0	0x10
 #define Pcibaseaddr1	0x14
+#define Pciprimarybus	0x18
 
 #define Pcicmdio	1
 #define Pcicmdmemory	2
@@ -214,7 +214,7 @@ eic770pciinit(void)
 	ulong s, v;
 	unsigned t;
 
-iprint("eic770pciinit: ");
+	DBG("eic770pciinit: ");
 	dbi_base  = (uintptr)soc.pcivend;	/* kernel addrs */
 	cfg_base  = (uintptr)soc.pci;
 	elbi_base = (uintptr)soc.pcictl;
@@ -225,7 +225,8 @@ iprint("eic770pciinit: ");
 	v = *(ulong *)(elbi_base + Elbictl0) & ~Elbictl0devtypemask;
 	v |= (Pciexptyperootport & Elbictl0devtypemask);
 	*(ulong *)(elbi_base + Elbictl0) = v;
-iprint("elbictl0\t%#p: %#lux to config root port\n", elbi_base + Elbictl0, v);
+	DBG("elbictl0\t%#p: %#lux to config root port\n",
+		elbi_base + Elbictl0, v);
 	coherence();
 
 	/*
@@ -233,7 +234,8 @@ iprint("elbictl0\t%#p: %#lux to config root port\n", elbi_base + Elbictl0, v);
 	 * bit 16 to confirm Pmselauxclk deasserted (PHY ready).
 	 */
 	*(ulong *)(elbi_base + Elbictl0) &= ~Elbictl0appholdphyrst;
-iprint("elbictl0\t%#p: %#lux to clear phy reset\n", elbi_base + Elbictl0, *(ulong *)(elbi_base + Elbictl0));
+	DBG("elbictl0\t%#p: %#lux to clear phy reset\n", elbi_base + Elbictl0,
+		*(ulong *)(elbi_base + Elbictl0));
 	coherence();
 
 	for (t = 0; t < 20; t++) {
@@ -249,7 +251,10 @@ iprint("elbictl0\t%#p: %#lux to clear phy reset\n", elbi_base + Elbictl0, *(ulon
 	}
 
 	dbi_rowrena(dbi_base, 1);
-	/* Optional: write Vendor/Device Ids into the RC config header (needs RO write enable). */
+	/*
+	 * Optional: write Vendor/Device Ids into the RC config header
+	 * (needs RO write enable).
+	 */
 	/* device:vendor packed */
 	*(ulong *)(dbi_base + Pcivendorid) = 0x2030<<16 | 0x1fe1;
 
@@ -262,20 +267,22 @@ iprint("elbictl0\t%#p: %#lux to clear phy reset\n", elbi_base + Elbictl0, *(ulon
 	/* Bus numbers: primary=0, secondary=1, subordinate=0xff */
 	v = *(ulong *)(dbi_base + Pciprimarybus) & 0xff000000U;
 	*(ulong *)(dbi_base + Pciprimarybus) = v | 0x00ff0100U;
-iprint("Pciprimarybus\t%#p: %#lux\n", dbi_base + Pciprimarybus, *(ulong *)(dbi_base + Pciprimarybus));
+	DBG("Pciprimarybus\t%#p: %#lux\n", dbi_base + Pciprimarybus,
+		*(ulong *)(dbi_base + Pciprimarybus));
 	coherence();
 
 	/* Command: enable IO/MEM/BUSMASTER/SERR */
 	v = *(ulong *)(dbi_base + Pcicmd) & 0xffff0000U;
 	v |= Pcicmdio | Pcicmdmemory | Pcicmdmaster | Pcicmdserr;
 	*(ulong *)(dbi_base + Pcicmd) = v;
-iprint("Pcicmd\t%#p: %#lux to enable accesses\n", dbi_base + Pcicmd, v);
+	DBG("Pcicmd\t%#p: %#lux to enable accesses\n", dbi_base + Pcicmd, v);
 	coherence();
 
 	/* Class code (upper 24 bits at 0x08): 0x0604xx */
 	v = *(ulong *)(dbi_base + Pcirevision) & 0x000000ff;
 	*(ulong *)(dbi_base + Pcirevision) = v | Pcibridgepci << 8;
-iprint("Pcirevision\t%#p: %#lux to set class code\n", dbi_base + Pcirevision, *(ulong *)(dbi_base + Pcirevision));
+	DBG("Pcirevision\t%#p: %#lux to set class code\n",
+		dbi_base + Pcirevision, *(ulong *)(dbi_base + Pcirevision));
 	coherence();
 
 //	dbi_rowrena(dbi_base, 0);
@@ -283,14 +290,15 @@ iprint("Pcirevision\t%#p: %#lux to set class code\n", dbi_base + Pcirevision, *(
 	/* Enable LTSSM */
 	v = *(ulong *)(elbi_base + Elbictl0);
 	*(ulong *)(elbi_base + Elbictl0) = v | Elbictl0appltssmena;
-iprint("Elbictl0\t%#p: %#lux to set ltssm\n", elbi_base + Elbictl0, *(ulong *)(elbi_base + Elbictl0));
+	DBG("Elbictl0\t%#p: %#lux to set ltssm\n", elbi_base + Elbictl0,
+		*(ulong *)(elbi_base + Elbictl0));
 	coherence();
 
 	/* Wait for Data Link Layer Link Active */
 // TODO	if (pcie_wait_link_up(p, 200) != 0)
 //		return -3;
 	delay(200);
-iprint("done\n");
+	DBG("done\n");
 	return 0;
 }
 
@@ -308,6 +316,7 @@ eic7700init(void)
 {
 	int n;
 
+	DBG("eic7700init...");
 	for (n = 0; n < 2; n++)
 		*(ulong *)KADDR(Eth0clk + 4*n) |= Ethclkena | Rmiiclkena;
 	coherence();

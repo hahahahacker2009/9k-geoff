@@ -5,7 +5,7 @@ micro(semi|chip) polarfire icicle in rv64
 • U54 are pipelined single-issue cores.
 1GB ecc memory at 0x80000000 (physmem)
 another 1GB ecc memory at 0x1040000000
-39-bit virtual addresses in rv64 (48-bit in tinyemu)
+39-bit virtual addresses in rv64
 proprietary l2 cache controller, 2MB
 all cpus, memory caches and dma are coherent!
 has standard clint & plic interrupt controllers

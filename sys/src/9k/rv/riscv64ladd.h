@@ -55,37 +55,26 @@
 #define CONSOUT(c) PRINT(c)
 
 #ifdef SIFIVEUART
-#define CONSPUT(c) \
+#define CONSWAIT \
+	MOVW	$(1ul<<31), R(TMP2); \
 	FENCE; \
 	MOVWU	(0*4)(R(UART0)), R(TMP); /* reg 0 is txdata */ \
-	MOVW	$(1ul<<31), R(TMP2); \
-	AND	R(TMP2), R(TMP);	/* notready bit */ \
-	BNE	R(TMP), -4(PC); \
+	AND	R(TMP2), R(TMP);	/* isolate notready bit */ \
+	BNE	R(TMP), -3(PC)
+#else					/* SIFIVEUART */
+/* i8250 */
+#define CONSWAIT \
+	FENCE; \
+	MOVWU	(5*4)(R(UART0)), R(TMP); /* 8250 Lsr is 5; reg 0 is Thr */ \
+	AND	$(1<<5), R(TMP);	/* Thre (Thr empty) is bit 5 */ \
+	BEQ	R(TMP), -3(PC)
+#endif					/* SIFIVEUART */
+
+#define CONSPUT(c) \
+	CONSWAIT; \
 	MOV	c, R(TMP); \
 	MOVW	R(TMP), (R(UART0)); \
 	FENCE
-#define CONSWAIT \
-	FENCE; \
-	MOVWU	(0*4)(R(UART0)), R(TMP); /* reg 0 is txdata */ \
-	MOVW	$(1ul<<31), R(TMP2); \
-	AND	R(TMP2), R(TMP);	/* notready bit */ \
-	BNE	R(TMP), -4(PC)
-#else					/* SIFIVEUART */
-/* i8250 */
-#define CONSPUT(c) \
-	FENCE; \
-	MOVWU	(5*4)(R(UART0)), R(TMP); /* 8250 Lsr is 5 */ \
-	AND	$0x20, R(TMP);		/* Thre (Thr empty) is 0x20 */ \
-	BEQ	R(TMP), -3(PC); \
-	MOV	c, R(TMP); \
-	MOVW	R(TMP), (R(UART0));	/* reg 0 is Thr */ \
-	FENCE
-#define CONSWAIT \
-	FENCE; \
-	MOVWU	(5*4)(R(UART0)), R(TMP); /* 8250 Lsr is 5 */ \
-	AND	$0x20, R(TMP);		/* Thre (Thr empty) is 0x20 */ \
-	BEQ	R(TMP), -3(PC)
-#endif					/* SIFIVEUART */
 #endif					/* DEBUG */
 
 #define CALLTRAP \

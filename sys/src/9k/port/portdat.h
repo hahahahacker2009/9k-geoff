@@ -201,6 +201,10 @@ struct Path
 	int	malen;			/* allocated length of mtpt */
 };
 
+typedef int	Createperm;
+typedef long	Sysstatlen;
+typedef vlong	Brwlen;
+
 struct Dev
 {
 	Rune	dc;
@@ -211,16 +215,16 @@ struct Dev
 	void	(*shutdown)(void);
 	Chan*	(*attach)(char*);
 	Walkqid*(*walk)(Chan*, Chan*, char**, int);
-	long	(*stat)(Chan*, uchar*, long);
+	Sysstatlen (*stat)(Chan*, uchar*, Sysstatlen);
 	Chan*	(*open)(Chan*, int);
-	void	(*create)(Chan*, char*, int, int);
+	void	(*create)(Chan*, char*, int, Createperm);
 	void	(*close)(Chan*);
 	long	(*read)(Chan*, void*, long, vlong);
-	Block*	(*bread)(Chan*, long, vlong);
+	Block*	(*bread)(Chan*, long, Brwlen);
 	long	(*write)(Chan*, void*, long, vlong);
-	long	(*bwrite)(Chan*, Block*, vlong);
+	long	(*bwrite)(Chan*, Block*, Brwlen);
 	void	(*remove)(Chan*);
-	long	(*wstat)(Chan*, uchar*, long);
+	Sysstatlen	(*wstat)(Chan*, uchar*, Sysstatlen);
 	void	(*power)(int);	/* power mgt: power(1) => on, power (0) => off */
 	int	(*config)(int, char*, DevConf*);	/* returns 0 on error */
 };
@@ -427,7 +431,6 @@ enum
 	RENDHASH =	1<<RENDLOG,	/* Hash to lookup rendezvous tags */
 	MNTLOG	=	5,
 	MNTHASH =	1<<MNTLOG,	/* Hash to walk mount table */
-	NFD =		100,		/* per process file descriptors */
 	PGHLOG  =	12,		/* was 9 in 9/pc; k10s are bigger */
 	PGHSIZE	=	1<<PGHLOG,	/* Page hash for image lookup */
 };
@@ -1016,11 +1019,12 @@ struct Watermark
  * interrupts
  */
 
-/* 9/pc interrupt service return values; unused in 9k */
-#define Intrnotforme
-#define Intrforme
-#define Intrtrap
-#define Intrunconverted
+enum {					/* interrupt service return values */
+	Intrnotforme,
+	Intrforme,
+	Intrtrap,
+	Intrunconverted,
+};
 
 struct Intrcommon {
 	Pcidev	*pcidev;

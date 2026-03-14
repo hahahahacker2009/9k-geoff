@@ -33,8 +33,8 @@ typedef struct Vctl Vctl;
 #define SYSCALLTYPE 64 /* nominal syscall trap type (IdtSYSCALL) */
 #define MAXSYSARG   5	/* for mount(fd, afd, mpt, flag, arg) */
 
-#define INTRSVCVOID
-#define Intrsvcret void
+#undef INTRSVCVOID
+#define Intrsvcret int
 
 /* incorporates extended-model and -family bits from cpuid instruction */
 /* 0x0FFM0FM0		x/case.*0/ s/0x000(.)06(.)0/0x\1\2/ */
@@ -49,11 +49,11 @@ typedef struct Vctl Vctl;
 /*
  *  machine dependent definitions used by ../port/portdat.h
  */
-struct Lock
+struct Lock				/* surely Locks are portable? */
 {
 	int	key;
 	ulong	noninit;		/* must be zero */
-	Mreg	sr;
+	Mpl	sr;
 	uintptr	pc;
 	Proc*	p;
 	Mach*	m;
@@ -490,7 +490,7 @@ enum {
 	Htt	= 1<<28,	/* multi-threading capable */
 
 	/* Procsig CX */
-	Monitor	= 1<<3,		/* have monitor/mwait instr.s (2014-) */
+	Monitor	= 1<<3,	/* have monitor/mwait instr.s (intel 2004, amd 2007) */
 	Eist	= 1<<7,		/* undocumented reserved magic */
 	Hypervisor= 1<<31,	/* running on a hypervisor */
 

@@ -69,7 +69,7 @@ strsearch(char* signature)
 	 * 3) within the BIOS ROM address space between 0xf0000 and 0xfffff
 	 *    (but will actually check 0xe0000 to 0xfffff).
 	 */
-	if((p = (uintptr)BIOSSEG(L16GET((uchar *)EBDAADDR))) != 0)
+	if((p = (uintptr)BIOSSEG(legeth((uchar *)EBDAADDR))) != 0)
 		if((r = strscan((void *)p, LOWMEMEND - p, signature)) != nil)
 			return r;
 
@@ -98,13 +98,10 @@ strsearch(char* signature)
 int
 isapu(void)
 {
-	int apu;
-
-	apu = strsearch("PC Enginapu2") != nil;	/* works as of bios v4.11 */
-	if (!apu)
-		apu = strsearch("PCEngines ap") != nil; /* for bios v2 */
-	thisisapu2 = apu;
-	return apu;
+	/* works on bios v4.11 */
+	thisisapu2 = strsearch("PC Enginapu2") != nil ||
+		     strsearch("PCEngines ap") != nil;	/* for bios v2 */
+	return thisisapu2;
 }
 
 /*

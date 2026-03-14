@@ -33,7 +33,7 @@ enum {
 
 typedef struct Vctl {
 	Vctl*	next;			/* handlers on this vector */
-	void	(*f)(Ureg*, void*);	/* handler to call */
+	Intrsvcret (*f)(Ureg*, void*);	/* handler to call */
 	void*	a;			/* argument to call it with */
 
 	uchar	isintr;			/* flag: interrupt, else fault/trap */
@@ -310,8 +310,10 @@ enum {
 	Vmarvell= 0x1b4b,
 	Vmoschip= 0x9710,
 	Vmyricom= 0x14c1,
+	Vopenbsd= 0x0b5d,
 	Voracle	= 0x80ee,
 	Vparallels= 0x1ab8,
+	Vqumranet = 0x1af4,
 	Vsamsung= 0x144d,
 	Vvmware	= 0x15ad,
 };

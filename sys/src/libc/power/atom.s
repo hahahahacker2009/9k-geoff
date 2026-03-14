@@ -18,7 +18,7 @@ xdecloop:
 	BNE	xdecloop
 	RETURN
 
-TEXT	loadlink(SB), $0
+TEXT	loadlinked(SB), $0
 	LWAR	(R3), R3
 	RETURN
 

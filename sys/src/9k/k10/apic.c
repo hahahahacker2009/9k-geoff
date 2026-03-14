@@ -121,10 +121,10 @@ apictprput(int priority)
 }
 
 int
-apiceoi(int vecno)
+apiceoi(int)			/* vector # arg. is ignored */
 {
-	apicrput(Eoi, 0);
-	return vecno;
+	apicrput(Eoi, 0);	/* done with this intr; ready for next */
+	return 0;
 }
 
 int
@@ -133,6 +133,8 @@ apicisr(int avecno)
 	uint vecno, isr;
 
 	vecno = avecno;
+	if (vecno > IdtMAX)
+		return 0;
 	isr = apicrget(Is + (vecno/32)*16);
 	return isr & (1<<(vecno%32));
 }

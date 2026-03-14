@@ -1,4 +1,5 @@
 tiny emu in rv64 @ 3GHz + uart
+sv39, sv48, sv57 virtual addresses work; sv64 doesn't yet, need to debug
 single emulated rv64 cpu
 
 0x00200000	plic hart base (prio threshes & claim/complete?)

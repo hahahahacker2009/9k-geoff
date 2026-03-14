@@ -494,6 +494,8 @@ Disks are better handled by NVME and SATA (see
 .PP
 The Ethernet device works only for certain ASIX-based cards and for CDC devices,
 and is greatly slowed by USB.
+It's not suitable for use as
+.BR #l0 .
 .PP
 The printer driver has not been tested and likely will fail.
 .PP

@@ -25,25 +25,6 @@
 #define HARTSLOP	6	/* max. ids in gaps in hartid space */
 #define HARTMAX		(MACHMAX + HARTSLOP)
 
-#define ALIGNED(p, pow2)	(((uintptr)(p) & ((pow2)-1)) == 0)
-#define PTEADDRMASK		(VMASK(56-PGSHFT) << PTESHFT)
-#define PTEADDRBITS(pte)	((pte) &  PTEADDRMASK)
-#define PTEATTRBITS(pte)	((pte) & ~PTEADDRMASK)
-#define PADDRINPTE(pte)		((PTEADDRBITS(pte) >> PTESHFT) << PGSHFT)
-#define PADDRFORPTE(pa)		((((pa) >> PGSHFT) << PTESHFT) & PTEADDRMASK)
-#define PAGEPRESENT(pte)	((pte) & PteP)
-
-#define KB		1024u			/* 2^10 0x0000000000000400 */
-#define MB		1048576u		/* 2^20 0x0000000000100000 */
-#define GB		1073741824u		/* 2^30 000000000040000000 */
-#define TB		1099511627776ull	/* 2^40 0x0000010000000000 */
-#define PB		1125899906842624ull	/* 2^50 0x0004000000000000 */
-#define EB		1152921504606846976ull	/* 2^60 0x1000000000000000 */
-
-#define KHZ		1000
-#define MHZ		(1000*1000)
-#define GHZ		(1000*MHZ)
-
 #define HOWMANY(x, y)	(((x)+((y)-1))/(y))
 #define ROUNDUP(x, y)	(HOWMANY((x), (y))*(y))
 #define ROUNDDN(x, y)	(((x)/(y))*(y))
@@ -76,6 +57,13 @@
 #define BY2PG		PGSZ
 #define PGROUND(s)	ROUNDUP(s, PGSZ)
 
+#define KB		1024u			/* 2^10 0x0000000000000400 */
+#define MB		1048576u		/* 2^20 0x0000000000100000 */
+#define GB		1073741824u		/* 2^30 000000000040000000 */
+#define TB		1099511627776ull	/* 2^40 0x0000010000000000 */
+#define PB		1125899906842624ull	/* 2^50 0x0004000000000000 */
+#define EB		1152921504606846976ull	/* 2^60 0x1000000000000000 */
+
 #define PGSZ		(4*KB)			/* smallest page size */
 #define PGSHFT		12			/* log2(PGSZ) */
 #define PTSZ		PGSZ			/* page table page size */
@@ -96,7 +84,7 @@
 
 /* Greatest kstack (Proc stack) use observed is 4320 bytes. */
 #define KSTACK		(2*PGSZ)		/* Proc kernel stack size */
-#define STACKALIGN(sp)	((sp) & ~((uintptr)BY2SE-1)) /* bug: assure with alloc */
+#define STACKALIGN(sp)	((sp) & ~(BY2SE-1ull))	/* bug: assure with alloc */
 /*
  * a system call pushes a Ureg at top of kstack, then a PC below it.
  * this skips past the PC to produce the address of the Ureg.
@@ -112,11 +100,15 @@
 #define MS2HZ		(1000/HZ)		/* millisec per clock tick */
 #define TK2SEC(t)	((t)/HZ)		/* ticks to seconds */
 
+#define KHZ		1000
+#define MHZ		(1000*1000)
+#define GHZ		(1000*MHZ)
+
 /*
  *  Address spaces
  *
- *  So far, hardware implements only 39 bits of virtual addresses.
- *  Tinyemu implements both 39 and 48 bits.
+ *  So far, hardware implements 39 and 48 bits of virtual addresses.
+ *  Tinyemu implements 39, 48 and 57 bits.
  *
  *  Typically, kernel is loaded at (or just above) 2GB (PHYSMEM, start of usable
  *  ram) & 3GB-1MB is used to hold the Sys and Syspercpu data structures.
@@ -130,32 +122,34 @@
  */
 #ifdef SV64
 #define PAGINGMODE	Sv64
-#define VMBITS		64		/* KZERO is 0x8000000000000000 */
+#define VMBITS		64	/* KZERO is 0x8000000000000000 */
+#define KZERO		0x8000000000000000ull	/* see ja note below */
 #else
 #ifdef SV57
 #define PAGINGMODE	Sv57
-#define VMBITS		57		/* KZERO is 0xff00000000000000 */
+#define VMBITS		57	/* KZERO is 0xff00000000000000 */
 #else
 #ifdef SV48
 #define PAGINGMODE	Sv48
-#define VMBITS		48		/* KZERO is 0xffff800000000000 */
+#define VMBITS		48	/* KZERO is 0xffff800000000000 */
 #else
 #define PAGINGMODE	Sv39
 #ifdef LOWKERN
-#define VMBITS		38		/* KZERO is 0x2000000000 */
+#define VMBITS		38	/* KZERO is 0x2000000000 */
 #else
-#define VMBITS		39		/* KZERO is 0xffffffc000000000 */
-#endif					/* LOWKERN */
-#endif					/* SV48 */
-#endif					/* SV57 */
-#endif					/* SV64 */
+#define VMBITS		39	/* KZERO is 0xffffffc000000000 */
+#endif				/* LOWKERN */
+#endif				/* SV48 */
+#endif				/* SV57 */
+#endif				/* SV64 */
 
-#define Npglvls		HOWMANY(VMBITS-PGSHFT, PTSHFT)
+#define Npglvls		(VMBITS == 64? 6: HOWMANY(VMBITS-PGSHFT, PTSHFT))
 #define Toplvl		(Npglvls - 1)	/* -1 for zero-origin level numbers */
 
 /* VMAPSZ must be multiple of top-level super-page; using PGLSZ ensures that */
 #define VMAPSZ		PGLSZ(Toplvl)	/* for Sv39, 1 GB */
 #define ADDRSPCSZ	(1ull<<(VMBITS-1)) /* -1 for high bit, is user vs kernel */
+#define ADDRSPCSZLVL(l)	(1ull << ((l) == 5? 63: (PGLSHFT((l)+1) - 1)))
 
 #define	UZERO		0			/* user segment */
 #define	UTZERO		(UZERO+PGSZ)		/* first address in user text */
@@ -205,11 +199,15 @@
 #else
 #define VTOP		0ull		/* highest virtual address used + 1 */
 #endif
-#define KZERO		(VTOP - ADDRSPCSZ)
+#ifndef KZERO
+#define KZERO		(VTOP - ADDRSPCSZ)	/* ja gets this wrong in Sv64 */
+#endif
+ /* -1 for high bit, is user vs kernel */
+#define KZEROLVL(l) ((l) == 5? 1ull<<63: VTOP - (1ull << (PGLSHFT((l)+1) - 1)))
 
 /*
  * kernel usually sits at start of ram (KZERO+PHYSMEM) but some systems are odd
- * and the kernel has to start a little higher.
+ * and the kernel has to sit a little higher.
  */
 #define KTZERO ((uintptr)ensurehigh(_main)) /* kernel text base; see mkfile jl -T */
 
@@ -242,6 +240,17 @@
 #define getpgcolor(va)	0
 // #define PIDXSHFT	12
 // #define NCOLOR	8		// see dat.h
+
+#define ALIGNED(p, pow2)	(((uintptr)(p) & ((pow2)-1)) == 0)
+#define PHYSBITS		56
+#define PHYSMASK		VMASK(PHYSBITS)
+/* upper 3 bits of a PTE are non-address bits, next 7 are reserved */
+#define PTEADDRMASK		(VMASK(64-3-7-PTESHFT) << PTESHFT)
+#define PTEADDRBITS(pte)	((pte) &  PTEADDRMASK)
+#define PTEATTRBITS(pte)	((pte) & ~PTEADDRMASK)
+#define PADDRINPTE(pte)		((PTEADDRBITS(pte) >> PTESHFT) << PGSHFT)
+#define PADDRFORPTE(pa)	(((((pa)&PHYSMASK) >> PGSHFT) << PTESHFT) & PTEADDRMASK)
+#define PAGEPRESENT(pte)	((pte) & PteP)
 
 /*
  * Hierarchical Page Tables.

@@ -22,20 +22,10 @@
 
 #define ncflush()		/* optimisation since nc is useless */
 
-int	i8250getc(Uart *);
-int	sifivegetc(Uart *);
-
-#ifdef SIFIVEUART
-Uart	sifiveuart[];
-#define UARTGETC() sifivegetc(&sifiveuart[0])
-#else
-Uart	i8250uart[];
-#define UARTGETC() i8250getc(&i8250uart[0])
-#endif
-
 extern char defnvram[];		/* from kernel config */
 
 int	hartcnt = 0;		/* machno allocator; init to avoid bss */
+int	initstall = 1;		/* for start.s */
 
 Sys* sys = nil;			/* initializer keeps sys out of bss */
 uintptr sizeofSys = sizeof(Sys);
@@ -206,6 +196,7 @@ machsysinit(void)
 	sys->copymode = 0;			/* COW */
 }
 
+/* returns 1 if we switched machno state to online from offline, else 0 */
 static int
 onlinewaiting(int machno)
 {
@@ -214,24 +205,24 @@ onlinewaiting(int machno)
 
 	mp = sys->machptr[machno];
 	if(mp == nil) {
-		// DBG("cpu%d non-existent...", machno);
+		DBG("cpu%d non-existent...", machno);
 		return 0;
 	}
 	if (mp->machno != machno)
 		panic("schedpus: cpu%d: Mach not initialised", machno);
-	for (tries = 500; tries-- > 0 && !mp->waiting; ) {
-		DBG("cpu%d not yet waiting...", machno);
-		delay(100);
-		coherence();
-	}
-	if (tries <= 0)
-		panic("schedpus: cpu%d not starting; mp->waiting %d",
-			machno, mp->waiting);
 	if(mp->online) {
 		DBG("cpu%d already online...", machno);
 		return 0;
 	}
-	/* we are waiting in squidboy() */
+	for (tries = 300; tries-- > 0 && !mp->waiting; ) {
+		DBG("cpu%d offline and not yet waiting...", machno);
+		delay(100);
+		coherence();
+	}
+	if (tries <= 0)
+		panic("schedpus: cpu%d not starting: still not waiting",
+			machno);
+	/* secondary is waiting in squidboy() */
 	if (mp->hartid < soc.hobbled) {		/* mgmt hart? */
 		DBG("cpu%d is mgmt hart...", machno);
 		return 0;
@@ -270,15 +261,17 @@ schedcpus(int ncpus)
 	/*
 	 * even on a fairly slow machine, a cpu can start in under .6 s.
 	 * the range on 600MHz icicle with debugging prints:
-	 * 236244054-323670622 cycles = .39-.54 s.
+	 *	236244054-323670622 cycles = .39-.54 s.
 	 * be tolerant of delays due to debug printing or staggered startups.
 	 */
-	for (tries = 0; running < ncpus && tries < 150; tries++) {
-		delay(100);	/* let them indicate presence; be patient */
+	iprint("waiting for cpus to launch...");
+	for (tries = 0; running < ncpus && tries < 300; tries++) {
+		DBG("try %d: ", tries);
+		delay(50);	/* let them indicate presence; be patient */
 		for(machno = 1; machno < ncpus; machno++) /* skip me (cpu0) */
 			running += onlinewaiting(machno);
 	}
-	iprint("%d cpus running, %d missing\n", running, ncpus - running);
+	iprint("\n%d cpus running, %d missing\n", running, ncpus - running);
 }
 
 /*
@@ -358,11 +351,11 @@ cpu0init(void)
 
 	fmtinstall('N', unitsconv);
 	machsysinit();
-	probemem();		/* useful when debugging on new hardware */
 	physmeminit();
 	/* we know physical memory size and end (sys->pmend) here */
 	setkernmem();
-
+	initstall = 0;	/* give secondary cpus in start.s the all-clear */
+	DBG("any secondary cpus unblocked\n");
 	probesvpbmt(sys);		/* pointless feature */
 	/* from here, region below sys will be uncached */
 
@@ -382,13 +375,12 @@ cpu0init(void)
 	i8250console("0");
 	fmtinit();			/* install P, L, R, N, Q verbs */
 	/*
-	 * if we linked with prf.$O, logging will only start once
+	 * if we linked with prf.$O, console logging will only start once
 	 * mallocinit is called from meminit.
 	 */
 	kmesginit();
 	/* cpuactive(0) is now called by machsysinit */
 	active.exiting = 0;
-	print("\nPlan 9 for %s\n\n", RVARCH);
 
 	/* if epoch is set after timersinit, timers will be confused */
 	setepoch();		/* get notions of time right here */
@@ -401,6 +393,11 @@ cpu0init(void)
 	 */
 	mmuinit();	/* uses kernmem; sets sys->vm*; vmaps soc devices */
 	meminit();		/* map KZERO to ram, call mallocinit */
+
+	/* console output is now being logged */
+	print("\nPlan 9 for %s\n\n", RVARCH);
+	print("kernel built %s\n", kerndatestr);
+	l2init();		/* may be private l2 caches per hart */
 	archinit();		/* populate #P with cputype */
 	trapinit();
 	if (socinit)
@@ -538,6 +535,25 @@ probeuvlong(uvlong *addr, int wr)
 		return 0;
 }
 
+void
+addrsanity(void)		/* check load addresses for sanity */
+{
+	ulong ktzerophys, physmem;
+	uintptr lowktzero;
+
+	lowktzero = PADDR((void *)KTZERO);
+	if (PPN(mainpc) != lowktzero)
+		prf("_main pc %#p too far from PADDR(KTZERO) %#p, "
+			"kernel loaded at wrong address!\n", mainpc, lowktzero);
+	ktzerophys = ROUNDDN((ulong)lowktzero, GB);
+	physmem = ROUNDDN(PHYSMEM, GB);
+	if (physmem != ktzerophys) {
+		prf("physmem %#lux != base of ktzero phys %#lux!\n",
+			physmem, ktzerophys);
+		prf("kernel loaded at address it was not linked for!\n");
+	}
+}
+
 /*
  * pmp may restrict which, if any, parts of the clint register space we can use,
  * depending on how paternalistic the vendor is.
@@ -598,6 +614,8 @@ prcpucfg(void)
 	}
 	print("mmu: using %d-bit virtual addresses and %d-level page tables, "
 		"can exploit %N bytes\n", VMBITS, Npglvls, ADDRSPCSZ);
+	print("mmu: best available satp mode is %d with %d asids\n",
+		(int)(bestmode>>Svshft), asids);
 	chooseidler();
 }
 
@@ -630,7 +648,9 @@ main(int cpu)
 	caller = getcallerpc(&cpu);
 	if (isuseraddr(caller))
 		print("called from low memory: %#p\n", caller);
+	addrsanity();
 	prcpucfg();
+	probemem();		/* useful when debugging on new hardware */
 
 	probeclint();
 	supsetmtimecmp();

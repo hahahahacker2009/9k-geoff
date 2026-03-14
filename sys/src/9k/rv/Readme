@@ -1,5 +1,5 @@
 The attached .tgz file should have everything you need to compile Plan
-9 riscv64 kernels and commands.  I plan to continue improving the port
+9 riscv64 kernels and commands.  I intend to continue improving the port
 and adapting to other RISC-V systems.
 
 Note the documentation and manual pages.  The compilers are ic (rv32)

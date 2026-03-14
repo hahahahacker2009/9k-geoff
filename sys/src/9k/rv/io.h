@@ -1,6 +1,6 @@
 typedef struct Vctl {			/* vector handlers list */
 	Vctl*	next;			/* more handlers on this vector */
-	void	(*f)(Ureg*, void*);	/* handler to call */
+	Intrsvcret (*f)(Ureg*, void*);	/* handler to call */
 	void*	a;			/* argument to call it with */
 	Vctl*	pollnxt;		/* next in poll chain, never remove */
 

@@ -463,6 +463,7 @@ yield(void)
  *  recalculate priorities once a second.  We need to do this
  *  since priorities will otherwise only be recalculated when
  *  the running process blocks.
+ *  only called on cpu0.
  */
 static void
 rebalance(void)
@@ -483,8 +484,11 @@ another:
 		p = rq->head;
 		if(p == nil)
 			continue;
+		/* don't do this; we'd only rebalance cpu0 procs */
+#ifdef bad_idea
 		if(p->mp != m)
 			continue;
+#endif
 		if(pri == p->basepri)
 			continue;
 		updatecpu(p);
@@ -1478,7 +1482,8 @@ kproc(char *name, void (*func)(void *), void *arg)
 	p->dbgreg = 0;
 
 	procpriority(p, PriKproc, 0);
-	if (strncmp(name, "#l", 2) == 0)	/* ether kproc? */
+	/* ether kproc? */
+	if (strncmp(name, "#l", 2) == 0 || strncmp(name, "ether", 5) == 0)
 		procpriority(p, PriKproc+2, 0);	/* give extra zing */
 
 	kprocchild(p, func, arg);
@@ -1699,3 +1704,32 @@ accounttime(void)
 	m->load = (m->load*(HZ-1)+n)/HZ;
 }
 
+/*
+ * wait for *vp to change from val, or for an interrupt, on machines
+ * that lack monitor & mwait instructions.
+ * shouldn't be needed on hardware; VMs might need it.
+ */
+int
+portwaitfor(int *vp, int val)
+{
+	int i;
+	Proc *restpl;
+	Mpl s;
+
+	if (sys->nonline <= 1)
+		halt();
+	else {
+		s = 0;
+		restpl = up;
+		if (up)	/* this cpu is scheduling, thus done initialising? */
+			s = spllo();
+		/*
+		 * How many times round this loop?
+		 */
+		for(i = 10000; *vp == val && i > 0; i--)
+			pause();
+		if (restpl)
+			splx(s);
+	}
+	return *vp;
+}

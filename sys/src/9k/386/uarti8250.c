@@ -537,6 +537,7 @@ i8250interrupt(Ureg*, void* arg)
 			break;
 		}
 	}
+	return Intrforme;
 }
 
 static void

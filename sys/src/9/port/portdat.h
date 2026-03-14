@@ -287,6 +287,10 @@ struct Path
 	int	malen;			/* allocated length of mtpt */
 };
 
+typedef ulong	Createperm;
+typedef int	Sysstatlen;
+typedef ulong	Brwlen;
+
 struct Dev
 {
 	int	dc;
@@ -297,20 +301,20 @@ struct Dev
 	void	(*shutdown)(void);
 	Chan*	(*attach)(char*);
 	Walkqid*(*walk)(Chan*, Chan*, char**, int);
-	int	(*stat)(Chan*, uchar*, int);
+	Sysstatlen (*stat)(Chan*, uchar*, Sysstatlen);
 	Chan*	(*open)(Chan*, int);
-	void	(*create)(Chan*, char*, int, ulong);
+	void	(*create)(Chan*, char*, int, Createperm);
 	void	(*close)(Chan*);
 	long	(*read)(Chan*, void*, long, vlong);
-	Block*	(*bread)(Chan*, long, ulong);
+	Block*	(*bread)(Chan*, long, Brwlen);
 	long	(*write)(Chan*, void*, long, vlong);
-	long	(*bwrite)(Chan*, Block*, ulong);
+	long	(*bwrite)(Chan*, Block*, Brwlen);
 	void	(*remove)(Chan*);
 	int	(*wstat)(Chan*, uchar*, int);
 	void	(*power)(int);	/* power mgt: power(1) => on, power (0) => off */
-	int	(*config)(int, char*, DevConf*);	/* returns nil on error */
+	int	(*config)(int, char*, DevConf*);	/* returns 0 on error */
 
-	/* not initialised */
+	/* not explicitly initialised */
 	int	attached;				/* debugging */
 };
 
@@ -524,7 +528,6 @@ enum
 	RENDHASH =	1<<RENDLOG,	/* Hash to lookup rendezvous tags */
 	MNTLOG	=	5,
 	MNTHASH =	1<<MNTLOG,	/* Hash to walk mount table */
-	NFD =		100,		/* per process file descriptors */
 	PGHLOG  =	9,
 	PGHSIZE	=	1<<PGHLOG,	/* Page hash for image lookup */
 };

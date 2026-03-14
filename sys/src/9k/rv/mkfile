@@ -24,7 +24,7 @@ SFX=uim bin
 
 CONF=`{configpath $ARCH^cpu}
 CONFLIST=$CONF		# `{configpath $ARCH^cpuf} `{configpath $ARCH^fs}
-#EXTRACOPIES=fsstand consoles
+EXTRACOPIES=fsstand consoles
 
 p=9
 
@@ -45,15 +45,19 @@ null:VQ:
 OBJ=$MACH $CONF.root.$O $CONF.$O $PORT $DEVS
 # OBJ=$MACH $PORT $DEVS $CONF.$O $CONF.root.$O
 
-$p$CONF:	$CONF.c $OBJ $LIB
+$p$CONF:Q:	$CONF.c $OBJ $LIB
 	d=`{date; cat $ARCH/motd >[2]/dev/null}
+	echo $CC $CFLAGS '-DKERNDATE='`{date -n} '-DDATESTR='"$"d" $CONF.c
 	$CC $CFLAGS '-DKERNDATE='`{date -n} '-DDATESTR='"$"d" $CONF.c
+	echo $LD $LDFLAGS -o $target -T$KTZERO '$OBJ'
 	$LD $LDFLAGS -o $target -T$KTZERO $OBJ
 	size $target
 
-$p$CONF.bin:Q:	$CONF.c $OBJ $LIB		# .bin for temu, for tecpu
+# avoid concurrent compilation of $CONF.c
+$p$CONF.bin:Q:	$CONF.c $OBJ $LIB $p$CONF	# .bin for temu, for tecpu
 	$LD $LDFLAGS -a >$target.list -o $target -H1 -T$KTZERO -R8 $OBJ
 	echo $LD $LDFLAGS -a '>'$target.list -o $target -H1 -T$KTZERO -R8 '$OBJ'
+
 $p$CONF.uim:Q:	$p$CONF.bin			# .uim for u-boot
 	loadaddr=`{echo $KTZERO | sed 's/0xf+[8ce]?/0x/'}
 	echo loadaddr $loadaddr

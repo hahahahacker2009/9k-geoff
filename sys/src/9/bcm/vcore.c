@@ -271,7 +271,7 @@ getethermac(void)
 	vcreq(TagGetmac, ea, 0, sizeof ea);
 	p = buf;
 	for(i = 0; i < 6; i++)
-		p += snprint(p, sizeof(buf), "%.2x", ea[i]);
+		p += snprint(p, sizeof buf, "%.2x", ea[i]);
 	return buf;
 }
 

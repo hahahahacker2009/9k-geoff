@@ -36,13 +36,17 @@ TEXT cas(SB), 1, $-4
 	MOVWU	ov+XLEN(FP), R12
 	MOVWU	nv+(XLEN+4)(FP), R13
 	MOV	R0, R11		/* default to failure */
-	FENCE_RW
 spincas:
+	FENCE_RW
 	LRW(ARG, 14)		/* (R(ARG)) -> R14 */
 	SLL	$32, R14
 	SRL	$32, R14	/* don't sign extend */
 	BNE	R12, R14, fail
-	FENCE_RW
+	/*
+	 * any fence here would make the LR/SC sequence non-constrained, thus
+	 * not guaranteed to make forward progress.
+	 */
+//	FENCE_RW
 	SCW(13, ARG, 14)	/* R13 -> (R(ARG)) maybe, R14=0 if ok */
 	BNE	R14, spincas	/* R14 != 0 means store failed */
 ok:
@@ -61,11 +65,15 @@ TEXT casv(SB), 1, $-4
 	MOV	ov+XLEN(FP), R12
 	MOV	nv+(2*XLEN)(FP), R13
 	MOV	R0, R11		/* default to failure */
-	FENCE_RW
 spincasp:
+	FENCE_RW
 	LRD(ARG, 14)		/* (R(ARG)) -> R14 */
 	BNE	R12, R14, fail
-	FENCE_RW
+	/*
+	 * any fence here would make the LR/SC sequence non-constrained, thus
+	 * not guaranteed to make forward progress.
+	 */
+//	FENCE_RW
 	SCD(13, ARG, 14)	/* R13 -> (R(ARG)) maybe, R14=0 if ok */
 	BNE	R14, spincasp	/* R14 != 0 means store failed */
 	JMP	ok

@@ -106,7 +106,7 @@ ibrk(uintptr addr, int seg)
 		ns = up->seg[i];
 		if(ns == 0 || ns == s)
 			continue;
-		if(newtop >= ns->base && newtop < ns->top) {
+		if(newtop > ns->base && s->base < ns->top) {
 			qunlock(&s->lk);
 			error(Esoverlap);
 		}

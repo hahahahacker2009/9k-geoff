@@ -49,11 +49,12 @@ case sourcesdump
 	9fs sources && mount -C /srv/sources /n/sourcesdump main/archive
 case sourcessnap
 	9fs sources && mount -C /srv/sources /n/sourcessnap main/snapshot
+# please avoid using -C for wikis
 case wiki
-	srv -qC 'tcp!9p.io!wiki' wiki /mnt/wiki
+	srv -q 'tcp!9p.io!wiki' wiki /mnt/wiki
 	echo using 9p.io instead of plan9.bell-labs.com
 case p9f
-	srv -qC 'tcp!p9f.org!wiki' wiki /mnt/wiki
+	srv -q 'tcp!p9f.org!wiki' wiki /mnt/wiki
 
 # general case
 case *

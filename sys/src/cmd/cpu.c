@@ -78,9 +78,10 @@ char *p9authproto = "p9any";
 void
 usage(void)
 {
-	fprint(2, "usage: cpu [-h system] [-sStv] [-C cert] [-u user] "
+	fprint(2, "usage: cpu [-h system] [-sStv] [-u user] "
 		"[-a authmethod] [-e 'crypt hash'] [-k keypattern] "
-		"[-P patternfile] [-c cmd arg ...]\n");
+		"[-P patternfile] [-c cmd arg ...]\n"
+		" or\tcpu [-t] [-C cert] -R\n" );
 	exits("usage");
 }
 
@@ -242,15 +243,15 @@ main(int argc, char **argv)
 	case 'R':			/* From listen; must be last option */
 		remoteside();
 		break;
-	case 'C':
-		tlscert = EARGF(usage());	/* for server side of -t */
-		/* fall through */
 	case 's':
 		sslonly = 1;
 		break;
 	case 'S':
 		slow = 1;
 		break;
+	case 'C':
+		tlscert = EARGF(usage());	/* for server side of -t */
+		/* fall through */
 	case 't':
 		tls = 1;			/* no fallback to ssl */
 		break;

@@ -281,6 +281,28 @@ TEXT aadd(SB), 1, $-4				/* int aadd(int*, int); */
 	RET
 
 /*
+ * void monitor(void* address, u32int extensions, u32int hints);
+ * void mwait(u32int extensions, u32int hints);
+ *
+ * Note: extensions and hints are only 32-bits.
+ * There are no extensions or hints defined yet for MONITOR,
+ * but MWAIT can have both.
+ * These functions and prototypes may change.
+ */
+TEXT monitor(SB), 1, $-4
+	MOVQ	RARG, AX			/* address */
+	MOVL	extensions+8(FP), CX		/* (c|sh)ould be 0 currently */
+	MOVL	hints+16(FP), DX		/* (c|sh)ould be 0 currently */
+	BYTE $0x0f; BYTE $0x01; BYTE $0xc8	/* MONITOR */
+	RET
+
+TEXT mwait(SB), 1, $-4
+	MOVL	RARG, CX			/* extensions */
+	MOVL	hints+8(FP), AX
+	BYTE $0x0f; BYTE $0x01; BYTE $0xc9	/* MWAIT */
+	RET
+
+/*
  * int k10waitfor(int* address, int val);
  *
  * Suspend the CPU until an interrupt or *address changes from val.

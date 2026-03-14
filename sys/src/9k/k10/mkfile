@@ -20,14 +20,13 @@ p=9
 OBJ=$MACH $CONF.root.$O $CONF.$O $DEVS $PORT
 VGA=`{echo devvga.c screen.c vga*.c | sed 's/\.c/.'$O'/g'}
 
-$CONF.$O:	$CONF.c
-	d=`{date}
-	$CC $CFLAGS '-DKERNDATE='`{date -n} '-DDATESTR="'$"d'"' $CONF.c
-
 # $LD -o $target.elf -H5 -E0x120000 -P0x120000 -8 -T0xffffffff80120000 $OBJ $CONF.$O
 $p$CONF:Q:	$OBJ $LIB
+	d=`{date}
+	echo $CC $CFLAGS '-DKERNDATE='`{date -n} '-DDATESTR="'$"d'"' $CONF.c
+	$CC $CFLAGS '-DKERNDATE='`{date -n} '-DDATESTR="'$"d'"' $CONF.c
 	# at -2gb.  -T arg is KZERO + 0x120000; see also use of sipi.h below
-	echo $LD -o $target -T0xffffffff80120000 -R4096 ...
+	echo $LD -o $target -T0xffffffff80120000 -R4096 '$OBJ'
 	$LD -o $target -T0xffffffff80120000 -R4096 $OBJ
 	size $target
 	echo -n self-decompressing kernel $target^lz...

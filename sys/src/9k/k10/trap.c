@@ -33,15 +33,16 @@ struct NFrame
 	Ureg	ureg;
 };
 
-void	lapicerror(Ureg*, void*);
-void	lapicspurious(Ureg*, void*);
+Intrsvcret	lapicerror(Ureg*, void*);
+Intrsvcret	lapicspurious(Ureg*, void*);
 
-static void debugbpt(Ureg*, void*);
-static void faultamd64(Ureg*, void*);
-static void doublefault(Ureg*, void*);
-static void gpf(Ureg *, void *);
-static void unexpected(Ureg*, void*);
-static void unwanted(Ureg*, void*);
+static Intrsvcret debugbpt(Ureg*, void*);
+static Intrsvcret faultamd64(Ureg*, void*);
+static Intrsvcret doublefault(Ureg*, void*);
+static Intrsvcret gpf(Ureg *, void *);
+static Intrsvcret unexpected(Ureg*, void*);
+static Intrsvcret unwanted(Ureg*, void*);
+
 static void dumpstackwithureg(Ureg*);
 static void dumpgpr(Ureg*);
 
@@ -70,7 +71,7 @@ vecinuse(uint vec)
 }
 
 Vctl *
-newvec(void (*f)(Ureg*, void*), void* a, int tbdf, char *name)
+newvec(Intrsvcret (*f)(Ureg*, void*), void* a, int tbdf, char *name)
 {
 	Vctl *v;
 
@@ -87,7 +88,7 @@ newvec(void (*f)(Ureg*, void*), void* a, int tbdf, char *name)
 
 /* old 9k interface */
 void*
-intrenable(int irq, void (*f)(Ureg*, void*), void* a, int tbdf, char *name)
+intrenable(int irq, Intrsvcret (*f)(Ureg*, void*), void* a, int tbdf, char *name)
 {
 	int vno;
 	Vctl *v;
@@ -104,11 +105,11 @@ intrenable(int irq, void (*f)(Ureg*, void*), void* a, int tbdf, char *name)
 	v->irq = irq;
 
 	ilock(&vctllock);
-	vno = ioapicintrenable(v);
+	vno = ioapicintrenable(v);	/* may set v->irq */
 	if(vno == -1){
 		iunlock(&vctllock);
 		print("intrenable: couldn't enable irq %d, tbdf %#ux for %s\n",
-			irq, tbdf, v->name);
+			v->irq, tbdf, v->name);
 		free(v);
 		return nil;
 	}
@@ -121,7 +122,7 @@ intrenable(int irq, void (*f)(Ureg*, void*), void* a, int tbdf, char *name)
 	v->vno = vno;
 	vctl[vno] = v;
 	iunlock(&vctllock);
-	DBG("intrenable %s irq %d vector %d\n", name, irq, vno);
+	DBG("intrenable %s irq %d vector %d\n", name, v->irq, vno);
 
 	/*
 	 * Return the assigned vector so intrdisable can find
@@ -235,7 +236,7 @@ irqallocread(Chan*, void *vbuf, long n, vlong offset)
 }
 
 void
-trapenable(int vno, void (*f)(Ureg*, void*), void* a, char *name)
+trapenable(int vno, Intrsvcret (*f)(Ureg*, void*), void* a, char *name)
 {
 	Vctl *v;
 
@@ -432,16 +433,18 @@ badtrap(Ureg *ureg, uint vno, int user)
 		panic("unexpected kernel trap %s @ %#p", name, ureg->ip);
 }
 
-static void
+static Intrsvcret
 unexpected(Ureg* ureg, void*)
 {
 	iprint("unexpected trap %llud; ignoring\n", ureg->type);
+	return Intrforme;
 }
 
-static void
+static Intrsvcret
 unwanted(Ureg* ureg, void*)
 {
 	badtrap(ureg, ureg->type, userureg(ureg));
+	return Intrforme;
 }
 
 enum {
@@ -451,7 +454,7 @@ enum {
 	Wrmsr1 = 0x30,
 };
 
-static void
+static Intrsvcret
 gpf(Ureg* ureg, void*)
 {
 	int user;
@@ -470,10 +473,11 @@ gpf(Ureg* ureg, void*)
 		if (inst[1] == Rdmsr1)
 			ureg->ax = ureg->dx = 0;
 		ureg->pc += 2;			/* pretend it succeeded */
-		return;
+		return Intrforme;
 	}
 	iprint("gpf: cr2 address %#p\n", cr2get());
 	badtrap(ureg, ureg->type, user);
+	return Intrforme;
 }
 
 static void
@@ -517,19 +521,68 @@ trapunknown(Ureg *ureg, int vno, int user)
 	USED(user);
 }
 
+static int
+callintrsvc(Ureg *ureg, Vctl *vec)
+{
+	int forme, count;
+	Intrsvcret (*isr)(Ureg *, void *);
+	Vctl *v;
+
+	count = 0;
+	if (vec == nil)
+		return count;
+	for(v = vec; v != nil; v = v->next) {
+		isr = v->f;
+		if (isr == nil) {
+			iprint("intr: no isr for vector %d\n", v->vno);
+			continue;
+		}
+		forme = (*isr)(ureg, v->a);
+		splhi();		/* in case isr dropped PL */
+		if (forme) {
+			ainc(&v->count);
+			count++;
+		}
+	}
+	if (count > 0 && vec->vno >= IdtPIC && vec->vno != IdtSYSCALL)
+		m->lastintr = vec->irq;
+	return count;
+}
+
+static void
+intrmissed(Ureg *ureg, int vno)
+{
+	int count, pvno;
+
+	count = 0;
+	/* misdirected interrupt?  try the other irqs */
+	for (pvno = IdtPIC; count == 0 && pvno < IdtPIC+16; pvno++)
+		if (pvno != vno)
+			count += callintrsvc(ureg, vctl[pvno]);
+	if (count == 0) {
+		/* apu2 gets lots of these at 65 (ether0) */
+		if(TODO) iprint("cpu%d: spurious interrupt for vector %d\n",
+			m->machno, vno);
+	} else
+		iprint("cpu%d: misdirected interrupt for vector %d\n",
+			m->machno, vno);
+}
+
 /*
  *  All traps come here.  It is slower to have all traps call trap()
  *  rather than directly vectoring the handler.  However, this avoids a
  *  lot of code duplication and possible bugs.  The only exception is
  *  for a system call.
  *  Trap is called with interrupts disabled via interrupt-gates.
+ *
+ *  to work arounds bugs in MPS and ACPI tables, if there is no work
+ *  for a given IRQ, poll them all.
  */
 void
 trap(Ureg* ureg)
 {
-	int clockintr, vno, user, isintr, irq;
-	void (*isr)(Ureg *, void *);
-	Vctl *ctl, *v;
+	int clockintr, vno, user, count;
+	Vctl *vec;
 
 	m->perf.intrts = perfticks();
 	user = userureg(ureg);
@@ -543,37 +596,20 @@ trap(Ureg* ureg)
 
 	clockintr = 0;
 	vno = ureg->type;
-	if(ctl = vctl[vno]){
-		irq = ctl->irq;
-		if((isintr = ctl->isintr) != 0){
-			m->intr++;
-			if(vno >= IdtPIC && vno != IdtSYSCALL)
-				m->lastintr = irq;
-		}
-
-		ctl->isr(vno);
-		for(v = ctl; v != nil; v = v->next)
-			if((isr = v->f) != nil) {
-				isr(ureg, v->a);
-				splhi();	/* in case v->f dropped PL */
-				v->count++;
-			} else
-				iprint("trap: no isr for vector %d\n", vno);
-		ctl->eoi(vno);
-		if(isintr){
+	if(vec = vctl[vno]){
+		vec->isr(vno);
+		count = callintrsvc(ureg, vec);
+		vec->eoi(vno);	/* done with this intr; ready for next */
+		if(vec->isintr) {
 			intrtime(m, vno);
-
-			/* in case the cpus all raced into mwait, always wake */
-			if(irq == IdtPIC+IrqCLOCK || irq == IdtTIMER)
+			m->intr++;
+			if (count == 0)
+				intrmissed(ureg, vno);
+			if(vec->irq == IdtPIC+IrqCLOCK || vec->irq == IdtTIMER)
 				clockintr = 1;
 			else
 				if(up)
 					preempted();
-			/*
-			 * procs waiting for this interrupt could be on
-			 * any cpu, so wake any mwaiting cpus.
-			 */
-			idlewake();
 		}
 	} else if (user)
 		posttrapnote(vno, "GOK");
@@ -586,6 +622,13 @@ trap(Ureg* ureg)
 		sched();
 		splhi();
 	}
+	if(vec && vec->isintr)
+		/*
+		 * procs waiting for this interrupt could be on
+		 * any cpu, so wake any mwaiting cpus.
+		 * in case the cpus all raced into mwait, always wake.
+		 */
+		idlewake();
 
 	if(user){
 		if(up->procctl || up->nnote)
@@ -727,7 +770,7 @@ dumpstack(void)
 	callwithureg(dumpstackwithureg);
 }
 
-static void
+static Intrsvcret
 debugbpt(Ureg* ureg, void*)
 {
 	char buf[ERRMAX];
@@ -738,15 +781,16 @@ debugbpt(Ureg* ureg, void*)
 	ureg->ip--;
 	snprint(buf, sizeof buf, "sys: breakpoint");
 	postnote(up, 1, buf, NDebug);
+	return Intrforme;
 }
 
-static void
+static Intrsvcret
 doublefault(Ureg *ureg, void*)
 {
 	panic("double fault; pc %#llux", ureg->ip);
 }
 
-static void
+static Intrsvcret
 faultamd64(Ureg* ureg, void*)
 {
 	uintptr addr;
@@ -755,7 +799,7 @@ faultamd64(Ureg* ureg, void*)
 	addr = cr2get();
 	user = userureg(ureg);
 //	if(!user && mmukmapsync(addr))
-//		return;
+//		return Intrforme;
 
 	/*
 	 * There must be a user context.
@@ -793,6 +837,7 @@ faultamd64(Ureg* ureg, void*)
 			error(buf);
 	}
 	up->insyscall = insyscall;
+	return Intrforme;
 }
 
 /*
@@ -956,7 +1001,7 @@ int
 notify(Ureg* ureg)
 {
 	int l;
-	Mreg s;
+	Mpl s;
 	Note note;
 	uintptr sp;
 	NFrame *nf;

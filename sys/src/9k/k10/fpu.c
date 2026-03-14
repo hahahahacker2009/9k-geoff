@@ -310,7 +310,7 @@ fpupostnote(void)
 	postnote(up, 1, n, NDebug);
 }
 
-static void
+static Intrsvcret
 fpuxf(Ureg* ureg, void*)
 {
 	u32int mxcsr;
@@ -356,9 +356,10 @@ fpuxf(Ureg* ureg, void*)
 
 	snprint(n, sizeof(n), "sys: fp: %s Exception mxcsr=%#ux", m, mxcsr);
 	postnote(up, 1, n, NDebug);
+	return Intrforme;
 }
 
-static void
+static Intrsvcret
 fpumf(Ureg* ureg, void*)
 {
 	PFPU *pfpu;
@@ -392,9 +393,10 @@ fpumf(Ureg* ureg, void*)
 	 *	return ->user note handler
 	 */
 	fpupostnote();
+	return Intrforme;
 }
 
-static void
+static Intrsvcret
 fpunm(Ureg* ureg, void*)
 {
 	Fxsave *save;
@@ -429,7 +431,7 @@ fpunm(Ureg* ureg, void*)
 		iprint("#NM: kernel ip %#p proc %d %s up->fpustate %d cr0 %#llux\n",
 			ureg->ip, up->pid, up->text, up->fpustate,
 			(uvlong)cr0get());
-		return;
+		return Intrforme;
 	}
 
 	switch(pfpu->fpustate){
@@ -475,6 +477,7 @@ fpunm(Ureg* ureg, void*)
 		pfpu->fpustate = Busy;
 		break;
 	}
+	return Intrforme;
 }
 
 void

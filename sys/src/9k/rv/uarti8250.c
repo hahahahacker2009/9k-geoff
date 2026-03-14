@@ -542,10 +542,10 @@ i8250interrupt(Ureg*, void* arg)
 
 	uart = arg;
 	if (uart == nil)
-		return;		// panic("i8250interrupt: nil uart");
+		return Intrforme;	// panic("i8250interrupt: nil uart");
 	ctlr = uart->regs;
 	if (ctlr == nil)
-		return;		// panic("i8250interrupt: nil ctlr");
+		return Intrforme;	// panic("i8250interrupt: nil ctlr");
 	ilock(&intrlock);
 	for(iir = csr8r(ctlr, Iir); !(iir & Ip); iir = csr8r(ctlr, Iir)){
 		switch(iir & IirMASK){
@@ -618,6 +618,7 @@ i8250interrupt(Ureg*, void* arg)
 		}
 	}
 	iunlock(&intrlock);
+	return Intrforme;
 }
 
 static void
@@ -718,7 +719,6 @@ i8250enable(Uart* uart, int ie)
 	 */
 	if(ie)
 		i8250interrupt(nil, uart);
-	return Intrunconverted;
 }
 
 void*
