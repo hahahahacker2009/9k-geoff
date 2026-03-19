@@ -2,7 +2,6 @@ Plan 9 Fifth Edition from Geoff Collyer
 
 This is the Plan 9 source code distributed by Geoff Collyer. You can see all of his changes since the last commit in Bell Labs Plan 9 in /sys/doc/release.ps. I made this repository by copying his /sys to the last Bell Labs iso (available at p9f.org/dl) and add little local modification. In particular:
 - restore /sys/src/cmd/samterm/main.c to the labs version
-- restore /sys/src/cmd/aux/vga to the labs version
 - apply these 9legacy patches: dist-inst-pbslba dist-venti-bloom
 dist-console dist-mkmulti dist-inst-9fat lib-snprint lib-wiki-links
 wikifs-links mimetype-zip 9p-buffers-win (modified for lzip) and maybe
@@ -17,21 +16,25 @@ more that I can't remember
 
 This is not 9legacy.  This distribution move faster, but many patches
 are not applied, I'm still looking for unapplied fixes.  Also, I made
-9k version of some 9legacy patches. Some notable differences:
+9k version of some 9legacy patches.
+
+Some notable differences from 9legacy:
 - there is a riscv64 port of 9k!
 - k10 does not have support for graphics.  Looks for l64real,
-realmode.c.  We use kernel realmode, not 9front's aux/realemu
+realmode.c.  We use kernel realmode, not 9front's aux/realemu.
+It doesn't work on my hardware anyways.
 - cpu have tls support, service cpu-tls is port 17014. It will warns if it fall back to ssl
 - rc has interactive cd spelling correction since Jul 5 2017
 - awk, pic has been converted to not rely on APE
 - the kernel and userland is 64-bit ready, in contrast to 9legacy.
 Look for 9legacy patch uintptr.
 
-There are some surprise I encountered with the kernels, that might
+There are some surprises I encountered with the kernels, that might
 make you don't want this distribution:
 - mpacpi, e820 of 9/pc only works on real hardware
+- ahci only works on real hardware, maybe nvme too
 - mpacpi is broken for 9k/k10 and not used.  For now, multiprocessor
-of k10 is broken, even on real hardware.
+of k10 is broken, even on real hardware. Try -smp sockets=4 in qemu and it will reset.
 
 ----------
 
