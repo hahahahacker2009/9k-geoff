@@ -14,6 +14,7 @@ DNSSERVER=1.1.1.1
 # DNSSERVER=75.75.75.75
 # DNSSERVER=96.78.174.36		# fw
 
+echo -n 'cpurc.local: '
 # on file servers, configure network and ensure dns is running
 if(~ $sysname fs) {
 	# configure primary network

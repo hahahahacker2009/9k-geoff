@@ -17,7 +17,10 @@
 #define log2	liblog2
 #define log	liblog
 #define reboot	libreboot
+#ifdef strtoll
+#undef strtoll
 #define strtoll libstrtoll
+#endif
 #undef timeradd
 #define timeradd	xtimeradd
 
@@ -27,6 +30,7 @@
 typedef unsigned char	p9_uchar;
 typedef unsigned int	p9_uint;
 typedef unsigned int	p9_ulong;
+typedef unsigned long	p9_usize;
 typedef int		p9_long;
 typedef signed char	p9_schar;
 typedef unsigned short	p9_ushort;
@@ -46,6 +50,7 @@ typedef p9_u32int mpdigit;
 /* #define long int rather than p9_long so that "unsigned long" is valid */
 #define long	int
 #define ulong	p9_ulong
+#define usize	p9_usize
 #define vlong	p9_vlong
 #define uvlong	p9_uvlong
 
@@ -273,7 +278,6 @@ extern	int	dofmt(Fmt*, char*);
 extern	double	__NaN(void);
 extern	int	__isNaN(double);
 extern	double	strtod(const char*, char**);
-extern vlong strtoll(const char *nptr, char **endptr, int base);
 extern	int	utfnlen(char*, long);
 extern	double	__Inf(int);
 extern	int	__isInf(double, int);

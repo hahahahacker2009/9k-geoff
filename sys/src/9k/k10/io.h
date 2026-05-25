@@ -37,6 +37,7 @@ typedef struct Vctl {
 	void*	a;			/* argument to call it with */
 
 	uchar	isintr;			/* flag: interrupt, else fault/trap */
+	/* msi mandatory for pci-e devices (exception for pcie-pci bridges) */
 	uchar	ismsi;			/* flag: is msi interrupt? */
 	short	irq;
 	short	vno;
@@ -224,6 +225,7 @@ enum {					/* pci 2.2 capability ids */
 	Pcicapbridge	= 4,		/* bridge info */
 	Pcicapmsi	= 5,		/* message-signaled interrupts */
 	Pcicaphot	= 6,		/* CompactPCI hot swap */
+	Pcicapvendor	= 9,		/* vendor specific */
 //	Pcicaphandoff	= 0xa,		/* bios handoff (legacy to os) */
 	Pcicappcie	= 0x10,		/* pci-express */
 	Pcicapmsix	= 0x11,		/* msi-x */
@@ -277,6 +279,7 @@ struct Pcidev
 	short	pcieptr;		/* pci-express ptr */
 };
 
+/* msi, mandatory for pci-e (except pcie-pci bridges) */
 struct Msi {				/* msi pci capability */
 	ushort	ctl;
 	uvlong	addr;

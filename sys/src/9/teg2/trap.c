@@ -1125,7 +1125,7 @@ trap(Ureg *ureg)
 	case PsrMirq:
 		m->intr++;
 		clockintr = irq(ureg);
-		if (!clockintr) {
+		if (!clockintr && m->ilockdepth == 0) {
 			if(up)
 				preempted();
 			wakewfi();	/* may be (k)proc to run now */
@@ -1181,7 +1181,7 @@ trap(Ureg *ureg)
 	splhi();
 
 	/* delaysched set because we held a lock or because our quantum ended */
-	if(up && up->delaysched && clockintr){
+	if(up && up->delaysched && clockintr && m->ilockdepth == 0){
 		sched();		/* can cause more traps */
 		splhi();
 	}

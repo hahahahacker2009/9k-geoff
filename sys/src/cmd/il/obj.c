@@ -102,12 +102,12 @@ main(int argc, char *argv[])
 
 	USED(argc);
 
+	if(debug['j'])
+		thechar = 'j';
 	if(*argv == 0) {
 		diag("usage: %cl [-options] objects", thechar);
 		errorexit();
 	}
-	if(debug['j'])
-		thechar = 'j';
 	if(thechar == 'j'){
 		thestring = "riscv64";
 		ptrsize = 8;

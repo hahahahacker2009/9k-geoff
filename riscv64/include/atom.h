@@ -28,7 +28,7 @@
 
 /* instructions unknown to the assembler */
 /*
- * atomically (rd = (rs1); (rs1) = rd func rs2).
+ * atomically (rd = (rs1); (rs1) = rd func rs2), so rs1 contains memory address.
  * setting AQ and RL produces sequential consistency by acting as fences,
  * *but perhaps only for this AMO operand*.
  */

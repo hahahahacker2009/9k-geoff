@@ -185,9 +185,9 @@ is the null string,
 returns
 .IR s1 .
 .SH SOURCE
-.B /sys/src/libc/port/rune.c
+.B /sys/src/libc/port/*rune*.c
 .br
-.B /sys/src/libc/port/utfrune.c
+.B /sys/src/libc/port/utf*.c
 .SH SEE ALSO
 .IR utf (6),
 .IR tcs (1)

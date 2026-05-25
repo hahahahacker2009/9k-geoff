@@ -290,8 +290,8 @@ TEXT touser(SB), 1, $-4
 	FENCE_I
 
 	MOV	R0, LINK
-	MOV	$(UTZERO+8*BY2WD), R12	/* skip unextended exec hdr of init */
-	MOV	R12, CSR(SEPC)		/* new pc */
+	MOV	$(UTZERO+8*BY2WD), R(TMP) /* skip unextended exec hdr of init */
+	MOV	R(TMP), CSR(SEPC)	/* new pc */
 	MOV	R(ARG), R2		/* new sp */
 	SRET				/* off to rv64 user mode */
 

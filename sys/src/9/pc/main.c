@@ -110,9 +110,10 @@ main(void)
 	quotefmtinstall();
 	screeninit();			/* cga setup */
 
-	print("\nPlan 9 (386)\n");
+	print("\nPlan 9 (386)\n\n");
 	if (nvramread(Cmosreset) != Rstpwron)
-		nvramwrite(Cmosreset, Rstpwron); /* in case of direct load reboot from 9k */
+		/* in case of direct load reboot from 9k */
+		nvramwrite(Cmosreset, Rstpwron);
 
 	trapinit0();			/* minimal set up */
 	mmuinit0();

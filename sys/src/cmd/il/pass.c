@@ -149,7 +149,8 @@ dodata(void)
 			if(strlen(s->name) >= 10)	/* has loader address */
 				sprint(literal, "$%p.%lux", s, p->from.offset);
 			else
-				sprint(literal, "$%s.%d.%lux", s->name, s->version, p->from.offset);
+				sprint(literal, "$%s.%d.%lux", s->name,
+					s->version, p->from.offset);
 		} else {
 			if(p->from.type == D_VCONST){
 				vv = *p->from.vval;

@@ -395,6 +395,7 @@ ethercardno(Ether *ether)
 		return -1;
 	for(cardno = 0; cards[cardno].type; cardno++)
 		if(cistrcmp(cards[cardno].type, ether->type) == 0) {
+			/* nothing sets nopt nor opt any more */
 			for(i = 0; i < ether->nopt; i++)
 				if(strncmp(ether->opt[i], "ea=", 3) == 0 &&
 				    parseether(ether->ea, &ether->opt[i][3]))

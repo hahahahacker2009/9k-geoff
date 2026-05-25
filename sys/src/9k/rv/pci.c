@@ -4,7 +4,7 @@
  * Nominally for PLDA PCI-E controller in Polarfire Icicle with hss 2020.11+
  * see /sys/src/9/teg2/pci.c for ecam access without inb, outb, etc.
  *
- * Handles PCI-Express by mostly ignoring extensions to PCI.
+ * Handles PCI-Express (2003) by mostly ignoring extensions to PCI.
  * Has more than a few magic numbers.
  */
 #include "u.h"
@@ -65,7 +65,7 @@ enum
 	SErrEn		= (1<<8),
 };
 
-struct Pcictl_pf {				/* first bridge is 16K past axi base */
+struct Pcictl_pf {			/* first bridge is 16K past axi base */
 	/* bridge */
 	union {
 		char	_0_[8*KB];
@@ -142,7 +142,7 @@ struct Pci {				/* from 386 */
 
 	Capctl	pwrmgmt;
 
-	/* msi */
+	/* msi, mandatory for pci-e (except pcie-pci bridges) */
 	ulong	msictlcap;
 	ulong	msimsgaddr[2];	/* little-endian */
 	ulong	msimsgdata;

@@ -1,5 +1,10 @@
 /*
- * page coloring for numa (core clustering)
+ * page coloring for numa (core clustering).
+ *
+ * remote ram accesses are 1.5 - 2 times that of local ram, and there are
+ * caches, so it's not a disaster.  could try to allocate pages in the same
+ * cluster as the allocating process's current cpu, using a page list per
+ * cluster (color) in page.c.
  */
 #include	"u.h"
 #include	"../port/lib.h"
@@ -27,11 +32,11 @@ memcolor(uintmem addr, uintmem *sizep)
 
 	/* TODO: iterate through membanks to work out *sizep */
 	below = addr - sys->pmbase;
-	if ((vlong)below < 0)
+	if ((intptr)below < 0)
 		below = 0;
 	if (sizep) {
 		*sizep = sys->pmbase + sys->pmoccupied - below;
-		if ((vlong)*sizep < 0)
+		if ((intptr)*sizep < 0)
 			*sizep = 0;
 	}
 	return below / gbs_per_cluster;
@@ -51,7 +56,7 @@ corecolor(int machno)
 	Mach *mp;
 
 	color = 0;
-	if((uint)machno >= MACHMAX || sys == nil)
+	if((uint)machno >= MACHMAX)
 		return 0;
 	mp = sys->machptr[machno];
 	if(mp == nil)

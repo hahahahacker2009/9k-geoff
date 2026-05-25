@@ -29,6 +29,9 @@ case ella
 case Rella
 	exec C office2 < /dev/null
 	exit
+case fsmain main
+	server=fs
+	* = fs
 case *
 	# look for server in /lib/ndb
 	server=`{ndb/query sys $1 console}
@@ -74,7 +77,7 @@ if(! test -e /mnt/consoles/$1){
 
 if (test -w /dev/label) {
 	olab=`{cat /dev/label}
-	label $1
+	label C $1
 }
 con -l $opt /mnt/consoles/$1
 if (test -w /dev/label)

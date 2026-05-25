@@ -14,6 +14,7 @@
 #include <memdraw.h>
 #include "screen.h"
 #include "keyboard.h"
+#include "r16.h"
 
 Memimage	*gscreen;
 Screeninfo	screen;
@@ -38,6 +39,9 @@ static int readybit;
 static Rendez	rend;
 
 Point	ZP;
+
+uint windowStyle;
+const uint BORDERLESS = (WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME | WS_SYSMENU | WS_DLGFRAME | WS_CLIPSIBLINGS | WS_VISIBLE) | (WS_POPUP ^ WS_MINIMIZE) | WS_MAXIMIZE;
 
 static int
 isready(void*a)
@@ -192,11 +196,13 @@ winproc(void *a)
 	wc.lpszClassName = L"9pmgraphics";
 	RegisterClass(&wc);
 
+	windowStyle = WS_OVERLAPPEDWINDOW;
+
 	window = CreateWindowEx(
 		0,			/* extended style */
 		L"9pmgraphics",		/* class */
 		L"drawterm screen",		/* caption */
-		WS_OVERLAPPEDWINDOW,    /* style */
+		windowStyle,		/* style */
 		CW_USEDEFAULT,		/* init. x pos */
 		CW_USEDEFAULT,		/* init. y pos */
 		CW_USEDEFAULT,		/* init. x size */
@@ -329,6 +335,7 @@ WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	int i;
 	Rectangle r;
 
+	b = 0;
 	switch(msg) {
 	case WM_CREATE:
 		break;
@@ -353,7 +360,6 @@ WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	case WM_RBUTTONDOWN:
 		x = LOWORD(lparam);
 		y = HIWORD(lparam);
-		b = 0;
 		if(wparam & MK_LBUTTON)
 			b = 1;
 		if(wparam & MK_MBUTTON)
@@ -413,8 +419,19 @@ WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 			kbdputc(kbdq, Kins);
 			break;
 		case VK_DELETE:
-//			kbdputc(kbdq, Kdel);
-			kbdputc(kbdq, 0x7f);	// should have Kdel in keyboard.h
+			kbdputc(kbdq, Kdel);
+			break;
+		case VK_HOME:
+			kbdputc(kbdq, Khome);
+			break;
+		case VK_END:
+			kbdputc(kbdq, Kend);
+			break;
+		case VK_PRIOR:
+			kbdputc(kbdq, Kpgup);
+			break;
+		case VK_NEXT:
+			kbdputc(kbdq, Kpgdown);
 			break;
 		case VK_UP:
 			kbdputc(kbdq, Kup);
@@ -428,6 +445,18 @@ WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		case VK_RIGHT:
 			kbdputc(kbdq, Kright);
 			break;
+		case VK_F11:
+			if (windowStyle == WS_OVERLAPPEDWINDOW)
+				windowStyle = BORDERLESS;
+			else
+				windowStyle = WS_OVERLAPPEDWINDOW;
+
+			SetWindowLongPtr(hwnd, -16, windowStyle);
+			ShowWindow(hwnd, SW_SHOWNORMAL);
+			RECT rcWnd;
+			GetWindowRect(hwnd,&rcWnd);
+			SetWindowPos(hwnd,(HWND)0,rcWnd.left,rcWnd.top,(rcWnd.right-rcWnd.left),(rcWnd.bottom-rcWnd.top),SWP_NOMOVE); /* forces a refresh of the screen */
+			ShowWindow(hwnd, SW_SHOWMAXIMIZED);
 		}
 		break;
 
@@ -541,26 +570,26 @@ setcolor(ulong index, ulong red, ulong green, ulong blue)
 }
 
 
-uchar*
+char*
 clipreadunicode(HANDLE h)
 {
-	Rune *p;
+	Rune16 *p;
 	int n;
-	uchar *q;
-	
+	char *q;
+
 	p = GlobalLock(h);
-	n = wstrutflen(p)+1;
+	n = rune16nlen(p, runes16len(p)+1);
 	q = malloc(n);
-	wstrtoutf(q, p, n);
+	runes16toutf(q, p, n);
 	GlobalUnlock(h);
 
 	return q;
 }
 
-uchar *
+char *
 clipreadutf(HANDLE h)
 {
-	uchar *p;
+	char *p;
 
 	p = GlobalLock(h);
 	p = strdup(p);
@@ -573,7 +602,7 @@ char*
 clipread(void)
 {
 	HANDLE h;
-	uchar *p;
+	char *p;
 
 	if(!OpenClipboard(window)) {
 		oserror();
@@ -597,8 +626,8 @@ int
 clipwrite(char *buf)
 {
 	HANDLE h;
-	char *p, *e;
-	Rune *rp;
+	char *p;
+	Rune16 *rp;
 	int n = strlen(buf);
 
 	if(!OpenClipboard(window)) {
@@ -616,11 +645,7 @@ clipwrite(char *buf)
 	if(h == NULL)
 		panic("out of memory");
 	rp = GlobalLock(h);
-	p = buf;
-	e = p+n;
-	while(p<e)
-		p += chartorune(rp++, p);
-	*rp = 0;
+	utftorunes16(rp, buf, n+1);
 	GlobalUnlock(h);
 
 	SetClipboardData(CF_UNICODETEXT, h);

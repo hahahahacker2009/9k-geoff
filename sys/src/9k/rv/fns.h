@@ -63,7 +63,6 @@ int	dbgprint(char*, ...);
 #define delay(ms) millidelay(ms)
 uintptr	docsr(uchar op, ushort csrno, uchar rs, uintptr new);
 void	drainuart(void);
-void	dualmap(PTE *ptp, uintptr phys, uint nptes, int lvl);
 void	dumpstk(void *stk);
 PTE	*earlypagealloc(void);
 void	ecall(...);
@@ -330,8 +329,10 @@ extern Mpl spllo(void);
 extern void splx(Mpl);
 
 /* riscv atomics */
-ulong	amoorw(ulong *addr, ulong bits);	/* set bits */
+ulong	amoaddw(ulong *addr, ulong bits);
 ulong	amoandnw(ulong *addr, ulong bits);	/* clear bits */
+ulong	amoandw(ulong *addr, ulong bits);
+ulong	amoorw(ulong *addr, ulong bits);	/* set bits */
 ulong	amoswapw(ulong *addr, ulong nv);
 
 /* libc atomics */

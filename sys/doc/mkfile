@@ -60,9 +60,9 @@ dirs:V:
 	}
 
 clean:V:
-	rm -f *.ps *.pdf *.html *.png
+	rm -f *.ps *.pdf *.html
 	# some postscript files in subdirectories can't be regenerated easily
-	rm -f */*.pdf */*.html */*.png
+	rm -f */*.pdf */*.html
 	for(i in $DIRS) @{
 		cd $i
 		mk $target

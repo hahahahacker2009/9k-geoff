@@ -34,11 +34,9 @@ OFILES=\
 	getfields.$O\
 	getpid.$O\
 	lock.$O\
-	lrand.$O\
 	mallocz.$O\
 	nan64.$O\
 	netmkaddr.$O\
-	nrand.$O\
 	nsec.$O\
 	pow10.$O\
 	pushssl.$O\
@@ -68,6 +66,8 @@ OFILES=\
 	sysfatal.$O\
 	time.$O\
 	tokenize.$O\
+	lrand.$O\
+	nrand.$O\
 	truerand.$O\
 	u16.$O\
 	u32.$O\

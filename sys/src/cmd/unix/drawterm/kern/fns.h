@@ -276,6 +276,7 @@ int		qwindow(Queue*);
 int		qwrite(Queue*, void*, int);
 void		qnoblock(Queue*, int);
 int		rand(void);
+void	p9_srand(long seed);
 void		randominit(void);
 ulong		randomread(void*, ulong);
 void		rdb(void);

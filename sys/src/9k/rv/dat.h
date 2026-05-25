@@ -196,7 +196,7 @@ struct Mach
 	Proc*	readied;	/* for runproc */
 	ulong	schedticks;	/* next forced context switch */
 
-	int	color;
+	int	color;		/* memory cluster for numa */
 
 	int	tlbfault;	/* per-cpu stats */
 	int	tlbpurge;
@@ -443,8 +443,6 @@ struct Rvarch {				/* this is likely to change */
  *  a parsed plan9.ini line
  *  only still used by pnp, uarts, ether.
  */
-#define NISAOPT		8
-
 struct ISAConf {		/* only used by usb & ether now */
 	char	*type;
 	uintptr	port;
@@ -455,7 +453,7 @@ struct ISAConf {		/* only used by usb & ether now */
 	ulong	freq;
 
 	int	nopt;
-	char	*opt[NISAOPT];
+	char	*opt[8];
 };
 
 /*
@@ -568,7 +566,7 @@ int	bootmachmode; /* flag: machine mode at boot? same on all non-hobbled harts? 
 uvlong	clintsperµs;	/* needed in delay before m is set */
 uvlong	cpuhz;		/* from kernel config */
 uchar	ether0mac[];
-int	hartcnt;
+ulong	hartcnt;
 void	(*hartinit)(void);
 char	kerndatestr[];
 uintptr	mainpc;

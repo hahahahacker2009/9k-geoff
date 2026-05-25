@@ -126,8 +126,10 @@ x86wdenable(void)
 		break;
 	case P4:
 		rdmsr(Msrmiscen, &r);
-		if(!(r & 0x80LL))
-			return;
+		if(!(r & 0x80LL)) {
+			iunlock(wd);
+			error(Enodev);
+		}
 
 		for(i = 0; i < 18; i++)
 			wrmsr(0x300+i, 0);		/* perfctr */

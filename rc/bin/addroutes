@@ -6,11 +6,7 @@ if (~ $#* 0)
 	cd /net
 if not
 	cd $1
-#if(! test -e iproute)	# 9vx potentially doesn't have /net/iproute
-#	exit ''
 
-# pfx=2603:3024:90c:9e		# old comcast
-# subnet=8
 pfx=2001:470:8277:00		# new he.net
 subnet=0
 v6prefix=$pfx$subnet^2::	# 2 is our public house network
@@ -20,9 +16,15 @@ progress=yes awaitfile 10 /srv/boot.env
 
 test -e /srv/boot.env && mount /srv/boot.env /n/env &&
     test -e /n/env/v6prefix && {	# from ipv6on
-	v6prefix=`{cat /n/env/v6prefix}			# a /64
-	pfx=`{echo $"v6prefix | sed 's/..::$//'}	# a /56
-	subnet=`{echo $"v6prefix | sed 's/^.*(.).::/\1/'} # sla digit
+	v6prefix=`{cat /n/env/v6prefix}				# a /64
+	pfx=`{echo $"v6prefix | sed 's/([^0-9a-f]?).::$/\1/'}	# a /56
+	if (~ $"v6prefix *:[0-9a-f]?::*)
+		subnet=0
+	if not
+		# sla digit
+		subnet=`{echo $"v6prefix | sed 's/^.*([0-9a-f]).::/\1/'}
+	if (~ $#subnet 0 || ~ $subnet '' *:*)
+		subnet=0
 	echo -n v6 sla: $subnet...
 }
 

@@ -249,7 +249,7 @@ e820scan(void)
 		print("\n");
 	}
 	if (rv < 0 || nmmap == 0) {		/* must be a pre-2002 PC */
-		print("e820scan: old PC has no e820 memory map & "
+		print("e820scan: 20th-century PC has no e820 memory map & "
 			"no multiboot map\n");
 		fakemmap(64*MB);
 	}

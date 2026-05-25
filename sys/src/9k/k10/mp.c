@@ -266,12 +266,9 @@ mpparse(PCMP *pcmp)
 			 * p[6] is the destination APIC;
 			 * p[7] is the INITIN pin on the destination APIC.
 			 */
-			if (p[6] == 0xff) {
+			if (p[6] == 0xff)
 				mpintrprint("routed to all IOAPICs", p);
-				p += 8;
-				break;
-			}
-			if ((lo = mpmkintr(p)) == 0) {
+			if (p[6] == 0xff || (lo = mpmkintr(p)) == 0) {
 				p += 8;
 				break;
 			}

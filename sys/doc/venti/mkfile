@@ -6,3 +6,5 @@ venti.ps:V:
 venti.html: venti.html.save
 	cp venti.html.save venti.html
 
+clean:V:
+	echo 'don''t.'

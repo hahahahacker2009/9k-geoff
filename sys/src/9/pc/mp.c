@@ -17,7 +17,7 @@
 
 enum {				/* flags for experiments */
 	Expnovectsharing	= 0,
-	Expocd			= 0,
+	Expocd			= 0,	/* obsessive-compulsive disorder? */
 	Expdefapic		= 0,
 	Expprnochoice		= 0,
 	Exptryothervec		= 0,
@@ -117,7 +117,8 @@ mpidentify(void)
 			return 1;	/* bad checksum or wrong mps version */
 		}
 	}
-	if(cpuserver && conf.havetsc)
+	/* we used to do this only for cpu servers; not sure why. */
+	if(conf.havetsc)
 		archmp.fastclock = tscticks;
 	return 0;
 }
@@ -1002,9 +1003,10 @@ pickapicvec(Vctl *v, int tbdf)
 }
 
 /*
- * use message-signalled interrupt if available.  msi and msi-x may both
- * be available (e.g. pci-e devices), but only one can be used on a given
- * device.  msi-x seems much more complicated for little benefit.
+ * use message-signalled interrupt if available; they are mandatory for pci-e
+ * devices, with an exception for pcie-pci bridges.  msi and msi-x may both be
+ * available (e.g., pci-e devices), but only one can be used on a given device.
+ * msi-x seems much more complicated for little benefit.
  */
 static int
 trymsi(Vctl *v, Pcidev *pcidev)
@@ -1027,7 +1029,7 @@ trymsi(Vctl *v, Pcidev *pcidev)
 			print("%s: %T: vid %ux did %ux pci-e device NOT "
 				"offering msi, but it's required for pci-e!\n",
 				v->name, pcidev->tbdf, pcidev->vid, pcidev->did);
-		/* else a pci device, so msi not mandatory */
+		/* else a pci (not pci-e) device, so msi not mandatory */
 		return -1;		/* sorry, no msi */
 	}
 

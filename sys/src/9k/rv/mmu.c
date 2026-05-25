@@ -466,7 +466,6 @@ mmuptpget(uintptr va, int level, int *lvlgotp)
 	if (level < 0 || level >= Npglvls)
 		panic("mmuptpget: level %d out of range", level);
 
-	assert(m != nil);
 	if (m->ptroot == nil) {
 		iprint("mmuptpget: cpu%d: nil m->ptroot\n", m->machno);
 		return nil;

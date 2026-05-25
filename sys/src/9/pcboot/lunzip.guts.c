@@ -140,24 +140,22 @@ static uchar magic_string[4] = { 'L', 'Z', 'I', 'P' };
 static char overfull[] = "overfilling output buffer";
 static char seekerr[] = "seek error";
 
-#define Rd_normalize(rdec) \
-{ \
+#define Rd_normalize(rdec) { \
 	if ((rdec)->range <= ((1<<24) - 1)) \
 		(rdec)->range <<= 8, \
 		(rdec)->code = ((rdec)->code << 8) | Rd_get_byte(rdec); \
-}
+ }
 #define Rd_finished(rdec) ((rdec)->pos >= (rdec)->stream_pos)
 #define Rd_member_position(rdec) ((rdec)->partial_member_pos + (rdec)->pos)
 /* 0xFF avoids decoder error if member is truncated at EOS marker */
 #define Rd_get_byte(rd) (Rd_finished(rd)? 0xFF: (rd)->buffer[(rd)->pos++])
 
 #define LZd_data_position(d) ((d)->partial_data_pos + (d)->pos)
-#define LZd_put_byte(d, b) \
-{ \
+#define LZd_put_byte(d, b) { \
 	(d)->buffer[(d)->pos++] = (b); \
 	if ((d)->pos >= (d)->buffer_size) \
 		panic(overfull); \
-}
+ }
 
 #define St_is_char(st) ((st) < 7)
 #define St_set_match(st) ((st) < 7? 7: 10)
@@ -353,8 +351,7 @@ Rd_decode_len(Input *rdec, Len_model *lm, int pos_state)
 	if (Rd_decode_bit(rdec, &lm->choice2) == 0)
 		return Len_low_syms + Rd_decode_tree3(rdec,
 			lm->bm_mid[pos_state]);
-	return Len_low_syms + Len_mid_syms + Rd_decode_tree8(rdec,
-		lm->bm_high);
+	return Len_low_syms + Len_mid_syms + Rd_decode_tree8(rdec, lm->bm_high);
 }
 
 static uchar
@@ -396,7 +393,7 @@ LZd_copy_block(LZ_decoder *d, unsigned distance, unsigned len)
 		fast2 = (fast && len <= lpos - i);
 	} else {
 		i += bufsz;
-		fast = (len < bufsz - i); /* (i == pos) may happen */
+		fast = (len < bufsz - i);	/* (i == pos) may happen */
 		fast2 = (fast && len <= i - lpos);
 	}
 	if (fast) {				/* no wrap */
@@ -426,7 +423,7 @@ LZd_copy_block2(LZ_decoder *d, unsigned distance, unsigned len)
 	if (len < d->buffer_size - d->pos) {	/* no wrap */
 		unsigned offset = distance + 1 + d->stream_pos - d->pos;
 
-		if (len <= offset)		/* block is in file */ {
+		if (len <= offset) {		/* block is in file */
 			if (seek_read_back(d, d->buffer + d->pos, len, offset)
 			    != len)
 				panic(seekerr);
@@ -460,14 +457,6 @@ static ulong
 LZd_crc(LZ_decoder *d)
 {
 	return d->crc ^ (ulong)~0ul;
-}
-
-static State
-St_set_char(State st)
-{
-	static State next[States] = { 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 4, 5 };
-
-	return next[st];
 }
 
 static State
@@ -629,34 +618,6 @@ CRC32_update_buf(ulong *crc, uchar *buffer, int size)
 	*crc = c;
 }
 
-int
-readblock(Input *d, uchar *buf, int size)
-{
-	int left;
-
-	left = d->stream_pos - d->pos;
-	if (size > left)
-		size = left;
-	memmove(buf, &d->buffer[d->pos], size);
-	d->pos += size;
-	print("lunzip: readblock called!\n");
-	return size;
-}
-
-static int
-writeblock(LZ_decoder *d, uchar *buf, int size)
-{
-	int left;
-
-	left = d->stream_pos - d->pos;
-	if (size > left)
-		size = left;
-	memmove(&d->buffer[d->pos], buf, size);
-	d->pos += size;
-	print("lunzip: writeblock called!\n");
-	return size;
-}
-
 /* read back something we wrote earlier */
 unsigned
 seek_read_back(LZ_decoder *d, uchar *buf, int size, vlong offset)
@@ -671,26 +632,6 @@ seek_read_back(LZ_decoder *d, uchar *buf, int size, vlong offset)
 	d->pos += size;
 	print("lunzip: seek_read_back called!\n");
 	return size;
-}
-
-bool
-Rd_read_block(Input *rdec)
-{
-	char errbuf[1];
-
-	print("lunzip: Rd_read_block called!\n");
-	if (!rdec->at_stream_end) {
-		rdec->stream_pos = readblock(rdec, rdec->buffer, rd_buffer_size);
-		errbuf[0] = '\0';
-		if (rdec->stream_pos != rd_buffer_size && errbuf[0]) {
-			print("%s: read error\n", argv0);
-			_exits("err");
-		}
-		rdec->at_stream_end = (rdec->stream_pos < rd_buffer_size);
-		rdec->partial_member_pos += rdec->pos;
-		rdec->pos = 0;
-	}
-	return rdec->pos < rdec->stream_pos;
 }
 
 void
@@ -864,8 +805,8 @@ LZd_decode_member(LZ_decoder *d)
 			/* 3rd bit */
 			if (Rd_decode_bit(rdec, &bm_rep0[state]) == 0) {
 				/* 4th bit */
-				if (Rd_decode_bit(rdec, &bm_len[
-				    state][pos_state]) == 0) {
+				if (Rd_decode_bit(rdec, &bm_len[state]
+				    [pos_state]) == 0) {
 					state = St_set_short_rep(state);
 					LZd_put_byte(d, LZd_peek(d, rep0));
 					continue;
@@ -932,6 +873,7 @@ decompress(uchar *outbuf, unsigned outbufsz, uchar *inlunzip, unsigned inbufsz)
 	File_header header;
 	LZ_decoder decoder;
 	Input rdec;
+	static char fileends[] = "File ends unexpectedly";
 
 	USED(outbufsz);
 	if (!Rd_init(&rdec, inlunzip, inbufsz)) {
@@ -944,7 +886,7 @@ decompress(uchar *outbuf, unsigned outbufsz, uchar *inlunzip, unsigned inbufsz)
 		size = Rd_read_data(&rdec, header, Fh_size);
 		if (Rd_finished(&rdec)) {		/* End Of File */
 			if (first_member || Fh_verify_prefix(header, size)) {
-				print("File ends unexpectedly at member header.");
+				print("%s at member header.", fileends);
 				rv = Reteoftoosoon;
 			} else if (size > 0)
 				rv = Reteoftoosoon;
@@ -987,9 +929,9 @@ decompress(uchar *outbuf, unsigned outbufsz, uchar *inlunzip, unsigned inbufsz)
 		if (result != Retok) {
 			if (verbosity >= 0 && result <= Reteoftoosoon)
 				print("%s at pos %lud\n",
-					(result == Reteoftoosoon?
-				    "File ends unexpectedly": "Decoder error"),
-					(long)partial_file_pos);
+					(result ==Reteoftoosoon? fileends:
+					  "Decoder error"),
+					  (long)partial_file_pos);
 			rv = Retok;
 			break;
 		}

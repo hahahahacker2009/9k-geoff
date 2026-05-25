@@ -2,7 +2,7 @@
 #include <libc.h>
 #include <mp.h>
 #include <libsec.h>
-#undef time
+// #undef time
 #include <time.h>
 
 typedef DigestState*(*DigestFun)(uchar*,ulong,uchar*,DigestState*);
@@ -2381,7 +2381,7 @@ mkutc(long t)
 {
 	Elem e;
 	char utc[50];
-	struct tm *tm = gmtime(t);
+	struct tm *tm = gmtime(&t);
 
 	e.tag.class = Universal;
 	e.tag.num = UTCTime;

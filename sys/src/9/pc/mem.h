@@ -42,6 +42,9 @@
 #define	MS2HZ		(1000/HZ)		/* millisec per clock tick */
 #define	TK2SEC(t)	((t)/HZ)		/* ticks to seconds */
 
+#define	MHZ		(1000*1000)
+#define GHZ		(1000LL*MHZ)
+
 /*
  *  Address spaces
  */

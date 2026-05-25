@@ -504,6 +504,7 @@ dotini(char *inibuf)
 	else
 		memmove(BOOTARGS, cp, n+1);
 
+	nconf = 0;
 	n = getfields(cp, line, MAXCONF, 0, "\n");
 	for(i = 0; i < n; i++){
 		cp = strchr(line[i], '=');

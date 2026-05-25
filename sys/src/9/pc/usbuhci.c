@@ -1290,7 +1290,7 @@ epio(Ep *ep, Qio *io, void *a, long count, int mustlock)
 		error(io->err ? io->err : Eio);
 	}
 	if(qh->state != Qidle)
-		panic("epio: qh not idle");
+		panic("usbuhci epio: qh not idle");
 	qh->state = Qinstall;
 	iunlock(ctlr);
 

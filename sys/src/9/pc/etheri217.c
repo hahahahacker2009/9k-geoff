@@ -1,6 +1,15 @@
 /*
  * i217 or 218 specific gunk.
  * optionally included by etherigbe.c
+ *
+ * The i21[789] datasheets are incomplete and point to an unspecified
+ * `integrated LAN controller', claimed to be compatible with the 82566.
+ * Apparently it's whatever is built in to the ICH8/9/10, which have manuals.
+ * I would have concluded that the 217 is just broken, but Windows can drive it
+ * with Lenovo's driver, but not with Intel's(!) and the TS140's pxe boot rom
+ * can boot through it.  One theory is that Intel's ME is preventing
+ * transmission.  Another is that the missing nvram is failing to initialise one
+ * of the zillions of registers.
  */
 
 enum {

@@ -84,26 +84,20 @@ x86wdenable(void)
 	 */
 	cpuidinfo(Procsig, 0, info);
 	fam = X86FAMILY(info[Ax]);
-	if(!m->isintelcpu){
+	if(!m->isintelcpu)
 		if(fam == 0x06)
 			model = K6;
 		else if(fam >= 0x0F)
 			model = K8;	/* or K10 or Jaguar */
 		else
 			error("unknown amd cpu family");
-	} else {
+	else
 		if(fam == 0x06)
 			model = P6;
 		else if(fam == 0x0F)
 			model = P4;
 		else
 			error("unknown intel cpu family");
-	}
-	if((info[Dx] & (Cpuapic|Cpumsr|Tsc)) != (Cpuapic|Cpumsr|Tsc)) {
-		print("x86wdenable: lacks apics, msrs or tsc; cpuiddx %#ux\n",
-			info[Dx]);
-		error(Enodev);
-	}
 
 	ilock(wd);
 	if(wd->inuse){

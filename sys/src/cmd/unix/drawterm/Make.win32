@@ -3,14 +3,14 @@
 # on another platform.  Otherwise the binaries are just
 # named gcc, etc.
 
-MING=i586-mingw32msvc-
+MING=i686-w64-mingw32-
 #MING=
 AR=$(MING)ar
 CC=$(MING)gcc
 AS=$(MING)as
 RANLIB=$(MING)ranlib
 WINDRES=$(MING)windres
-CFLAGS=-Wall -Wno-missing-braces -I$(ROOT)/include -I$(ROOT) -I$(ROOT)/kern -c -D_X86_ -DIS_32 -DWINDOWS -DUNICODE -O2
+CFLAGS=-Wall -Wno-missing-braces -I$(ROOT)/include -I$(ROOT) -I$(ROOT)/kern -c -D_X86_ -DIS_32 -DWINDOWS -DUNICODE -O2 -fcommon
 O=o
 FS=fs-win32
 IP=win32

@@ -63,7 +63,7 @@ link +dev
 	usbehci		usbehcipc
 #	x86watchdog
 
-#	realmode
+	realmode
 
 misc +dev
 	cache
@@ -93,7 +93,7 @@ amd64
 	l64idt
 	l64syscall
 # l64real and realmode not ready for prime time
-#	l64real
+	l64real
 	l64fpu
 	apu
 	arch

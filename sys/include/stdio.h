@@ -15,6 +15,7 @@
  * if wp<rp, we must have state==WR, so that getc and putc work correctly.
  * On open, rp, wp and buf are set to 0, so first getc or putc will call
  * _IO_getc or _IO_putc, which will allocate the buffer.
+ *
  * If setvbuf(., ., _IONBF, .) is called, bufl is set to 0 and
  * buf, rp and wp are pointed at unbuf.
  * If setvbuf(., ., _IOLBF, .) is called, _IO_putc leaves wp and rp pointed at
@@ -22,6 +23,7 @@
  * it's got a newline.  This nonsense is in order to avoid impacting performance
  * of the other buffering modes more than necessary -- putting the test in putc
  * adds many instructions that are wasted in non-_IOLBF mode:
+ *
  * #define putc(c, f) (_IO_ctmp=(c),\
  * 		(f)->wp>=(f)->rp || (f)->flags&LINEBUF && _IO_ctmp=='\n'?\
  * 		_IO_putc(_IO_ctmp, f): *(f)->wp++=_IO_ctmp)

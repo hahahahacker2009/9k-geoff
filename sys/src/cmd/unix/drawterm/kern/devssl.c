@@ -9,6 +9,8 @@
 
 #include	"libsec.h"
 
+int		nrand(int);
+
 #define DEPRECATED 1		/* include rc4 while retiring it */
 #define NOSPOOKS 1
 

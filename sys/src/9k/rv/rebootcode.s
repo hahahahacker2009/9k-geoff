@@ -9,8 +9,16 @@
 #include "start.h"
 
 /* dedicated registers for reboot */
-#define ENTRY	17
-#define RMASK	19
+RMASK	= 22
+SYSRB	= 23
+LOCK	= 24
+TMP2	= 25
+TMP	= 26
+MACHNO	= 27
+ENTRY	= 28
+UART0	= 29
+MACHMODE= 30
+HARTID	= 31
 
 /*
  * Copy the new kernel to its expected location in physical addresses.
@@ -22,6 +30,9 @@
  * The new kernel will start in the privilege mode that we are called in.
  * May be called from mtrap.s or main.c.
  */
+	GLOBL	printlck(SB), $4
+	DATA	printlck(SB)/4, $0
+
 TEXT main(SB), $0
 	/*
 	 * we could be in machine or super mode.
@@ -49,6 +60,8 @@ TEXT rbalign(SB), 1, $-4
 	 */
 	LOADSATP(R0)			/* paging off in super */
 	MOV	$setSB(SB), R3
+	MOV	$printlck(SB), R(LOCK)
+	ENSURELOW(R(LOCK))
 
 CONSPUT($'T')
 	MOV	R0, newkern(SB)
@@ -143,6 +156,7 @@ newkernel:
 	FENCE
 	FENCE_I
 	MOV	R(HARTID), R10			/* emulate SBI start up */
+	MOV	R0, R11				/* no device tree */
 	BEQ	R(MACHMODE), superentry
 	/* we're supposed to be in machine mode via ecall */
 //	MOV	R(ENTRY), CSR(MTVEC)		/* can't do this */

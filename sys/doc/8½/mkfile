@@ -7,3 +7,5 @@
 8½.html:D: 8½.ms
 	tbl 8½.ms | htmlroff -ms -mhtml >8½.html
 
+clean:V:
+	rm -f 8½.^(html ps pdf)

@@ -7,6 +7,8 @@
 #include "dat.h"
 #include "fns.h"
 
+/* convert bytes to integers, by byte order and integer length */
+
 uint
 legeth(void *vp)
 {
@@ -56,7 +58,7 @@ begetvl(void *vp)
 }
 
 
-/* output */
+/* convert integers to bytes, by byte order and integer length */
 
 void *
 leputh(void *vp, ushort l)

@@ -628,7 +628,7 @@ PCArch archmp = {
 .intron=	lapicintron,
 .introff=	lapicintroff,
 
-.fastclock=	i8253read,
+.fastclock=	i8253read,	/* overwritten with tscticks on MP cpus */
 .timerset=	lapictimerset,
 .resetothers=	mpresetothers,
 };
@@ -965,7 +965,7 @@ chooseidler(void)
 		wakemwait();
 	} else					/* pre-2014 cpu? */
 		idlehands = halt;
-	if (0 && conf.vm)			/* TODO: tune */
+	if (TODO && conf.vm)			/* TODO: tune */
 		// coherence =
 		idlehands = nop;		/* coherence nop ok on vmware */
 	splx(s);

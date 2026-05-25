@@ -146,22 +146,30 @@
 
 #define Rv64intr	(1ull<<63)	/* interrupt, not exception */
 
-#define Supswintr	1
+#define Supswintr	1	/* interprocessor interrupts */
 #define Vsupswintr	2
 #define Mchswintr	3
-#define Suptmrintr	5
+
+#define Suptmrintr	5	/* clock interrupts */
 #define Vsuptmrintr	6
 #define Mchtmrintr	7
-#define Supextintr	9	/* global intr */
-#define Vsupextintr	10	/* global intr */
-#define Mchextintr	11	/* global intr */
-#define Supgextintr	12	/* global intr */
+
+#define Supextintr	9	/* global interrupts */
+#define Vsupextintr	10
+#define Mchextintr	11
+#define Supgextintr	12
+
 #define Hpmctrovflintr	13
 #define Debugintr	14
 #define Local0intr	16
 #define Xtperfovflintr	17
+
 #define Nlintr	64	/* # of local interrupts */
-#define Msdiff	2	/* "M* - S*" bit */
+
+#define Excgroup	4	/* exceptions are in groups of 4 */
+#define Excgrpshft	2	/* lg Excgroup */
+
+#define Msdiff	2	/* "M* - S*" exception codes */
 
 #define Ssie	(1<<Supswintr)	/* super sw */
 #define Msie	(1<<Mchswintr)	/* machine sw */
@@ -248,8 +256,6 @@
  * can't cope with.  appended to mkenum output to make riscv64l.h.
  */
 
-#undef DEBUG
-
 /* instructions not yet known to ia and ja */
 #define ECALL	SYS $0
 #define EBREAK	SYS $1
@@ -287,7 +293,7 @@
  */
 
 /* always prints */
-#define PRINT(c) \
+#define PR(c) \
 	MOV	c, R(TMP); \
 	MOVW	R(TMP), (R(UART0)); \
 	FENCE
@@ -297,7 +303,7 @@
 #define CONSPUT(c)
 #define	CONSWAIT
 #else					/* DEBUG */
-#define CONSOUT(c) PRINT(c)
+#define CONSOUT(c) PR(c)
 
 #ifdef SIFIVEUART
 #define CONSWAIT \

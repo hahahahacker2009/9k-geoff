@@ -52,6 +52,7 @@ enum
 	T2out=	(1<<5),		/* output of T2 */
 
 	Freq=	1193182,	/* Real clock frequency */
+	Freq2=	Freq * 2,
 	Tickshift=8,		/* extra accuracy */
 	MaxPeriod=Freq/HZ,
 	MinPeriod=Freq/(100*HZ),
@@ -145,6 +146,7 @@ wdogresume(int resume)
 	}
 }
 
+/* runs on each cpu, which seems unnecessary in principle as this is SMP. */
 void
 guesscpuhz(int aalcycles)
 {
@@ -175,6 +177,7 @@ guesscpuhz(int aalcycles)
 		x = inb(T0cntr);
 		x |= inb(T0cntr)<<8;
 		aamloop(loops);
+
 		outb(Tmode, Latch0);
 		cycles(&b);
 		y = inb(T0cntr);
@@ -191,50 +194,48 @@ guesscpuhz(int aalcycles)
 
 	/*
 	 *  figure out clock frequency and a loop multiplier for delay().
-	 *  n.b. counter goes up by 2*Freq
+	 *  n.b. counter goes up by Freq2
 	 */
 	if(x == 0)
 		x = 1;			/* avoid division by zero on vmware 7 */
-	cpufreq = (vlong)loops*((aalcycles*2*Freq)/x);
-	m->loopconst = (cpufreq/1000)/aalcycles;	/* AAM+LOOP's for 1 ms */
+	cpufreq = (vlong)loops * ((aalcycles*Freq2) / x);
+	m->loopconst = (cpufreq/1000) / aalcycles;  /* AAM+LOOP's for 1 ms */
 
-	if(conf.havetsc && a != b){  /* a == b means virtualbox has confused us */
-		/* counter goes up by 2*Freq */
-		b = (b-a)<<1;
-		b *= Freq;
-		b /= x;
-
-		/*
-		 *  round to the nearest megahz
-		 */
-		m->cpumhz = (b+500000)/1000000L;
-		m->cpuhz = b;
-		m->cyclefreq = b;
+	if(conf.havetsc && a != b){	/* a == b means vbox has confused us */
+		m->cpuhz = (b-a) * Freq2 / x;
+		m->cyclefreq = m->cpuhz;
+		m->cpumhz = m->cpuhz + MHZ/2;	/* round to nearest MHz next */
 	} else {
-		/*
-		 *  add in possible 0.5% error and convert to MHz
-		 */
-		m->cpumhz = (cpufreq + cpufreq/200)/1000000;
-		m->cpuhz = cpufreq;
+		m->cpuhz  = cpufreq;
+		m->cpumhz = cpufreq + cpufreq/200; /* add possible 0.5% error */
 	}
+	m->cpumhz /= MHZ;
 
 	/* don't divide by zero in trap.c */
-	if (m->cpumhz == 0)
-		panic("guesscpuhz: zero m->cpumhz");
-	i8253.hz = Freq<<Tickshift;
+	if (m->cpumhz == 0) {
+		iprint("guesscpuhz: zero m->cpumhz, assuming sanity\n");
+		m->cpuhz = GHZ;
+		m->cpumhz = GHZ / MHZ;
+	}
+	/*
+	 * we used to use Freq<<Tickshift (~305MHz) but cpu clocks are faster
+	 * now.  see lapictimerinit().
+	 */
+	if (i8253.hz == 0)
+		i8253.hz = m->cpuhz<<Tickshift;
 }
 
 void
 i8253timerset(uvlong next)
 {
 	long period;
-	ulong want;
-	ulong now;
+	ulong want, now;
 
 	period = MaxPeriod;
 	if(next != 0){
 		want = next>>Tickshift;
-		now = i8253.ticks; /* assuming whomever called us just did fastticks() */
+		/* assuming whomever called us just did fastticks() */
+		now = i8253.ticks;
 
 		period = want - now;
 		if(period < MinPeriod)
@@ -249,7 +250,7 @@ i8253timerset(uvlong next)
 		/* load new value */
 		outb(Tmode, Load0|Square);
 		outb(T0cntr, period);		/* low byte */
-		outb(T0cntr, period >> 8);		/* high byte */
+		outb(T0cntr, period >> 8);	/* high byte */
 
 		/* remember period */
 		i8253.period = period;

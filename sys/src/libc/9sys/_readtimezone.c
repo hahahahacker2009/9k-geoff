@@ -66,8 +66,10 @@ _readtimezone(_Timezone *tz)
 	i = open("/env/timezone", 0);
 	if(i < 0)
 		return;
-	nb = read(i, buf, sizeof buf);
+	nb = readn(i, buf, sizeof buf);
 	close(i);
+	if (nb < 0)
+		goto error;
 	if(nb < sizeof buf) {		/* didn't fill buf? */
 		buf[nb] = '\0';
 

@@ -235,7 +235,7 @@ extern Intrsvcret apictimerintr(Ureg*, void*);
 extern void apictprput(int);
 
 extern void ioapicinit(int, uintmem);
-extern void ioapicintrinit(int, int, int, int, u32int);
+extern int  ioapicintrinit(int, int, int, int, u32int);
 extern int  ioapicintrtbloff(uint vno);
 extern void ioapiconline(void);
 

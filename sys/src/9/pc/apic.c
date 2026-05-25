@@ -71,32 +71,37 @@ lapiconline(void)
 static void
 lapictimerinit(void)
 {
-	uvlong x, v, hz;
+	uvlong x, hz, hz10pc;
 
-	v = m->cpuhz/1000;
 	lapicw(LapicTDCR, LapicX1);
-	lapicw(LapicTIMER, ApicIMASK|LapicCLKIN|LapicONESHOT|(VectorPIC+IrqTIMER));
+	lapicw(LapicTIMER, ApicIMASK | LapicCLKIN | LapicONESHOT |
+		(VectorPIC + IrqTIMER));
 
 	if(lapictimer.hz == 0){
 		x = fastticks(&hz);
-		x += hz/10;
-		lapicw(LapicTICR, 0xffffffff);
-		do{
-			v = fastticks(nil);
-		}while(v < x);
+		hz10pc = hz / 10;
+		x += hz10pc;
 
-		lapictimer.hz = (0xffffffffUL-lapicr(LapicTCCR))*10;
+		lapicw(LapicTICR, 0xffffffff);
+		while (fastticks(nil) < x)
+			;
+
+		lapictimer.hz = (0xffffffffUL - lapicr(LapicTCCR)) * 10LL;
 		lapictimer.max = lapictimer.hz/HZ;
 		lapictimer.min = lapictimer.hz/(100*HZ);
 
-		if(lapictimer.hz > hz-(hz/10)){
-			if(lapictimer.hz > hz+(hz/10))
-				panic("lapic clock %lld > cpu clock > %lld",
+		iprint("lapictimerinit: lapictimer.hz %,lld hz %,lld\n",
+			lapictimer.hz, hz);
+		if(lapictimer.hz > hz - hz10pc){
+			if(lapictimer.hz > hz + hz10pc)
+				panic("lapic clock %,lld > cpu clock %,lld",
 					lapictimer.hz, hz);
 			lapictimer.hz = hz;
 		}
 		assert(lapictimer.hz != 0);
 		lapictimer.div = hz/lapictimer.hz;
+		if (lapictimer.div == 0)
+			panic("lapictimerinit: zero lapictimer.div");
 	}
 }
 

@@ -1,3 +1,4 @@
+/* non-EFI memory map via bios call */
 static int
 ise820biosmap(uchar *p)
 {
@@ -8,18 +9,19 @@ uintptr
 finde820map(void)
 {
 	uchar *p;
+	static char e820map[] = "e820 memory map";
 
 	p = (uchar *)BIOSTABLES;
 	if(ise820biosmap(p)){
-		print("e820 memory map present\n");
+		print("%s present\n", e820map);
 		return (uintptr)p;
 	}
 	p += 0x10;		/* compatible with some old bootstraps */
 	if(ise820biosmap(p)){
-		print("e820 memory map at old-style address %#p\n", p);
+		print("%s at old-style address %#p\n", e820map, p);
 		return (uintptr)p;
 	}
-	print("no e820 memory map; wtf?\n");
+	print("no %s; wtf?\n", e820map);
 	return 0;
 }
 

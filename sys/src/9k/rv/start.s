@@ -8,11 +8,17 @@
 
 #define Z(n)	MOV R0, R(n)
 
-#define ALIGNPAT 0x01020304
+/* dedicated registers during start-up */
+LOCK	= 12
+UART0	= 13
+TMP	= 14
+TMP2	= 15
+MACHMODE= 30
+HARTID	= 31
 
 	/* data segment, not bss, variables, due to initialisation */
-	GLOBL	datalign(SB), $4
-	DATA	datalign(SB)/4, $ALIGNPAT
+	GLOBL	printlck(SB), $4
+	DATA	printlck(SB)/4, $0
 
 /*
  * this may be entered in machine or super mode.
@@ -54,203 +60,105 @@ TEXT _main(SB), 1, $-4			/* _main avoids libc's main9.s */
 	MOV	$panicstk+(INITSTKSIZE)(SB), R2	/* very temporary stack */
 // TEXT pstkalign(SB), 1, $-4		/* reset SP, FP for new R2 */
 
-	MOV	$PAUart0, R(UART0)	/* now safe to print on PAUart0 */
-
-	MOV	$4, R9
-	SLL	$31, R9			/* must be valid rv32 shift */
-	BEQ	R9, rv32 /* shifted off left end? hart in 32-bit mode, park */
-
-	/*
-	 * a misaligned data segment can behave quite strangely,
-	 * so detect and report one if found.
-	 */
-	MOVWU	datalign(SB), R12
-	MOV	$ALIGNPAT, R9
-	BNE	R9, R12, unaligned
-
-	/* assume super mode by default */
-	MOV	$'S', R12
-	MOV	R0, R(MACHMODE)
-
 	/*
 	 * try to catch a trap if we access M mode CSRs in S mode.
 	 * this relies on M mode delegating or forwarding this
 	 * type of exception (illegal instruction?) to S mode.
 	 * if SBI throws a fit, we're out of luck.
 	 */
-	MOV	$dummymach(SB), R9
-	MOV	R9, CSR(SSCRATCH)	/* m for early strap */
-	MOV	$supertrap(SB), R9
-	MOV	R9, CSR(STVEC)
-	MOV	R9, CSR(MTVEC)
+	MOV	$'S', R11		/* assume super mode by default */
+	MOV	R0, R(MACHMODE)
+	MOV	$supertrap(SB), R(TMP)
+	MOV	R(TMP), CSR(STVEC)
+	MOV	$recktrap(SB), R(TMP)	/* catch early stray M faults */
+	CSRRW	CSR(MTVEC), R(TMP), R(TMP)
+	MOV	R(TMP), origmtvec(SB)	/* stash initial mtvec for later */
 	FENCE
 
-	/*
-	 * we didn't fault on MTVEC, so we're in M mode.  set it up minimally.
-	 */
-	MOV	$'M', R12
-	MOV	$1, R(MACHMODE)
-	MOV	CSR(MHARTID), R(HARTID)
-	/* device tree pointer somewhere? */
-
-	MOV	$Defmsts, R(TMP)
-	MOV	R(TMP), CSR(MSTATUS)
-	CSRRC	CSR(MSTATUS), $(Sie|Mie), R0
-	MOV	R0, CSR(MIE)
-	MOV	R0, CSR(MIP)
-	MOV	R0, CSR(MEDELEG)
-	MOV	R0, CSR(MIDELEG)
-
-	MOV	$recktrap(SB), R9	/* catch early stray M faults */
-	CSRRW	CSR(MTVEC), R9, R9
-	MOV	R9, origmtvec(SB)	/* stash initial mtvec for later */
-
-	MOV	$dummymach(SB), R9
-	MOV	R9, CSR(MSCRATCH)	/* m for early mtrap */
+	/* we didn't fault on MTVEC access, so we're in M mode. */
+	JAL	LINK, mnointrs(SB)
 
 TEXT supertrap(SB), 1, $-4
 	/* if we faulted, we're in S mode */
 	/* interrupts are now definitely off, in M or S mode */
+	MOV	$recktrap(SB), R(TMP)	/* catch early stray S faults */
+	MOV	R(TMP), CSR(STVEC)
+
+	MOV	$PAUart0, R(UART0)	/* now safe to print on PAUart0 */
+ 	MOV	$printlck(SB), R(LOCK)
 	MOVW	R(MACHMODE), bootmachmode(SB)
-	CONSPUT(R12)
-	CONSPUT($' ')
-
-	MOV	$recktrap(SB), R9	/* catch early stray S faults */
-	MOV	R9, CSR(STVEC)
-
-	MOV	$dummysc(SB), R12
-	SCW(0, 12, 0)	/* discharge any lingering reservation we hold */
-
-	MOV	$HARTMAX, R(TMP)
-	BGEU	R(TMP), R(HARTID), nostack	/* more harts than expected? */
+	CONSPUT(R11)
 
 	/*
 	 * zero most registers to avoid possible non-determinacy.
-	 * R2 is stack pointer, R3 is static base,
-	 * R29 is UART0, R30 is MACHMODE, R31 is HARTID.
+	 * R2 is stack pointer, R3 is static base, R6 is up, R12 is LOCK,
+	 * R13 is UART0, R30 is MACHMODE, R31 is HARTID.
 	 */
-	Z(1); Z(4); Z(5); Z(6); Z(7); Z(8); Z(9); Z(10); Z(11); Z(12); Z(13)
-	Z(14); Z(15); Z(16); Z(17); Z(18); Z(19); Z(20); Z(21); Z(22); Z(23)
-	Z(24); Z(25); Z(26); Z(27); Z(28)
+	Z(1); Z(4); Z(5); Z(6); Z(7); Z(8); Z(9); Z(10); Z(11); Z(14); Z(15)
+	Z(16); Z(17); Z(18); Z(19); Z(20); Z(21); Z(22); Z(23); Z(24); Z(25)
+	Z(26); Z(27); Z(28); Z(29)
 
 	/*
-	 * in case i(un)lock are called before m is set to its real Mach*,
-	 * perhaps called via panic very early on this hart.
-	 */
-	MOV	$dummymach(SB), R(MACH)
-	MOV	R0, R(USER)
-
-	/* save PC as approx. PADDR(KTZERO) for mainpc */
-	JAL	R12, 1(PC)
-	MOV	R12, mainpc(SB)
-
-	/*
-	 * assign machnos sequentially from zero.
-	 * after Amoadd: old hartcnt in MACHNO, updated hartcnt in memory.
-	 */
-	CONSPUT($'C')
-	MOV	$hartcnt(SB), R9
-	MOV	$1, R10
-	AMOW(Amoadd, AQ|RL, 10, 9, MACHNO)
-
-	MOV	$MACHMAX, R(TMP)
-	BGEU	R(TMP), R(MACHNO), nostack	/* more cpus than expected? */
-
-	/*
-	 * set up a temporary stack for C for this cpu, based on machno.
+	 * set up a temporary stack for C for this cpu.
 	 * initstks is in the data segment, so won't be zeroed when zeroing bss.
 	 */
-	CONSPUT($'T')
-	MOV	$'0', R15
-	ADD	R(MACHNO), R15
-	CONSPUT(R15)
+	MOV	$initstkp(SB), R(TMP2)
+	MOV	$INITSTKSIZE, R(TMP)
+	/* after Amoadd: old initstkp in R2, updated initstkp in memory. */
+	AMOD(Amoadd, AQ|RL, TMP, TMP2, 2)	/* end of my init stack */
+	ENSURELOW(R2)			/* initstkp initialised to high addr */
+	MOV	$initstks+(MACHMAX*INITSTKSIZE)(SB), R(TMP2)
+	BGTU	R(TMP2), R2, nostack
 
-	/* put sp within stack with SBIALIGN */
-	MOV	$initstks+(INITSTKSIZE-SBIALIGN)(SB), R(TMP)
-	MOV	$INITSTKSIZE, R11
-	MUL	R(MACHNO), R11
-	ADD	R11, R(TMP), R2		/* just past my init stack */
+	MOV	$4, R(TMP)
+	SLL	$31, R(TMP)		/* must be valid rv32 shift */
+	BEQ	R(TMP), rv32 /* shifted off left end? in 32-bit mode, park */
 
-	BNE	R(MACHNO), notzero
+	MOV	R(HARTID), R(ARG)
+	JAL	LINK, low(SB)		/* low(hartid); no return */
 
-	/* we are cpu0, so zero bss */
-	CONSPUT($'Z')
-	MOV	$edata(SB), R(TMP)
-	MOV	$end(SB), R(TMP2)
-zerobss:
-	MOV	R0, (R(TMP))
-	ADD	$XLEN, R(TMP)
-	BLTU	R(TMP2), R(TMP), zerobss
-	FENCE
- 	MOVW	R0, initstall(SB)	/* all-clear for secondary cpus */
-	JMP	allcpus
-
-	/*
-	 * we are a secondary, so wait here until cpu0 finishes zeroing bss
-	 * and other initialisation.
-	 */
-notzero:
-	PAUSE
-	FENCE
-	MOVW	initstall(SB), R(TMP)
-	BNE	R(TMP), notzero
-	/*
-	 * all is clear for secondaries; add a slight delay to give cpu0 a head
-	 * start and stagger cpu starts, in case of near-simultaneous start up.
-	 */
-	MOV	$(100*MHZ), R(TMP)
-	MUL	R(MACHNO), R(TMP)
-delay:
-	SUB	$1, R(TMP)
-	BNE	R(TMP), delay
-
-allcpus:
-	/* BUG: shouldn't need this but can't pass arg to low() */
-	/* store hart id in hartids[machno] for Mach->hartid */
-	MOV	$hartids(SB), R12
-	MOV	$2, R13			/* sizeof(short) */
-	MUL	R(MACHNO), R13
-	ADD	R13, R12
-	MOVH	R(HARTID), (R12)	/* hartids[machno] = HARTID */
-	FENCE
-
-	CONSPUT($'\r')
-	CONSPUT($'\n')
-	SUB	$16, R2			/* room to push low's args */
-	MOVW	R(MACHNO), bootingcpu(SB)
-	MOV	R(MACHNO), R(ARG)
-	JAL	LINK, low(SB)		/* low(machno, hartid); no return */
-
-	/*
-	 * failures of various sorts
-	 */
-
-	PRINT($'?'); PRINT($'r'); PRINT($'e'); PRINT($'t')
+	PR($'?'); PR($'r'); PR($'e'); PR($'t')
 	JMP	crlfwfi
+
+/*
+ * disable M interrupts and delegations.  uncommon case.
+ */
+TEXT mnointrs(SB), 1, $-4
+	MOV	R0, CSR(MIE)
+	MOV	R0, CSR(MIP)
+	MOV	$Defmsts, R(TMP)
+	MOV	R(TMP), CSR(MSTATUS)
+	CSRRC	CSR(MSTATUS), $(Sie|Mie), R0
+	MOV	R0, CSR(MEDELEG)
+	MOV	R0, CSR(MIDELEG)
+
+	MOV	$'M', R11
+	MOV	$1, R(MACHMODE)
+	MOV	CSR(MHARTID), R(HARTID)
+	/* device tree pointer somewhere? */
+
+	MOV	R(MACH), CSR(MSCRATCH)	/* m for early mtrap */
+	RET
+
+/*
+ * failures of various sorts
+ */
 
 nostack:
-	PRINT($'?'); PRINT($'n'); PRINT($'s'); PRINT($'t')
-	MOV	$'0', R15
-	ADD	R(MACHNO), R15
-	PRINT(R15)
-	JMP	crlfwfi
-
+	PR($'?'); PR($'n'); PR($'o'); PR($' '); PR($'s'); PR($'t')
+	PR($'a'); PR($'c'); PR($'k')
+	PR($' '); PR($'h'); PR($'a'); PR($'r'); PR($'t')
+	MOV	R(HARTID), R(TMP2)
+	JMP	digcrlfwfi
 rv32:
-	PRINT($'?'); PRINT($'3'); PRINT($'2'); PRINT($'b')
-	PRINT($'i'); PRINT($'t'); PRINT($' ')
-	MOV	$'0', R15
-	ADD	R(HARTID), R15
-	PRINT(R15)
-	JMP	crlfwfi
-
-unaligned:
-	PRINT($'D'); PRINT($'a'); PRINT($'t'); PRINT($'a')
-	PRINT($' '); PRINT($'s'); PRINT($'e'); PRINT($'g')
-	PRINT($' '); PRINT($'m'); PRINT($'i'); PRINT($'s')
-	PRINT($'a'); PRINT($'l'); PRINT($'i'); PRINT($'g')
-	PRINT($'n'); PRINT($'e'); PRINT($'d'); PRINT($'!')
+	PR($'?'); PR($'3'); PR($'2'); PR($'b'); PR($'i'); PR($'t')
+	PR($' '); PR($'h'); PR($'a'); PR($'r'); PR($'t')
+	MOV	R(HARTID), R(TMP2)
+digcrlfwfi:
+	ADD	$'0', R(TMP2)
+	PR(R(TMP2))
 crlfwfi:
-	PRINT($'\r'); PRINT($'\n')
+	PR($'\r'); PR($'\n')
 
 TEXT wfi(SB), 1, $-4
 	WFI			/* may pause the core cycle counter */

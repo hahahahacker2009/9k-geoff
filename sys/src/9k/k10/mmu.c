@@ -9,6 +9,9 @@
 
 #include "amd64.h"
 
+#undef	DBGFLG
+#define	DBGFLG 0
+
 #define ALIGNED(p, a)	(!(((uintptr)(p)) & ((a)-1)))
 
 /* see mem.h */
@@ -58,11 +61,13 @@ mmuflushtlb(u64int)
 	cr3put(pml4->pa);
 }
 
-/* up must be non-nil when called, otherwise there's no process to flush */
 void
 mmuflush(void)
 {
 	Mpl s;
+
+	if(up == nil)
+		return;
 
 	s = splhi();
 	up->newtlb = 1;
@@ -152,7 +157,7 @@ mmuswitch(Proc* proc)
 	}
 
 	pte = UINT2PTR(pml4->va);
-	for(page = proc->mmuptp[Npglvls-1]; page != nil; page = page->next){
+	for(page = proc->mmuptp[3]; page != nil; page = page->next){
 		pte[page->daddr] = PPN(page->pa)|PteU|PteRW|PteP;
 		if(page->daddr >= pml4->daddr)
 			pml4->daddr = page->daddr+1;
@@ -286,7 +291,8 @@ pdmap(uintmem pa, int attr, uintptr va, uintptr size)
 					pa, va);
 			*pde = pa|attr|PtePS|PteP;
 			pgsz = PGLSZ(1);
-		} else {
+		}
+		else{
 			if(*pde == 0){
 				/*
 				 * Need a PTSZ physical allocator here.
@@ -587,8 +593,6 @@ mmuinit(void)
 	/* we are cpu0 */
 	page = &mach0pml4;
 	page->pa = cr3get();
-	assert(page->pa == PADDR(sys->pml4)); /* uses page tables in low mem */
-	page->pa = PADDR(sys->pml4);
 	page->va = PTR2UINT(sys->pml4);
 
 	m->pml4 = page;
@@ -667,8 +671,6 @@ mmuinit(void)
  * create an identity map for the first 1 GB.  the relevant page tables
  * may be currently set for a user process, rather than unused; just
  * overwrite them.
- *
- * only call with only one cpu running (at start-up or shutdown).
  */
 void
 mmuidentitymap(void)
@@ -680,8 +682,8 @@ mmuidentitymap(void)
 	mmuflush();
 	pml4 = m->pml4;
 	pml4pte = (PTE *)pml4->va;
-	pml4pte[PTLX(0, Npglvls-1)]  = PADDR(sys->pdp)|PteRW|PteP; /* 512GB */
-	sys->pdp[PTLX(0, Npglvls-2)] = PADDR(sys->pd )|PteRW|PteP; /* 1GB */
+	pml4pte[PTLX(0, 3)]  = PADDR(sys->pdp)|PteRW|PteP;	/* 512GB */
+	sys->pdp[PTLX(0, 2)] = PADDR(sys->pd )|PteRW|PteP;	/* 1GB */
 	for (i = 0; i < PTSZ/sizeof(PTE); i++)
 		sys->pd[PTLX(i*2*MB, 1)] = (i*2*MB)|PtePS|PteRW|PteP;
 	coherence();

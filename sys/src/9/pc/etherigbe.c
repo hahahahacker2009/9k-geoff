@@ -676,6 +676,7 @@ enum {
 	i82571, i82572, i82573, i82574, i82575, i82576, i82577, i82579,
 	i82580, i350,
 	i210, i217, i218, i219,
+	i225,			/* also i226: 2.5Gb too */
 	Nctlrtypes,
 };
 
@@ -698,6 +699,7 @@ static char *tname[] = {
 [i217] "i217",			/* so fussy it won't transmit */
 [i218] "i218",
 [i219] "i219",
+[i225] "i225",
 };
 
 typedef struct Rxtx Rxtx;
@@ -1319,6 +1321,8 @@ i82563transmit(Ether* edev)
 			ienable(ctlr, Txdw|Txqe|Txdlow|Parityeccrst);
 			break;
 		}
+		if (ctlr->tb[tdt] != nil)	/* not yet cleaned? */
+			break;
 		if((bp = qget(edev->oq)) == nil)
 			break;
 
@@ -1513,6 +1517,10 @@ fload(Ctlr *ctlr)
 		return 0;	/* Eec doesn't exist; it's now Fextnvm6 */
 
 	io = ctlr->pcidev->mem[1].bar & ~0x0f;
+	if (io == 0) {
+		print("%Æ: pci mem[1].bar zero, no flash nvram\n", ctlr);
+		return -1;
+	}
 	f.reg = vmap(io, ctlr->pcidev->mem[1].size);
 	if(f.reg == nil)
 		return -1;
@@ -1585,7 +1593,7 @@ loadnvrammac(Ctlr *ctlr)
 	/* eeprom[0x13] is init ctl 4. bits 5-1 are phy addr. */
 	if (r != 0)
 		print("%Æ: nvram phy add: %d\n", ctlr,
-			(ctlr->eeprom[0x13]>>1) & MASK(5));	// TODO debug
+			(ctlr->eeprom[0x13]>>1) & MASK(5));
 	/*
 	 * upper 4 bits of checksum short contain an `update nvm' bit that
 	 * we can't readily set, so just compare the low 12 bits.
@@ -1747,6 +1755,7 @@ mcastbits(Ctlr *ctlr)
 //		case i82583:
 		case i350:
 		case i210:				/* includes i211 */
+		case i225:
 			ctlr->mcastbits = 12;		/* 128 longs */
 			break;
 		default:
@@ -2430,10 +2439,10 @@ i82563attach(Ether* edev)
 		qunlock(&ctlr->alock);
 		return;
 	}
-#ifdef TODO_
+#ifdef TODO_DEBUG_PHY
 	phynum(ctlr, 0);		/* load phy addresses */
 	iprint("%Æ: phys general %d specific %d\n", ctlr,
-		ctlr->phyaddgen, ctlr->phyaddspec);	// TODO debug
+		ctlr->phyaddgen, ctlr->phyaddspec);
 #endif
 
 	ctlr->regs[Imc] = ~0;
@@ -2980,8 +2989,7 @@ i82563pci(void)
 		case 0x15e3:		/* i219-lm */
 			type = i219;	/* attached via PCH, not pci-e */
 			break;
-#ifdef notyet
-		/* these move some registers, so need changes */
+		/* TODO: untested; these move some registers, so need changes */
 		case 0x15fd:		/* i225 */
 		case 0x15f2:		/* i225-lm */
 		case 0x15f3:		/* i225-v */
@@ -2994,7 +3002,6 @@ i82563pci(void)
 		case 0x5503:		/* i226-lmvp */
 			type = i225;
 			break;
-#endif
 		}
 		newctlr(p, type);
 	}

@@ -1,17 +1,11 @@
 /*
  * definitions for assembly-language startup
  */
-#undef DEBUG
 
-/* dedicated registers during start-up */
-SYSRB	= 23
-LOCK	= 24
-TMP2	= 25
-TMP	= 26
-MACHNO	= 27
-UART0	= 29
-MACHMODE= 30
-HARTID	= 31
+/*
+ * these macros and those they invoke assume that these registers are defined:
+ * TMP, TMP2, LOCK, UART0.
+ */
 
 /* spinlock from unpriv. isa spec., figure a.7 */
 /* callers assume that R(LOCK) contains &printlck, but any R(LOCK) will work. */

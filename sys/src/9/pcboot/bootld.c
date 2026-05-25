@@ -676,7 +676,9 @@ readexec(Boot *b)
 		b->ep = b->wp + Kernelmax;
 		print("%cz...", gzipped? 'g': 'l');
 	} else {
-		print("bad kernel format (magic %#lux)\n", magic);
+		print("bad kernel format (magic %#lux = %c%c%c%c)\n", magic,
+			hdr->magic[0], hdr->magic[1], hdr->magic[2],
+			hdr->magic[3]);
 		return bootfail(b);
 	}
 	if (copyhdr) {

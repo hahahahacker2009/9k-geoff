@@ -5,6 +5,7 @@ typedef struct Vctl {			/* vector handlers list */
 	Vctl*	pollnxt;		/* next in poll chain, never remove */
 
 	uchar	isintr;			/* flag: interrupt, else fault/trap */
+	/* msi mandatory for pci-e devices (exception for pcie-pci bridges) */
 	uchar	ismsi;			/* flag: is msi interrupt? */
 	uchar	type;			/* exception or some form of intr? */
 	ushort	irq;
@@ -231,6 +232,7 @@ struct Pcidev
 	short	pcieptr;		/* pci-express ptr */
 };
 
+/* msi, mandatory for pci-e (except pcie-pci bridges) */
 struct Msi {				/* msi pci capability */
 	ushort	ctl;
 	uvlong	addr;
@@ -265,8 +267,10 @@ enum {
 	Vmarvell= 0x1b4b,
 	Vmoschip= 0x9710,
 	Vmyricom= 0x14c1,
+	Vopenbsd= 0x0b5d,
 	Voracle	= 0x80ee,
 	Vparallels= 0x1ab8,
+	Vqumranet = 0x1af4,
 	Vsamsung= 0x144d,
 	Vsifive	= 0x489,
 	Vspacemit= 0x710,	/* also 0x201f */

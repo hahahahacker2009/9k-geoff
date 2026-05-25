@@ -1,4 +1,5 @@
 /*
+ * broadcom bus arbiter used in rpi4; needs hand-holding.
  * from 9front
  */
 

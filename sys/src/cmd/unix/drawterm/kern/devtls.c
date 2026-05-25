@@ -210,6 +210,7 @@ enum{
 	Qstats,
 };
 
+#define MASK(w)		((1u<<(w)) - 1)
 #define TYPE(x) 	((x).path & MASK(5))
 #define CONV(x) 	(((x).path >> 5) & (MaxTlsDevs-1))
 #define QID(c, y) 	((c)<<5 | (y))
@@ -495,7 +496,7 @@ tlsopen(Chan *c, int omode)
 	c->mode = openmode(omode);
 	c->flag |= COPEN;
 	c->offset = 0;
-	c->iounit = qiomaxatomic;
+	c->iounit = MaxRecLen;
 	assert(MaxRecLen <= qiomaxatomic);
 	return c;
 }

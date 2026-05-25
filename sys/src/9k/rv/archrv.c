@@ -1226,8 +1226,7 @@ microdelay(vlong microsecs)
 	now = rdtime();
 	t = now + microsecs * clintsperµs;	/* target in clint ticks */
 	/* when islo(), cpu0 clock interrupts will restart the dog */
-	if (islo() || m == nil || m->machno != 0 ||
-	    !watchdogon || watchdog == nil) {
+	if (islo() || m->machno != 0 || !watchdogon || watchdog == nil) {
 		while (rdtime() < t)
 			pause();
 		return;

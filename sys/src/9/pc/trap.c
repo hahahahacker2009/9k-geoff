@@ -691,7 +691,7 @@ trapknown(Ureg *ureg, int vno)
 		v->eoi(vno);			/* dismiss intr late instead */
 
 	intrtime(m, vno);
-	if(!clockintr) {
+	if(!clockintr && m->ilockdepth == 0) {
 		if(up)
 			preempted();
 		/*
@@ -756,7 +756,7 @@ trap(Ureg* ureg)
 	/* to do: shouldn't notify be called first, so we won't spin? */
 
 	/* delaysched set because we held a lock or because our quantum ended */
-	if(up && up->delaysched && clockintr){
+	if(up && up->delaysched && clockintr && m->ilockdepth == 0){
 		sched();
 		splhi();
 	}
@@ -944,12 +944,14 @@ fault386(Ureg* ureg, void*)
 		if(vmapsync(addr))
 			return Intrtrap;
 		if(addr >= USTKTOP)
-			panic("kernel fault: bad address pc=%#.8lux addr=%#.8lux", ureg->pc, addr);
+			panic("kernel fault: bad address pc=%#.8p addr=%#.8p",
+				ureg->pc, addr);
 		if(up == nil)
-			panic("kernel fault: no user process pc=%#.8lux addr=%#.8lux", ureg->pc, addr);
+			panic("kernel fault: no user proc pc=%#.8p addr=%#.8p",
+				ureg->pc, addr);
 	}
 	if(up == nil)
-		panic("user fault: up=0 pc=%#.8lux addr=%#.8lux", ureg->pc, addr);
+		panic("user fault: up=0 pc=%#.8p addr=%#.8p", ureg->pc, addr);
 
 	insyscall = up->insyscall;
 	up->insyscall = 1;

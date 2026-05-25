@@ -331,7 +331,7 @@ struct Page
 	ulong	daddr;
 	int	ref;			/* Reference count */
 	uchar	modref;			/* Simulated modify/reference bits */
-	uchar	color;			/* Cache coloring */
+	uchar	color;			/* Cache coloring; make numa cluster */
 	uchar	lg2size;		/* log2(pagesize) */
 	/* we really only need 2 bits per cpu */
 	char	cachectl[MACHMAX];	/* Cache flushing control for mmuput */
@@ -491,7 +491,7 @@ struct Pallocmem
 {
 	uintmem	base;
 	uintmem	limit;
-	int	color;
+	int	color;			/* memory cluster for numa */
 };
 
 struct Palloc

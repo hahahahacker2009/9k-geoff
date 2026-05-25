@@ -10,8 +10,8 @@
 
 /* registers */
 MCHTMP=15
-TMP=26
-TMP2=27
+TMP=14
+TMP2=13
 UART0=29
 
 TEXT pushr2_31(SB), 1, $-4
@@ -397,6 +397,11 @@ TEXT aadd(SB), 1, $-4			/* int aadd(int*, int addend); */
 	SEXT_W(R(ARG))
 	RET
 
+TEXT amoaddw(SB), 0, $(2*XLEN)	/* ulong amoaddw(ulong *a, ulong addend) */
+	MOVWU	addend+XLEN(FP), R9	/* addend */
+	AMOW(Amoadd, AQ|RL, 9, ARG, ARG) /* *R(ARG)+=R9; old *R(ARG) ->R(ARG) */
+	RET
+
 TEXT amoswapw(SB), 0, $(2*XLEN)	/* ulong amoswapw(ulong *a, ulong nv) */
 	MOVWU	nv+XLEN(FP), R9	/* new value */
 	AMOW(Amoswap, AQ|RL, 9, ARG, ARG) /* *R(ARG)=R9; old *R(ARG) ->R(ARG) */
@@ -461,14 +466,15 @@ TEXT mul64fract(SB), 1, $-4
 	MOV	a+XLEN(FP), R9
 	MOV	b+(2*XLEN)(FP), R11
 
-	MULHU	R9, R11, R13			/* high unsigned(al*bl) */
-	MUL	R9, R11, R14			/* low unsigned(al*bl) */
+	MULHU	R9, R11, R(TMP)			/* high unsigned(al*bl) */
+	MUL	R9, R11, R(TMP2)		/* low unsigned(al*bl) */
 
-	SRL	$32, R14			/* lose lowest long */
-	SLL	$32, R13  /* defeat sign extension & position low of hi as hi */
-	OR	R13, R14
+	SRL	$32, R(TMP2)			/* lose lowest long */
+	/* defeat sign extension & position low of hi as hi */
+	SLL	$32, R(TMP)
+	OR	R(TMP), R(TMP2)
 
-	MOV	R14, (R(ARG))
+	MOV	R(TMP2), (R(ARG))		/* store result via r */
 	RET
 
 /* Zbb extension, as found in sifive u74 */
@@ -506,13 +512,13 @@ TEXT cbozero(SB), 1, $-4			/* void cbozero(uintptr) */
 
 /* wait with no timeout for a pending interrupt or change to *p */
 TEXT wrsnto(SB), 1, $-4			/* void wrsnto(int *p) */
-	LRW(ARG, 14)			/* (R(ARG)) -> R14 */
+	LRW(ARG, TMP)			/* (R(ARG)) -> R(TMP) */
 	SYS	$0xd
 	RET
 
 /* wait with a short timeout for a pending interrupt or change to *p */
 TEXT wrssto(SB), 1, $-4			/* void wrssto(int *p) */
-	LRW(ARG, 14)			/* (R(ARG)) -> R14 */
+	LRW(ARG, TMP)			/* (R(ARG)) -> R(TMP) */
 	SYS	$0x1d
 	RET
 

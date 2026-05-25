@@ -69,6 +69,7 @@ extern	int	reject(int, char*, char*);
 
 extern 	char*	argv0;
 
+void	p9_srand(long);
 extern	ulong	truerand(void);
 extern	int	pushssl(int, char*, char*, char*, int*);
 extern	int	iounit(int);

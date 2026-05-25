@@ -16,11 +16,16 @@
 #include "fns.h"
 #include "io.h"
 #include "riscv64.h"
+// #include "../port/dbgprint.h"
 
+/*
+ * prf is now called from (i)print if early is non-zero, but that only
+ * helps cpu0.
+ */
 #define dbprf if (!soc.lowdebug) {} else prf
-/* prf is now called from (i)print if early != 0 */
-#define prf	iprint
-#define print	iprint
+
+/* uvlong assures alignment */
+typedef uvlong Initstack[INITSTKSIZE / sizeof(vlong)];
 
 enum {
 	Diagnose = 0,		/* self-checking for a new machine */
@@ -32,23 +37,27 @@ enum {
 	Pageexcs = 1<<Instpage | 1<<Loadpage | 1<<Storepage,
 };
 
-/* init with anything to force into data seg. to avoid bss zeroing */
+/*
+ * init with anything (must be non-zero for arrays) to force into data seg.
+ * to avoid bss zeroing.
+ */
 int	asids = 0;
-int	bootingcpu;
 /* flag: booted in machine mode; assume super; init to avoid bss */
 int	bootmachmode = 0;
-Mach	dummymach = { 0 };
 ulong	dummysc;
 int	early = 1;		/* use prf & trap.c debugging */
-ushort	hartids[MACHMAX] = { 0 };
+ulong	hartcnt = 0;		/* machno allocator; init to avoid bss */
 Rvarch*	initarchp;
-int	initstall;
-/* uvlong assures alignment */
-uvlong	initstks[MACHMAX][INITSTKSIZE / sizeof(vlong)] = { 0 };
+Initstack initstks[MACHMAX] = { 1 };
+Initstack *initstkp = initstks + 1;
 Sys*	lowsys = 0;		/* visible to earlypagealloc in mmu.c */
 uintptr	mainpc = 0;
 uintptr satptval, satpepc;
 void	(*tlbinvall)(void) = 0;
+
+static	Mach	dummymach = { 0, 0, 0, 1 };
+static	int	initstall = 1;
+static	uintptr	satpread;
 
 /*
  * machine mode setup and switch to supervisor mode.
@@ -71,7 +80,6 @@ delegate(void)
 {
 	dbprf("deleg...");
 	csrswap(MCOUNTEREN, ~0ull); /* expose timers & cycle counters to S */
-	csrswap(SCOUNTEREN, ~0ull);
 //	mideleg = csrwrrd(MIDELEG, Superie);	/* old: punt S intrs to S */
 	mideleg = csrwrrd(MIDELEG, ~0ull); /* try to punt S+M intrs to S */
 
@@ -128,6 +136,7 @@ assertrv(char *claim)
 	dbprf("** If cpu is actually risc-v, %s.\n", claim);
 }
 
+/* this ended up being mostly an (unsuccessful) attempt to cope with the c910 */
 static void
 macharchinit(void)
 {
@@ -231,13 +240,14 @@ lvlkzero(int lvl)
  * KZERO is different for each paging mode.
  */
 void
-dualmap(PTE *ptp, uintptr phys, uint nptes, int lvl)
+dualmap(PTE *ptp, uint nptes, int lvl)
 {
-	uintptr kzero;
+	uintptr kzero, phys;
 	PTE ptebits;
 
 	/* force to physical space, round down to nearest superpage */
 	kzero = lvlkzero(lvl);
+	phys = 0;			/* start address */
 	phys = ROUNDDN(phys & ~kzero, PGLSZ(lvl));
 	ptebits = PADDRFORPTE(phys) | PteRWX | Pteleafvalid;
 	setptes(&ptp[0], ptebits, nptes, lvl);
@@ -296,7 +306,7 @@ mkinitpgtbl(Sys *lowsys, int lvl, uintptr sv)
 	 * populate id map in lower range & upper->lower, from 0 up.
 	 */
 	dbprf("populating normal root page table for lvl %d...", lvl);
-	dualmap(ptp, 0, nptes, lvl);	/* default to sv39 */	
+	dualmap(ptp, nptes, lvl);	/* default to sv39 */	
 	if (soc.c910) {
 		/* don't map first 4K or 2MB page to avoid hang */
 		/* for PHYSMEM, use PPN((uvlong)KTZERO & VMASK(30)) */
@@ -333,14 +343,14 @@ supsetmtimecmp(void)
 }
 
 static void
-newmach(uint cpu)
+newmach(uint cpu, int hartid)
 {
 	/* initialise enough of Mach to get to main */
 	m->machmode = bootmachmode;
 	fakecpuhz();
 	usephysdevaddrs();		/* device vmaps not yet in effect */
 	m->machno = cpu;		/* override preset from newcpupages */
-	m->hartid = hartids[cpu];
+	m->hartid = hartid;
 	m->mtimecmp = nil;			/* pessimism */
 
 	if (bootmachmode) {
@@ -351,7 +361,7 @@ newmach(uint cpu)
 	putsscratch((uintptr)m);		/* ready for straps now */
 
 	if(cpu == 0)
-		dbprf("Booting Plan 9 on hart %d\n", m->hartid);
+		dbprf("Booting Plan 9 on hart %d\n", hartid);
 	clrstie();
 	if (nosbi)
 		wrcltimecmp(VMASK(63));		/* no clock intrs on m */
@@ -372,6 +382,10 @@ ckwdog(void)				/* try to detect a watchdog */
 	}
 }
 
+/*
+ * a misaligned data segment can behave quite strangely,
+ * so detect and report if one is found.
+ */
 static void
 alignchk(void)
 {
@@ -384,12 +398,12 @@ alignchk(void)
 extern uint harts_per_cluster;
 
 /*
- * On cpu0, fill in bits of Mach and Sys, allocate a permanent stack in
- * sys->machstk, signal other cpus to progress, return stack top in low
+ * On cpu0, zero bss, fill in bits of Mach and Sys, allocate a permanent stack
+ * in sys->machstk, signal other cpus to progress, return stack top in low
  * addresses.
  */
 static uintptr
-setstkmach0(void)
+setstkmach0(int hartid)
 {
 	char *aftreboot;
 	Sys *rlowsys;
@@ -401,10 +415,11 @@ setstkmach0(void)
 	coherence();
 	m = &rlowsys->mach;
 	usephysdevaddrs();		/* device vmaps not yet in effect */
-
 	/* now safe to lock */
+
 	soc.clintlongs = 1;		/* pessimism, works on all */
 	alignchk();
+	memset(edata, 0, end - edata);	/* zero bss */
 
 	/* tell other cpus to wait in secstall(). */
 	rlowsys->secstall |= RBFLAGSTALL;
@@ -433,7 +448,7 @@ setstkmach0(void)
 	 * todo: increment rlowsys->nprivmodes for each of the hyper and
 	 * user-interrupt extensions that is present.
 	 */
-	newmach(0);
+	newmach(0, hartid);
 
 	// prf("\n9\n");		/* won't be logged in kmesg */
 
@@ -443,6 +458,9 @@ setstkmach0(void)
 	}
 	loadsbiids(rlowsys);
 	ckwdog();
+
+	coherence();
+	initstall = 0;			/* all-clear for secondary cpus */
 	return (uintptr)&rlowsys->machstk[MACHSTKSZ];
 }
 
@@ -492,7 +510,7 @@ normalmap(void)
  * could be in machine mode.
  */
 static uintptr
-secstall(int cpu)
+secstall(int cpu, int hartid)
 {
 	Mach *m0;
 
@@ -501,25 +519,22 @@ secstall(int cpu)
 	 * then wait for cpu0 to allocate secondaries' data structures and clear
 	 * lowsys->secstall in main.c by schedcpus or settrampargs from reboot.
 	 */
-	if (cpu != bootingcpu)
-		prf("cpu%d has bootingcpu %d\n", cpu, bootingcpu);
-	while (lowsys == nil || sys == nil || lowsys->secstall) {
+	while (initstall || lowsys == nil || sys == nil || lowsys->secstall) {
 		pause();
 		coherence();
 	}
 
 	/*
 	 * cpu & hartid were validated in start.s, so sys->machptr[cpu] is now
-	 * valid.
+	 * valid and must be a high address.
 	 */
-	m = lowsys->machptr[cpu]; /* machptr[cpu] must be a high address */
+	m = ensurelow(lowsys->machptr[cpu]);
 	if (m == nil)
 		panic("setmach: nil sys->machptr[%d] before mallocinit", cpu);
-	m = ensurelow(m);
 	usephysdevaddrs();		/* device vmaps not yet in effect */
 
 	/* now safe to lock */
-	newmach(cpu);
+	newmach(cpu, hartid);
 	m0 = ensurelow(lowsys->machptr[0]);
 	m->cpuhz  = m0->cpuhz;
 	m->cpumhz = m0->cpumhz;
@@ -540,8 +555,6 @@ secstall(int cpu)
 
 	return m->stack + MACHSTKSZ;	/* permanent stack top for this hart */
 }
-
-uintptr satpread;
 
 static int
 gotsatp(uintptr nsatp)
@@ -598,7 +611,7 @@ probesatp(Sys *sys)
 
 		dbprf("populating lvl %d root page table...", lvl);
 		zero(pt, PTSZ);
-		dualmap(pt, 0, Ptpgptes/2 - (VMBITS == 64? 0: 1), lvl);
+		dualmap(pt, Ptpgptes/2 - (VMBITS == 64? 0: 1), lvl);
 		// mmudump((uintptr)pt, lvl);
 
 		/* try test pt */
@@ -620,10 +633,10 @@ probesatp(Sys *sys)
 	 * force test page to Sv39 before setting root page table for normal use
 	 */
 	zero(pt, PTSZ);
-	dualmap(pt, 0, Ptpgptes/2 - (VMBITS == 64? 0: 1), 2);
+	dualmap(pt, Ptpgptes/2 - (VMBITS == 64? 0: 1), 2);
 	putsatp(Sv39 | satp);
 
-	/* set up mmu with requesated pagingmode, verify operation */
+	/* set up mmu with requested pagingmode, verify operation */
 	mkinitpgtbl(lowsys, Toplvl, pagingmode);
 
 	dbprf("\nprobe initial page table (satp %#p)...", sys->satp);
@@ -689,6 +702,7 @@ prstackuse(void)
 	uvlong *stkbot, *stkbase;
 
 	if (Measurestkuse) {
+		/* m->machno may not be the right index */
 		stkbot = stkbase = initstks[m->machno];
 		prf("\ncpu%d: initstk %#p: %#p %#p %#p %#p use %lld bytes\n\n",
 			m->machno, stkbase, stkbot[0], stkbot[1], stkbot[2],
@@ -707,8 +721,8 @@ setsts(void)
 /*
  * We are called with all interrupts disabled.
  *
- * A temporary stack (in initstks) must be in use when we are called.
- * BSS has already been zeroed.  Don't use any high addresses until we are
+ * A temporary stack (in initstks) must be in use when we are called.  BSS has
+ * not been zeroed on the first call.  Don't use any high addresses until we are
  * definitely in supervisor mode with paging on.
  *
  * Main goals are: establish m, sys, a permanent stack, [sm]scratch, [sm]tvec,
@@ -721,27 +735,44 @@ setsts(void)
  * top of the first memory bank, usually the first GB.
  */
 void
-low(uint cpu)
+low(uvlong hartid)
 {
+	uvlong cpu;
 	uintptr stktop;
 	Page *ptroot;
 
 	up = nil;
 	setsts();
-	if (cpu >= MACHMAX)
-		panic("low: cpu %d out of range", cpu);
-	/* Set bits of Mach and Sys, m, and works out new stack top. */
+	storecond(&dummysc, 0);	/* clear any lingering reservation we hold */
+
+	/*
+	 * in case i(un)lock are called before m is set to its real Mach*,
+	 * perhaps called via panic very early on this hart.
+	 */
+	m = &dummymach;
+	putsscratch((uintptr)m);
+
+	/*
+	 * assign machnos sequentially from zero.
+	 * after amoaddw: old hartcnt in cpu, updated hartcnt in memory.
+	 */
+	cpu = amoaddw(&hartcnt, 1);
+	if (cpu >= MACHMAX) {
+		prf("low: cpu %lld out of range\n", cpu);
+		panic("low: cpu %lld out of range", cpu);
+	}
 	if (cpu == 0)
-		stktop = setstkmach0();		/* also sets sys and lowsys */
-	else
-		stktop = secstall(cpu);
+		/* save PC as approx. PADDR(KTZERO) */
+		mainpc = getcallerpc(&hartid);
+	/* Set bits of Mach and Sys, m, and works out new stack top. */
+	stktop = cpu == 0? setstkmach0(hartid): secstall(cpu, hartid);
 
 	/*
 	 * on secondaries, m->online is now 1, so iovmapsoc must have run on
 	 * cpu0 by now, thus its page table's kernel mappings are final.
 	 * On all cpus, get out of machine mode if necessary, and start paging.
 	 */
-	dbprf("[cpu%d hart%d]\n", cpu, hartids[cpu]); /* show signs of life */
+	dbprf("[cpu%lld hart%lld]\n", cpu, hartid); /* show signs of life */
 	if (bootmachmode)
 		mach_to_super(lowsys);	/* enables any M extensions too */
 
@@ -749,6 +780,7 @@ low(uint cpu)
 	m->machmode = 0;
 	putstvec(strap);		/* make probes work w/ low addr */
 	putsscratch((uintptr)m);	/* ready for straps now */
+	csrswap(SCOUNTEREN, ~0ull);
 	pagingon(lowsys);	/* install low id map & upper->low map */
 
 	/*
@@ -756,18 +788,19 @@ low(uint cpu)
 	 * upper addresses.  All extant automatic variables and saved return
 	 * addresses are on the old (current) stack (or in registers), thus
 	 * unpredictable after the switch.
-	 *
-	 * jump into high (kernel) addresses, thus vacating the lower range for
-	 * user processes.  adjust pointers and registers as needed.
 	 */
 	putstvec(rectrapalign);
 	prstackuse();
 
-	dbprf("new stack %#p...", (uintptr)ensurelow(stktop - SBIALIGN));
+	dbprf("new stack's top %#p...", (uintptr)ensurelow(stktop - SBIALIGN));
 	setsp((uintptr)ensurelow(stktop - SBIALIGN));
 
+	/*
+	 * jump into high (kernel) addresses, thus vacating the lower range for
+	 * user processes.  adjust pointers and registers as needed.
+	 */
 	dbprf("jump to kernel space...");
-	jumphigh();			/* adjust registers (m, sp, sb) */
+	jumphigh();
 
 	/*
 	 * now executing in upper space with high static base

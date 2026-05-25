@@ -948,7 +948,9 @@ wakeup(Rendez *r)
 	lock(r);
 	p = r->p;
 
-	if(p != nil){
+	if(p == nil)
+		unlock(r);
+	else {
 		lock(&p->rlock);
 		if(p->state != Wakeme || p->r != r){
 			iprint("%p %p %d\n", p->r, r, p->state);
@@ -956,10 +958,10 @@ wakeup(Rendez *r)
 		}
 		r->p = nil;
 		p->r = nil;
-		ready(p);
+		unlock(r);
+		ready(p);		/* just change p's state, don't sleep */
 		unlock(&p->rlock);
 	}
-	unlock(r);
 
 	splx(s);
 
@@ -1013,8 +1015,14 @@ postnote(Proc *p, int dolock, char *n, int flag)
 					p->r != r, p->state);
 			p->r = nil;
 			r->p = nil;
-			ready(p);
+			/*
+			 * The unlock must precede ready(p), in case the readied
+			 * process immediately deallocates the Rendez.  This can
+			 * happen with semacquire, where the Rendez is on the
+			 * stack.
+			 */
 			unlock(r);
+			ready(p);
 			break;
 		}
 

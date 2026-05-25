@@ -24,9 +24,6 @@
 
 extern char defnvram[];		/* from kernel config */
 
-int	hartcnt = 0;		/* machno allocator; init to avoid bss */
-int	initstall = 1;		/* for start.s */
-
 Sys* sys = nil;			/* initializer keeps sys out of bss */
 uintptr sizeofSys = sizeof(Sys);
 uintptr sizeofSyspercpu = sizeof(Syspercpu);
@@ -268,6 +265,8 @@ schedcpus(int ncpus)
 	for (tries = 0; running < ncpus && tries < 300; tries++) {
 		DBG("try %d: ", tries);
 		delay(50);	/* let them indicate presence; be patient */
+		if (tries % 20 == 19)
+			iprint(".");
 		for(machno = 1; machno < ncpus; machno++) /* skip me (cpu0) */
 			running += onlinewaiting(machno);
 	}
@@ -354,8 +353,6 @@ cpu0init(void)
 	physmeminit();
 	/* we know physical memory size and end (sys->pmend) here */
 	setkernmem();
-	initstall = 0;	/* give secondary cpus in start.s the all-clear */
-	DBG("any secondary cpus unblocked\n");
 	probesvpbmt(sys);		/* pointless feature */
 	/* from here, region below sys will be uncached */
 
@@ -384,7 +381,7 @@ cpu0init(void)
 
 	/* if epoch is set after timersinit, timers will be confused */
 	setepoch();		/* get notions of time right here */
-	sethz();		/* also configures any l2 cache */
+	sethz();
 	calibrate();
 
 	/*
@@ -542,7 +539,7 @@ addrsanity(void)		/* check load addresses for sanity */
 	uintptr lowktzero;
 
 	lowktzero = PADDR((void *)KTZERO);
-	if (PPN(mainpc) != lowktzero)
+	if (mainpc < lowktzero || mainpc > lowktzero+2*PGSZ)
 		prf("_main pc %#p too far from PADDR(KTZERO) %#p, "
 			"kernel loaded at wrong address!\n", mainpc, lowktzero);
 	ktzerophys = ROUNDDN((ulong)lowktzero, GB);
@@ -642,6 +639,7 @@ main(int cpu)
 	 */
 	cpu0init();
 	/* we know physical memory size and end (sys->pmend) here */
+
 	/* now logging console output to kmesg */
 	pcireset();		/* turn off bus masters & intrs */
 

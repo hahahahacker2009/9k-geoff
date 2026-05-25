@@ -3,8 +3,6 @@
  * can't cope with.  appended to mkenum output to make riscv64l.h.
  */
 
-#undef DEBUG
-
 /* instructions not yet known to ia and ja */
 #define ECALL	SYS $0
 #define EBREAK	SYS $1
@@ -42,7 +40,7 @@
  */
 
 /* always prints */
-#define PRINT(c) \
+#define PR(c) \
 	MOV	c, R(TMP); \
 	MOVW	R(TMP), (R(UART0)); \
 	FENCE
@@ -52,7 +50,7 @@
 #define CONSPUT(c)
 #define	CONSWAIT
 #else					/* DEBUG */
-#define CONSOUT(c) PRINT(c)
+#define CONSOUT(c) PR(c)
 
 #ifdef SIFIVEUART
 #define CONSWAIT \

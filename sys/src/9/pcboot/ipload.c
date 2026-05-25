@@ -377,7 +377,7 @@ cprint(Chan *c, char *fmt, ...)
 	return devtab[c->type]->write(c, buf, n, c->offset);
 }
 
-/* request file via ttftp on oe */
+/* request file via ttftp (port 17015) on oe */
 Chan *
 ttftpopen(Openeth *oe, char *file, Bootp *rep)
 {
@@ -933,7 +933,7 @@ ipload(Openeth *oe, Kernname *kp)
 	}
 
 	memset(&rep, 0, sizeof rep);
-	if (setipcfg(oe, &rep) < 0)
+	if (setipcfg(oe, &rep) < 0)	/* bootp broadcast & response */
 		error("can't set ip config");
 
 	n = getkernname(oe, &rep, kp);

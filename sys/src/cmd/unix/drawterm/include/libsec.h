@@ -1,3 +1,9 @@
+#ifdef PLAN9
+#pragma	lib	"libsec.a"
+#pragma	src	"/sys/src/libsec"
+#endif
+
+
 #ifndef _MPINT
 typedef struct mpint mpint;
 #endif
@@ -21,8 +27,8 @@ struct AESstate
 	int	keybytes;
 	uint	ctrsz;
 	uchar	key[AESmaxkey];			/* unexpanded key */
-	u32int	ekey[4*(AESmaxrounds + 1)];	/* encryption key */
-	u32int	dkey[4*(AESmaxrounds + 1)];	/* decryption key */
+	ulong	ekey[4*(AESmaxrounds + 1)];	/* encryption key */
+	ulong	dkey[4*(AESmaxrounds + 1)];	/* decryption key */
 	uchar	ivec[AESbsize];			/* initialization vector */
 	uchar	mackey[3 * AESbsize];		/* 3 XCBC mac 96 keys */
 };
@@ -70,6 +76,42 @@ void	bfECBencrypt(uchar*, int, BFstate*);
 void	bfECBdecrypt(uchar*, int, BFstate*);
 
 /*
+ * Chacha definitions
+ */
+
+enum{
+	ChachaBsize=	64,
+	ChachaKeylen=	256/8,
+	ChachaIVlen=	96/8
+};
+
+typedef struct Chachastate Chachastate;
+struct Chachastate
+{
+	/*
+	 * 0-3:	a constant (sigma or tau)
+	 * 4-11:	the key
+	 * 12:	block counter
+	 * 13-15:	IV
+	 */
+	union{
+		u32int	input[16];
+		struct{
+			u32int	constant[4];
+			u32int	key[8];
+			u32int	counter;
+			u32int	iv[3];
+		};
+	};
+	int	rounds;
+};
+
+void	setupChachastate(Chachastate*, uchar*, usize, uchar*, int);
+void	chacha_setblock(Chachastate*, u32int);
+void	chacha_encrypt(uchar*, usize, Chachastate*);
+void	chacha_encrypt2(uchar*, uchar*, usize, Chachastate*);
+
+/*
  * DES definitions
  */
 
@@ -90,7 +132,7 @@ struct DESstate
 
 void	setupDESstate(DESstate *s, uchar key[8], uchar *ivec);
 void	des_key_setup(uchar[8], ulong[32]);
-void	block_cipher(ulong*, uchar*, int);
+void	block_cipher(ulong[32], uchar[8], int);
 void	desCBCencrypt(uchar*, int, DESstate*);
 void	desCBCdecrypt(uchar*, int, DESstate*);
 void	desECBencrypt(uchar*, int, DESstate*);
@@ -121,7 +163,7 @@ struct DES3state
 };
 
 void	setupDES3state(DES3state *s, uchar key[3][8], uchar *ivec);
-void	triple_block_cipher(ulong keys[3][32], uchar*, int);
+void	triple_block_cipher(ulong keys[3][32], uchar[8], int);
 void	des3CBCencrypt(uchar*, int, DES3state*);
 void	des3CBCdecrypt(uchar*, int, DES3state*);
 void	des3ECBencrypt(uchar*, int, DES3state*);
@@ -386,14 +428,14 @@ typedef struct TLSconn{
 	char	*sessionConst;
 } TLSconn;
 
-// tlshand.c
-extern int tlsClient(int fd, TLSconn *c);
-extern int tlsServer(int fd, TLSconn *c);
+/* tlshand.c */
+int tlsClient(int fd, TLSconn *c);
+int tlsServer(int fd, TLSconn *c);
 
-// thumb.c
-extern Thumbprint* initThumbprints(char *ok, char *crl);
-extern void freeThumbprints(Thumbprint *ok);
-extern int okThumbprint(uchar *sha1, Thumbprint *ok);
+/* thumb.c */
+Thumbprint* initThumbprints(char *ok, char *crl);
+void	freeThumbprints(Thumbprint *ok);
+int	okThumbprint(uchar *sha1, Thumbprint *ok);
 
 /* readcert.c */
 uchar	*readcert(char *filename, int *pcertlen);

@@ -47,7 +47,7 @@ enum {
 	 * Nrb of 256 wasn't enough on fs but it recovered.
 	 * Nrb of 384 wasn't enough on cpu and it paniced (nil Block*).
 	 */
-	Ntd	= 32,		/* multiple of 8 */
+	Ntd	= 64,		/* multiple of 8 */
 	Nrd	= 128,		/* multiple of 8 */
 	/* 9boot's tftp/udp seems to need 1024 (was 512); ttftp doesn't */
 	Nrb	= 1024,		/* private receive buffers, >= Nrd */
@@ -377,7 +377,7 @@ struct Ctlr {
 	QLock	slock;
 	ulong	stats[nelem(stattab)];
 
-	uint	ixcs;		/* valid hw checksum count */
+	uint	ixcs;		/* valid hw checksum (crc) count */
 	uint	ipcs;		/* good hw ip checksums */
 	uint	tcpcs;		/* good hw tcp/udp checksums */
 };
@@ -579,10 +579,13 @@ transmit(Ether *edev)
 			ienable(ctlr, Itx0);
 			break;
 		}
+		if (ctlr->tb[tdt] != nil)
+			break;
 		if((bp = qget(edev->oq)) == nil)
 			break;
 
 		assert(ctlr->tdba != nil);
+		coherence();		/* paranoia: flush bp's buffer */
 		td = &ctlr->tdba[tdt];
 		/* td->status, thus Tdd, will have been zeroed by cleanup */
 		td->vladdr = PCIWADDR(bp->rp);
@@ -793,7 +796,6 @@ rim(void *vc)
 static void
 ckcksum(Ctlr *ctlr, Rd *rd, Block *bp)
 {
-	ctlr->ixcs++;
 	if(rd->status & Ipcs){
 		/*
 		 * IP checksum calculated (and valid as errors == 0).
@@ -808,8 +810,13 @@ ckcksum(Ctlr *ctlr, Rd *rd, Block *bp)
 		ctlr->tcpcs++;
 		bp->flag |= Btcpck|Budpck;
 	}
+	if (rd->errors & Rxe)
+		ctlr->edev->crcs++;
+	else {
+		ctlr->ixcs++;
+		bp->flag |= Bpktck;
+	}
 	bp->checksum = rd->checksum;
-	bp->flag |= Bpktck;
 }
 
 static int
@@ -818,10 +825,12 @@ qinpkt(Ctlr *ctlr)
 	int passed;
 	uint rdh;
 	Block *bp;
+	Etherpkt *pkt;
 	Rd *rd;
 
 	ctlr->rim = 0;
 	rdh = ctlr->rdh;
+	coherence();
 	rd = &ctlr->rdba[rdh];
 	/* Rdd indicates a reusable rd; sw owns it */
 	if (!(rd->status & Rdd))
@@ -831,8 +840,9 @@ qinpkt(Ctlr *ctlr)
 	 * Accept eop packets with no errors.
 	 */
 	passed = 0;
+	bp = ctlr->rb[rdh];
+	ckcksum(ctlr, rd, bp);
 	if(rd->status & Reop && rd->errors == 0){
-		bp = ctlr->rb[rdh];
 		if (bp == nil) {
 			iprint("%Æ: nil Block* from ctlr->rb\n", ctlr);
 			return -1;
@@ -841,14 +851,18 @@ qinpkt(Ctlr *ctlr)
 			print("%Æ: got jumbo of %d bytes\n", ctlr, rd->length);
 		else
 			bp->wp += rd->length;
-		ckcksum(ctlr, rd, bp);
 		ainc(&nrbfull);
 		notemark(&ctlr->wmrb, nrbfull);
 		etheriq(ctlr->edev, bp, 1);	/* pass pkt upstream */
 		passed++;
 	} else {
+		pkt = (Etherpkt *)bp->rp;
+		if ((bp->flag & Bpktck) == 0)	/* good crc? */
+			iprint("%Æ: bad crc, sts %#ux; ether type %#ux len %d\n",
+				ctlr, rd->status,
+				pkt->type[0]<<8 | pkt->type[1], rd->length);
 		ainc(&nrbfull);			/* rbfree will adec */
-		freeb(ctlr->rb[rdh]);		/* toss bad pkt */
+		freeb(bp);			/* toss bad pkt */
 	}
 	ctlr->rb[rdh] = nil;
 	ctlr->rdfree--;

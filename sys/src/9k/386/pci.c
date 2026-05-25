@@ -1,6 +1,6 @@
 /*
- * PCI bus support code.  Handles PCI-Express by mostly ignoring extensions
- * to PCI.
+ * PCI bus support code.  Handles PCI-Express (2003) by mostly ignoring
+ * extensions to PCI.
  * has more than a few magic numbers.
  */
 #include "u.h"
@@ -686,29 +686,29 @@ static Bridge southbridges[] = {
 
 typedef struct Slot Slot;
 struct Slot {
-	uchar	bus;			// Pci bus number
-	uchar	dev;			// Pci device number
-	uchar	maps[12];		// Avoid structs!  Link and mask.
-	uchar	slot;			// Add-in/built-in slot
+	uchar	bus;			/* Pci bus number */
+	uchar	dev;			/* Pci device number */
+	uchar	maps[12];		/* Avoid structs!  Link and mask. */
+	uchar	slot;			/* Add-in/built-in slot */
 	uchar	reserved;
 };
 
 typedef struct Router Router;
 struct Router {
-	uchar	signature[4];		// Routing table signature
-	uchar	version[2];		// Version number
-	uchar	size[2];		// Total table size
-	uchar	bus;			// Interrupt router bus number
-	uchar	devfn;			// Router's devfunc
-	uchar	pciirqs[2];		// Exclusive PCI irqs
-	uchar	compat[4];		// Compatible PCI interrupt router
-	uchar	miniport[4];		// Miniport data
+	uchar	signature[4];		/* Routing table signature */
+	uchar	version[2];		/* Version number */
+	uchar	size[2];		/* Total table size */
+	uchar	bus;			/* Interrupt router bus number */
+	uchar	devfn;			/* Router's devfunc */
+	uchar	pciirqs[2];		/* Exclusive PCI irqs */
+	uchar	compat[4];		/* Compatible PCI interrupt router */
+	uchar	miniport[4];		/* Miniport data */
 	uchar	reserved[11];
 	uchar	checksum;
 };
 
-static ushort pciirqs;			// Exclusive PCI irqs
-static Bridge *southbridge;		// Which southbridge to use.
+static ushort pciirqs;			/* Exclusive PCI irqs */
+static Bridge *southbridge;		/* Which southbridge to use. */
 
 static void
 pcirouting(void)

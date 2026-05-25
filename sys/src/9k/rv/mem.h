@@ -123,7 +123,7 @@
 #ifdef SV64
 #define PAGINGMODE	Sv64
 #define VMBITS		64	/* KZERO is 0x8000000000000000 */
-#define KZERO		0x8000000000000000ull	/* see ja note below */
+// #define KZERO		0x8000000000000000ull /* TODO see ja note below */
 #else
 #ifdef SV57
 #define PAGINGMODE	Sv57
@@ -200,7 +200,7 @@
 #define VTOP		0ull		/* highest virtual address used + 1 */
 #endif
 #ifndef KZERO
-#define KZERO		(VTOP - ADDRSPCSZ)	/* ja gets this wrong in Sv64 */
+#define KZERO		(VTOP - ADDRSPCSZ) /* TODO ja got this wrong in Sv64? */
 #endif
  /* -1 for high bit, is user vs kernel */
 #define KZEROLVL(l) ((l) == 5? 1ull<<63: VTOP - (1ull << (PGLSHFT((l)+1) - 1)))

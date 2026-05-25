@@ -188,22 +188,30 @@ enum {
 };
 
 enum {				/* cause exception codes for interrupts */
-	Supswintr	= 1,
+	Supswintr	= 1,		/* interprocessor interrupts */
 	Vsupswintr	= 2,
 	Mchswintr	= 3,
-	Suptmrintr	= 5,
+
+	Suptmrintr	= 5,		/* clock interrupts */
 	Vsuptmrintr	= 6,
 	Mchtmrintr	= 7,
-	Supextintr	= 9,		/* global intr */
-	Vsupextintr	= 10,		/* global intr */
-	Mchextintr	= 11,		/* global intr */
-	Supgextintr	= 12,		/* global intr */
+
+	Supextintr	= 9,		/* global interrupts */
+	Vsupextintr	= 10,
+	Mchextintr	= 11,
+	Supgextintr	= 12,
+
 	Hpmctrovflintr	= 13,
 	Debugintr	= 14,
 	Local0intr	= 16,
 	Xtperfovflintr	= 17,
+
 	Nlintr		= 64,		/* # of local interrupts */
-	Msdiff		= 2,		/* "M* - S*" bit */
+
+	Excgroup	= 4,		/* exceptions are in groups of 4 */
+	Excgrpshft	= 2,		/* lg Excgroup */
+
+	Msdiff		= 2,		/* "M* - S*" exception codes */
 };
 
 /* local interrupt enables */

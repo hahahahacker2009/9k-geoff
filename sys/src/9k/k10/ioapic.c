@@ -83,18 +83,30 @@ rtblput(Apic* apic, int sel, u32int hi, u32int lo)
 	rtblw(apic->addr, sel, lo);
 }
 
-void
+int
 ioapicintrinit(int busno, int apicno, int intin, int devno, u32int lo)
 {
 	Rdt *rdt;
 	Apic *apic;
 
-	if(busno >= Nbus || apicno >= Napic || nrdtarray >= Nrdt)
-		return;
+	if(busno >= Nbus || apicno >= Napic)
+		return -1;
 	apic = &ioapic[apicno];
-	if(!apic->useable || intin >= apic->nrdt)
-		return;
+	if(!apic->useable) {
+		iprint("ioapicintrinit: apic %d not usable\n", apicno);
+		return -1;
+	}
+	if(intin >= apic->nrdt) {
+		iprint("ioapicintrinit: intin %d too big for apic nrdt %d\n",
+			intin, apic->nrdt);
+		return -1;
+	}
+	if(nrdtarray >= Nrdt) {
+		iprint("ioapicintrinit: out of rdtarray entries\n");
+		return -1;
+	}
 
+	/* allocate a new Rdt and insert it at head of rdtbus[busno] list */
 	rdt = &rdtarray[nrdtarray++];
 	rdt->apic = apic;
 	rdt->devno = devno;
@@ -102,6 +114,7 @@ ioapicintrinit(int busno, int apicno, int intin, int devno, u32int lo)
 	rdt->lo = lo;
 	rdt->next = rdtbus[busno];
 	rdtbus[busno] = rdt;
+	return 0;
 }
 
 void
@@ -347,9 +360,10 @@ static Buggymsi buggymsi[] = {	/* also update 9/pc/mp.c */
 static char *msiconf;
 
 /*
- * use message-signalled interrupt if available.  msi and msi-x may both
- * be available (e.g. pci-e devices), but only one can be used on a given
- * device.  msi-x seems much more complicated for little benefit.
+ * use message-signalled interrupt if available; they are mandatory for pci-e
+ * devices, with an exception for pcie-pci bridges.  msi and msi-x may both be
+ * available (e.g.  pci-e devices), but only one can be used on a given device.
+ * msi-x seems much more complicated for little benefit.
  */
 static int
 trymsi(Vctl *v, Pcidev *pcidev)

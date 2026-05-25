@@ -3,6 +3,9 @@
 #define X86MODEL(x)	((((x)>>4) & 0x0F) | (((x)>>16) & 0x0F)<<4)
 #define X86STEPPING(x)	((x) & 0x0F)
 
+/*
+ * i8259 interrupt controller
+ */
 enum {
 	VectorNMI	= 2,		/* non-maskable interrupt */
 	VectorBPT	= 3,		/* breakpoint */
@@ -241,7 +244,7 @@ enum {					/* pci 2.2 capability ids */
 	Pcicapbridge	= 4,		/* bridge info */
 	Pcicapmsi	= 5,		/* message-signaled interrupts */
 	Pcicaphot	= 6,		/* CompactPCI hot swap */
-	Pcicappcie	= 0x10,		/* pci-express */
+	Pcicappcie	= 0x10,		/* pci-express (since 2003) */
 	Pcicapmsix	= 0x11,		/* msi-x */
 };
 
@@ -275,6 +278,7 @@ struct Pcidev
 	uchar	cls;
 	uchar	ltr;
 
+	/* 0 is usually mmio registers, 2 is pc i/o port, 3 is msi-x table */
 	Pcibar	mem[6];
 
 	Pcibar	rom;			/* only used by devpccard */
@@ -324,8 +328,10 @@ enum {
 	Vmarvell= 0x1b4b,
 	Vmoschip= 0x9710,
 	Vmyricom= 0x14c1,
+	Vopenbsd= 0x0b5d,
 	Voracle	= 0x80ee,
 	Vparallels= 0x1ab8,
+	Vqumranet = 0x1af4,
 	Vsamsung= 0x144d,
 	Vvmware	= 0x15ad,
 };

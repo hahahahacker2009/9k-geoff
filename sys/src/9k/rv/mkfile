@@ -7,10 +7,10 @@ objtype=riscv64
 # won't work for tecpu.
 
 # defaults
-PHYSMEM=0x80000000u
+PHYSMEM=0x80000000u		# 0x80200000u could work almost everywhere
 KTZERO=0xffffffc080000000	# Sv39 at 2GB phys
-PAClint=0x02000000
-PAUart0=0x10010000		# sifive's default
+PAClint=0x02000000		# very common address
+PAUart0=0x10010000		# sifive's default, but no standard
 # should be PHYSMEM+BANK0SIZE-MB+0x5000
 RBKTZERO=0xbff05000	# reboot trampoline at physical top of 1GB bank at 0x8⋯
 BANK0SIZE=GB
@@ -30,6 +30,7 @@ p=9
 
 CFLAGS=$CFLAGS $CONFDEF
 AFLAGS=$AFLAGS $CONFDEF
+# -t would move strings into text segment
 LDFLAGS=-X
 
 9k:V:	$p$CONF

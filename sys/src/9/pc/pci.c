@@ -1,5 +1,6 @@
 /*
- * PCI bus support code.  Handles PCI-Express by ignoring extensions to PCI.
+ * PCI bus support code.  Handles PCI-Express (2003) by mostly ignoring
+ * extensions to PCI.
  */
 #include "u.h"
 #include "../port/lib.h"
