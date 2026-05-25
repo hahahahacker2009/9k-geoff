@@ -32,7 +32,7 @@ enum {
 
 	SystimerFreq	= 1*Mhz,
 	MaxPeriod	= SystimerFreq / HZ,
-	MinPeriod	= 10,
+	MinPeriod	= 100,
 
 };
 
@@ -121,7 +121,7 @@ clockinit(void)
 {
 	Systimers *tn;
 	Armtimer *tm;
-	u32int t0, t1, tstart, tend;
+	u32int t0, t1, tstart;
 
 	if(((cprdfeat1() >> 16) & 0xF) != 0) {
 		/* generic timer supported */
@@ -129,7 +129,7 @@ clockinit(void)
 			/* input clock is 19.2MHz or 54MHz crystal */
 			*(ulong*)(ARMLOCAL + Localctl) = 0;
 			/* divide by (2^31/Prescaler) for 1Mhz */
-			*(ulong*)(ARMLOCAL + Prescaler) = (((uvlong)SystimerFreq<<31)/soc.oscfreq)&~1UL;
+			*(ulong*)(ARMLOCAL + Prescaler) = (((uvlong)SystimerFreq<<31)/soc.oscfreq)&~1ULL;
 		}
 		cpwrtimerphysctl(Imask);
 	}
@@ -139,10 +139,9 @@ clockinit(void)
 	do{
 		t0 = lcycles();
 	}while(tn->clo == tstart);
-	tend = tstart + 10000;
 	do{
 		t1 = lcycles();
-	}while(tn->clo != tend);
+	}while(tn->clo - tstart < 10000);
 	t1 -= t0;
 	m->cpuhz = 100 * t1;
 	m->cpumhz = (m->cpuhz + Mhz/2 - 1) / Mhz;

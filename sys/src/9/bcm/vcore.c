@@ -15,7 +15,7 @@ typedef struct Fbinfo Fbinfo;
 typedef struct Vgpio Vgpio;
 
 enum {
-	VcRead		= 0x00>>2,
+//	Read		= 0x00>>2,
 	VcWrite		= 0x00>>2,
 	Peek		= 0x10>>2,
 	Sender		= 0x14>>2,
@@ -118,7 +118,7 @@ vcread(uint chan)
 		while(r[Status]&Empty)
 			;
 		coherence();
-		x = r[VcRead];
+		x = r[Read];
 	}while((x&ChanMask) != chan);
 	return x & ~ChanMask;
 }

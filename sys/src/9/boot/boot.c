@@ -274,6 +274,7 @@ boot(int argc, char *argv[])
 	int fd, afd, islocal, ishybrid;
 	char *rsp, *p;
 	Method *mp;
+	char buf[32];
 
 	if (alignmagic != Alignmagic)
 		write(2, "boot data seg unaligned!\n", 29);
@@ -303,7 +304,11 @@ boot(int argc, char *argv[])
 	}ARGEND
 
 	readfile("#e/cputype", cputype, sizeof(cputype));
-
+	readfile("#e/service", buf, sizeof(buf));
+	if(strcmp(buf, "cpu") == 0)
+		cpuflag = 1;
+	else if(strcmp(buf, "terminal") == 0)
+		cpuflag = 0;
 	if ((p = getenv("bootpromptwait")) != nil)
 		promptwait = atoi(p);
 

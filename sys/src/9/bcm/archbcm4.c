@@ -130,8 +130,8 @@ cputype2name(char *buf, int size)
 		p = seprint(buf, buf + size, "Unknown-%#x", part);
 		break;
 	}
-	seprint(p, buf + size, " r%lldp%lld",
-		(r >> 20) & VMASK(4), r & VMASK(4));
+	seprint(p, buf + size, " r%udp%ud",
+		(r >> 20) & MASK(4), r & MASK(4));
 	return buf;
 }
 

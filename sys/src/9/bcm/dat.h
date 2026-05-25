@@ -22,7 +22,6 @@ typedef struct Lock	Lock;
 typedef struct Memcache	Memcache;
 typedef struct MMMU	MMMU;
 typedef struct Mach	Mach;
-typedef struct Notsave	Notsave;
 typedef struct Page	Page;
 typedef struct PhysUart	PhysUart;
 typedef struct PMMU	PMMU;
@@ -83,6 +82,10 @@ struct FPsave
 
 /*
  * FPsave.fpstate
+ *
+ * FPinit: never used
+ * FPactive: in use, registers are live
+ * FPinactive: not in use, registers are saved
  */
 enum
 {
@@ -90,9 +93,11 @@ enum
 	FPactive,
 	FPinactive,
 	FPemu,
+	FPnotestart,
 
-	/* bits or'd with the state */
-	FPillegal= 0x100,
+	/* state repeated 3 bits up for note handler */
+	FPnoteshift = 3,
+	FPnotemask = 7<<3,
 };
 
 struct Confmem
@@ -141,15 +146,6 @@ enum {
 	Alt3	= 0x7,
 	Alt4	= 0x3,
 	Alt5	= 0x2,
-};
-
-
-
-/*
- *  things saved in the Proc structure during a notify
- */
-struct Notsave {
-	int	emptiness;
 };
 
 /*

@@ -181,7 +181,14 @@ sysrfork(ulong *arg)
 		p->noteid = up->noteid;
 
 	/* don't penalize the child, it hasn't done FP in a note handler. */
-	p->fpstate = up->fpstate & ~FPillegal;
+	/*
+	 * originally in rsc's 9-fpnote patch, but Miller removed for
+	 * non-386 kernels. I'm not sure if 9k should be updated as well.
+	if((up->fpstate>>FPnoteshift) != 0){
+		fpoff();
+		p->fpstate &= ~FPnotemask;
+	}
+	*/
 	pid = p->pid;
 	memset(p->time, 0, sizeof(p->time));
 	p->time[TReal] = sys->ticks;

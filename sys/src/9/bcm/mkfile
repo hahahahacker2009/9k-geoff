@@ -1,6 +1,6 @@
 CONF=pi4
-CONFLIST=pi4 pi4cpu # pi picpu pifat pi2 pi2cpu piwifi pi2wifi pi4wifi
-#EXTRACOPIES=
+CONFLIST=pi picpu pifat pi2 pi2cpu pi4 pi4cpu piwifi pi2wifi pi4wifi
+EXTRACOPIES=
 
 loadaddr=0x80008000
 
